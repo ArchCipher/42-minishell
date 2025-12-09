@@ -63,6 +63,18 @@ size_t	ft_strcspn(const char *s, const char *reject)
 	return (i);
 }
 
+int	ft_strncmp(const char *s1, const char *s2, size_t n)
+{
+	if (n == 0)
+		return (0);
+	while (n-- > 1 && *s1 && *s1 == *s2)
+	{
+		s1++;
+		s2++;
+	}
+	return (((int)(unsigned char)*s1) - ((int)(unsigned char)*s2));
+}
+
 /*
 char	*ft_strtok_r(char *s, const char *sep, char **p)
 {
@@ -84,3 +96,21 @@ char	*ft_strtok_r(char *s, const char *sep, char **p)
 	return (s);
 }
 */
+
+char	*ft_strndup(const char *s1, size_t len)
+{
+	char	*dst;
+	size_t	i;
+
+	dst = malloc(len + 1);
+	if (!dst)
+		return (NULL);
+	i = 0;
+	while (i < len)
+	{
+		dst[i] = s1[i];
+		i++;
+	}
+	dst[i] = '\0';
+	return (dst);
+}

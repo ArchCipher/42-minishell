@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static t_node	*new_node(void *token)
+t_node	*new_node(void *token)
 {
 	t_node	*new;
 
@@ -35,7 +35,7 @@ void    free_list(t_node *tokens)
         free(current);
     }
 }
-
+/*
 void    save_quote_token(char **s, t_node *new)
 {
     if (**s != '\'' && **s != '\"')
@@ -51,22 +51,19 @@ void    save_quote_token(char **s, t_node *new)
 	if ((*s)[new->len] == '\'' || (*s)[new->len] == '\"')
 		(*s)++;
 }
+*/
 
-void    save_token(char **s, t_node *new)
+void    save_token(char *s, t_node *new)
 {
-    if (**s == '\'' || **s == '\"')
-		save_quote_token(s, new);
-    else if (ft_strchr(OPERATORS, **s))
+    if (ft_strchr(OPERATORS, *s))
     {
-        new->len = ft_strspn(*s, OPERATORS);
+        new->len = ft_strspn(s, OPERATORS);
         new->type = operator;
-		(*s) += new->len;
     }
     else
     {
-        new->len = ft_strcspn(*s, REJECT);
+        new->len = ft_strcspn(s, REJECT);
         new->type = word;
-		(*s) += new->len;	
     }
 }
 
@@ -88,12 +85,13 @@ t_node	*split_into_tokens(char *s)
 		new = new_node(s);
 		if (!new)
 			return (free_list(tokens), NULL);
-		save_token(&s, new);	
+		save_token(s, new);	
 		if (!tokens)
 			tokens = new;
 		else
 			current->next = new;
 		current = new;
+		s += new->len;
 	}
 	return (tokens);
 }
