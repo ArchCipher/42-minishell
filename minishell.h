@@ -13,14 +13,15 @@
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
-# include <readline/history.h>  // readline
+# include <stdbool.h>		// bool
+// # include <readline/history.h>  // readline
 # include <readline/readline.h> // readline
 # include <stdio.h>             // printf, readline     //, strerror, perror
 # include <stdlib.h>            // free      // malloc, free, exit, getenv
 # include <unistd.h>
 
 # define BUFLEN 256 
-# define REJECT " \f\n\r\t\v<>|$\'\""
+# define REJECT " \f\n\r\t\v<>|$"
 # define OPERATORS "<>|$"
 
 enum e_token_type
@@ -49,6 +50,9 @@ typedef struct s_node
 
 // lexer.c
 t_node	*split_into_tokens(char *s);
+void    free_list(t_node *tokens);
+
+void	parse_tokens(t_node *tokens);
 
 // utils.c
 int		ft_isspace(int c);

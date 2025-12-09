@@ -5,7 +5,7 @@ NAME			= minishell
 INC				= -I.
 
 #				Sources & Objects
-MSRCS			= minishell lexer utils
+MSRCS			= minishell lexer parser utils
 
 SRCS			= $(addsuffix .c, $(MSRCS))
 OBJS			= $(SRCS:.c=.o)

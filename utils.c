@@ -63,6 +63,7 @@ size_t	ft_strcspn(const char *s, const char *reject)
 	return (i);
 }
 
+/*
 char	*ft_strtok_r(char *s, const char *sep, char **p)
 {
 	if (!s && !*p)
@@ -82,3 +83,4 @@ char	*ft_strtok_r(char *s, const char *sep, char **p)
 		*p = NULL;
 	return (s);
 }
+*/

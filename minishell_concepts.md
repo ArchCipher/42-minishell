@@ -1,5 +1,8 @@
 # MINISHELL
 [Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
+https://cgit.git.savannah.gnu.org/cgit/bash.git/tree/
+
+parser.y
 
 ## Duplicate fd operator
 

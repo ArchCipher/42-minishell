@@ -23,29 +23,51 @@ static t_node	*new_node(void *token)
 	new->next = NULL;
 	return (new);
 }
-/*
-char	*create_set(char *set, char *accept)
-{
-	ft_memset(set, 0, BUFLEN);
-	while (*accept)
-		set[(unsigned char)*accept++] = 1;
-	return (set);
-}
-*/
 
-void    save_quote_token(char *s, t_node *new)
+void    free_list(t_node *tokens)
 {
-    if (*s != '\'' && *s != '\"')
+    t_node *current;
+
+    while (tokens)
+    {
+        current = tokens;
+        tokens = tokens->next;
+        free(current);
+    }
+}
+
+void    save_quote_token(char **s, t_node *new)
+{
+    if (**s != '\'' && **s != '\"')
         return ;
 	new->type = squote;
-    if (*s == '\"')
+    if (**s == '\"')
         new->type = dquote;
-	new->token = s;
-    new->len = 1;
-	while (s[new->len] && s[new->len] != '\'' && s[new->len] != '\"')
+	(*s)++;
+	new->token = *s;
+    new->len = 0;
+	while ((*s)[new->len] && ((new->type == squote && (*s)[new->len] != '\'' )|| (new->type == dquote && (*s)[new->len] != '\"')))
 		new->len++;
-	if (s[new->len] == '\'' || s[new->len] == '\"')
-		new->len++;
+	if ((*s)[new->len] == '\'' || (*s)[new->len] == '\"')
+		(*s)++;
+}
+
+void    save_token(char **s, t_node *new)
+{
+    if (**s == '\'' || **s == '\"')
+		save_quote_token(s, new);
+    else if (ft_strchr(OPERATORS, **s))
+    {
+        new->len = ft_strspn(*s, OPERATORS);
+        new->type = operator;
+		(*s) += new->len;
+    }
+    else
+    {
+        new->len = ft_strcspn(*s, REJECT);
+        new->type = word;
+		(*s) += new->len;	
+    }
 }
 
 t_node	*split_into_tokens(char *s)
@@ -64,30 +86,14 @@ t_node	*split_into_tokens(char *s)
 		if (!*s)
 			break ;
 		new = new_node(s);
-		// if (!new)
-		// 	return (free_list(tokens));
+		if (!new)
+			return (free_list(tokens), NULL);
+		save_token(&s, new);	
 		if (!tokens)
-		{
 			tokens = new;
-			current = tokens;
-		}
 		else
-			current = new;
-        if (*s == '\'' || *s == '\"')
-			save_quote_token(s, new);
-        else if (ft_strchr(OPERATORS, *s))
-        {
-            current->len = ft_strspn(s, OPERATORS);
-			current->type = operator;
-        }
-        else
-        {
-            current->len = ft_strcspn(s, REJECT);
-            current->type = word;
-		}
-        s += current->len;
-		printf("len: %zu type: %d\n", current->len, current->type);
-		current = current->next;
+			current->next = new;
+		current = new;
 	}
 	return (tokens);
 }

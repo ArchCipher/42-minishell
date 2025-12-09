@@ -32,8 +32,6 @@
 int	main(void)
 {
 	char	*input;
-	// char	*split;
-	// char	*save;
 	t_node *tokens;
 
 	while (1)
@@ -43,8 +41,10 @@ int	main(void)
 			break ;
 		add_history(input);
 		tokens = split_into_tokens(input);
-        (void)tokens;
+		parse_tokens(tokens);
+		// execute commands
 		free(input);
+		free_list(tokens);
 	}
 	// rl_clear_history();	// only in linux
 }
