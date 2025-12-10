@@ -1,169 +1,117 @@
-// echo "hello" text.txt should print "hello" text.txt
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parser.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/09 13:47:52 by kmurugan          #+#    #+#             */
+/*   Updated: 2025/12/10 21:18:52 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "minishell.h"
 
-void print_pwd()
+int	end_quote(char *s, char c)
 {
-    char *buf = NULL;
-
-    buf = getcwd(buf, 0);
-    if (!buf)
-        return (perror("Error: "));
-    printf("%s\n", buf);
-    free(buf);
+	while (*s)
+	{
+		if (*s == c)
+			return (1);
+		s++;
+	}
+	return (0);
 }
 
+char	*expand_var(char *token, char *var, size_t len)
+{
+	char	*env_var;
+	size_t	i;
+	size_t	prefix_len;
+	size_t	suffix_len;
+	size_t	env_len;
+	char	*new;
 
-void print_cd(const char *path)
-{
-    if (chdir(path) == -1)
-        perror("Error: ");
-}
-int end_quote(char *s, char c)
-{
-    while(*s)
-    {
-        if (*s == c)
-            return (1);
-        s++;
-    }
-    return (0);
-}
-
-void free_plist(t_node *p_tokens)
-{
-    t_node *current;
-
-    while (p_tokens)
-    {
-        current = p_tokens;
-        p_tokens = p_tokens->next;
-        free(current->token);
-        free(current);
-    }
-}
-/*
-expand_vars(char *token)
-{
-
-}
-*/
-char *handle_word(char *token, size_t t_len)
-{
-    char *new;
-    char *current;
-    // char *quote;
-    size_t len;
-    enum e_token_type flag;
-    
-    current = token;
-    flag = word;
-    len = 0;
-    new = NULL;
-    while(*current && t_len--)
-    {
-        if (flag == equote || flag == dollar_sign)
-            flag = word;
-        if (*current == '\'' && flag != squote && end_quote(current + 1, '\''))
-            flag = squote;
-        else if (*current == '\"' && flag != dquote && end_quote(current + 1, '\"'))
-            flag = dquote;
-        else if ((*current == '\'' && flag == squote) || (*current == '\"' && flag == dquote))
-            flag = equote;
-        else if (*current == '$' && flag != squote)
-        {
-            flag = dollar_sign;
-            // expand_var(&current);
-        }
-        if (flag != equote && flag != dollar_sign && !(*current == '\'' && flag == squote) && !(*current == '\"' && flag == dquote))
-        {
-            // printf("char %c %d\n", *current, flag);
-            if (!new)
-                new = malloc(2);
-            else
-                new = realloc(new, len + 2); //redo!!!
-            new[len] = *current;
-            len++;
-            new[len] = 0;
-        }
-        current++;
-    }
-    printf("token: %s\n", new);
-    return (new);
+	i = 0;
+	while (var[i] && (var[i] != '\'' && var[i] != '\"' && var[i] != '$'))
+		i++;
+	env_var = strndup(var, i);
+	if (!env_var)
+		return (free(token), NULL);
+	env_var = getenv(env_var);
+	if (!env_var)
+		return (free(token), NULL);
+	prefix_len = var - token - 1;
+	suffix_len = (token + len) - (var + i);
+	env_len = ft_strlen(env_var);
+	new = malloc(prefix_len + env_len + suffix_len + 1);
+	if (!new)
+		return (free(token), NULL);
+	new[prefix_len + env_len + suffix_len] = 0;
+	ft_memcpy(new, token, prefix_len);
+	ft_memcpy(new + prefix_len, env_var, env_len);
+	ft_memcpy(new + prefix_len + env_len, var + i, suffix_len);
+	free(token);
+	return (new);
 }
 
-t_node *parse_tokens(t_node *tokens)
+char	*handle_word(char *token, size_t len)
 {
-    t_node *p_tokens;
-    t_node *current;
-    t_node *p_current;
-    t_node *new;
-    char *token;
+	char	*new;
+	char	*s;
+	char	*d;
 
-    current = tokens;
-    p_tokens = NULL;
-    while (current)
-    {
-        if (current->type == word)
-            token = handle_word(current->token, current->len);
-        else
-            token = ft_strndup(current->token, current->len);
-        if (!token)
-            return (free_plist(p_tokens), NULL);
-        new = new_node(token);
-        if (!new)
-            return (free_plist(p_tokens), NULL);
-        if (!p_tokens)
-            tokens = new;
-        else
-            p_current->next = new;
-        p_current = new;
-        current = current->next;
-    }
-    return (p_tokens);
+	s = token;
+	new = NULL;
+	if ((*s == '\'' || *s == '\"') && end_quote(s + 1, *s))
+		new = ft_strndup(token + 1, len -= 2);
+	else
+		new = ft_strndup(token, len);
+	if (!new)
+		return (NULL);
+	if (*s == '\'')
+		return (new);
+	d = new;
+	while (d && *d)
+	{
+		d = ft_strchr(d, '$');
+		if (!d)
+			break ;
+		new = expand_var(new, ++d, len);
+		if (!new)
+			return (NULL);
+	}
+	return (new);
 }
 
-/*
-void echo(t_node *current)
+t_node	*parse_tokens(t_node *tokens)
 {
-    bool nl;
+	t_node	*p_tokens;
+	t_node	*current;
+	t_node	*p_current;
+	t_node	*new;
+	char	*token;
 
-    nl = true;
-    current = current->next;
-    if (ft_strncmp(current->token, "-n", 2) == 0)
-    {
-        nl = false;
-        current = current->next;
-    }
-    while (current && current->type == word)
-    {
-        // handle quotes, env vars etc
-        if (*(current->token) == '\'' || *(current->token) == '\"')
-        {
-            (current->token)++;
-            current->len -= 2;
-        }
-        write(1, current->token, current->len);
-        current = current->next;
-    }
-    if (nl == true)
-            write(1, "\n", 1);
+	current = tokens;
+	p_tokens = NULL;
+	while (current)
+	{
+		if (current->type == word)
+			token = handle_word(current->token, current->len);
+		else
+			token = ft_strndup(current->token, current->len);
+		if (!token)
+			return (free_list(tokens, false), free_list(p_tokens, true), NULL);
+		new = new_node(token);
+		if (!new)
+			return (free_list(tokens, false), free_list(p_tokens, true), NULL);
+		if (!p_tokens)
+			tokens = new;
+		else
+			p_current->next = new;
+		p_current = new;
+		current = current->next;
+	}
+	free_list(tokens, false);
+	return (p_tokens);
 }
-
-void parse_tokens(t_node *tokens)
-{
-    t_node *current;
-
-    current = tokens;
-    while (current)
-    {
-        if (ft_strncmp(current->token, "echo", 4) == 0)
-            echo(current);
-        else if (ft_strncmp(current->token, "pwd", 3) == 0)
-            pwd();
-        else if(ft_strncmp(current->token, "exit", 4) == 0)
-            exit(0);
-        current = current->next;
-    }
-}
-*/

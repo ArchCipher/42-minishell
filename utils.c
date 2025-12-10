@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 17:28:00 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/04 17:52:55 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/10 21:03:13 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ char	*ft_strchr(const char *s, int c)
 		return ((char *)s);
 	return (NULL);
 }
-
+/*
 size_t	ft_strspn(const char *s, const char *accept)
 {
 	size_t	i;
@@ -63,19 +63,6 @@ size_t	ft_strcspn(const char *s, const char *reject)
 	return (i);
 }
 
-int	ft_strncmp(const char *s1, const char *s2, size_t n)
-{
-	if (n == 0)
-		return (0);
-	while (n-- > 1 && *s1 && *s1 == *s2)
-	{
-		s1++;
-		s2++;
-	}
-	return (((int)(unsigned char)*s1) - ((int)(unsigned char)*s2));
-}
-
-/*
 char	*ft_strtok_r(char *s, const char *sep, char **p)
 {
 	if (!s && !*p)
@@ -97,6 +84,18 @@ char	*ft_strtok_r(char *s, const char *sep, char **p)
 }
 */
 
+int	ft_strncmp(const char *s1, const char *s2, size_t n)
+{
+	if (n == 0)
+		return (0);
+	while (n-- > 1 && *s1 && *s1 == *s2)
+	{
+		s1++;
+		s2++;
+	}
+	return (((int)(unsigned char)*s1) - ((int)(unsigned char)*s2));
+}
+
 char	*ft_strndup(const char *s1, size_t len)
 {
 	char	*dst;
@@ -113,4 +112,26 @@ char	*ft_strndup(const char *s1, size_t len)
 	}
 	dst[i] = '\0';
 	return (dst);
+}
+
+void	*ft_memcpy(void *dst, const void *src, size_t n)
+{
+	unsigned char			*d;
+	const unsigned char		*s;
+
+	d = (unsigned char *)dst;
+	s = (unsigned char *)src;
+	while (n-- > 0)
+		*d++ = *s++;
+	return (dst);
+}
+
+size_t	ft_strlen(const char *s)
+{
+	size_t	n;
+
+	n = 0;
+	while (s[n])
+		n++;
+	return (n);
 }

@@ -6,38 +6,38 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:33:15 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/04 18:38:40 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/10 20:39:27 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
-# include <stdbool.h>		// bool
-// # include <readline/history.h>  // readline
+# include <errno.h>             // errno
+# include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
+# include <stdbool.h>           // boolean
 # include <stdio.h>             // printf, readline     //, strerror, perror
 # include <stdlib.h>            // free      // malloc, free, exit, getenv
-# include <unistd.h>
+# include <unistd.h>            // chdir,
 
-# define BUFLEN 256 
+# define BUFLEN 256
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
 
-enum e_token_type
+enum					e_token_type
 {
 	word,
-    squote,
-    dquote,
+	squote,
+	dquote,
 	equote,
-	operator,
 	pipe_char,
-	redirect_in,
-	redirect_out,
-	append,
-	heredoc,
-	dollar_sign
-	// assignment
+	redir_in,  // <
+	redir_out, // >
+	append,    // >>
+	heredoc    // <<
+				// dollar_sign
+				// assignment
 };
 
 typedef struct s_node
@@ -49,19 +49,23 @@ typedef struct s_node
 }						t_node;
 
 // lexer.c
-t_node	*split_into_tokens(char *s);
-void    free_list(t_node *tokens);
-t_node	*new_node(void *token);
+t_node					*split_into_tokens(char *s);
+void					free_list(t_node *tokens, bool free_content);
+t_node					*new_node(void *token);
 
-t_node	*parse_tokens(t_node *tokens);
-void free_plist(t_node *p_tokens);
+// parser.c
+t_node					*parse_tokens(t_node *tokens);
+int						end_quote(char *s, char c);
 
 // utils.c
-int		ft_isspace(int c);
-char	*ft_strchr(const char *s, int c);
-size_t	ft_strspn(const char *s, const char *accept);
-size_t	ft_strcspn(const char *s, const char *reject);
-int		ft_strncmp(const char *s1, const char *s2, size_t n);
-char	*ft_strndup(const char *s1, size_t len);
+int						ft_isspace(int c);
+char					*ft_strchr(const char *s, int c);
+size_t					ft_strspn(const char *s, const char *accept);
+size_t					ft_strcspn(const char *s, const char *reject);
+int						ft_strncmp(const char *s1, const char *s2, size_t n);
+char					*ft_strndup(const char *s1, size_t len);
+void	*ft_memcpy(void *dst, const void *src, size_t n);
+size_t	ft_strlen(const char *s);
+char					*ft_strjoin(const char *s1, const char *s2);
 
 #endif

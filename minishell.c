@@ -6,11 +6,13 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:27:07 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/04 16:08:13 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/10 14:19:50 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
+
+void	cleanup_linux(void);
 
 /*
 	NAME
@@ -27,12 +29,11 @@
 	EXTERNAL FUNC(S)
 		open, close, read, write, malloc, free, perror, exit
 */
-#include <string.h>
 
 int	main(void)
 {
 	char	*input;
-	t_node *tokens;
+	t_node	*tokens;
 
 	while (1)
 	{
@@ -41,10 +42,22 @@ int	main(void)
 			break ;
 		add_history(input);
 		tokens = split_into_tokens(input);
-		parse_tokens(tokens);
+		tokens = parse_tokens(tokens);
 		// execute commands
 		free(input);
-		free_list(tokens);
+		free_list(tokens, true);
 	}
-	// rl_clear_history();	// only in linux
+	cleanup_linux();
 }
+#ifdef __linux__
+
+void	cleanup_linux(void)
+{
+	rl_clear_history();
+}
+#else
+
+void	cleanup_linux(void)
+{
+}
+#endif
