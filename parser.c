@@ -2,6 +2,23 @@
 
 #include "minishell.h"
 
+void print_pwd()
+{
+    char *buf = NULL;
+
+    buf = getcwd(buf, 0);
+    if (!buf)
+        return (perror("Error: "));
+    printf("%s\n", buf);
+    free(buf);
+}
+
+
+void print_cd(const char *path)
+{
+    if (chdir(path) == -1)
+        perror("Error: ");
+}
 int end_quote(char *s, char c)
 {
     while(*s)
@@ -25,12 +42,12 @@ void free_plist(t_node *p_tokens)
         free(current);
     }
 }
-
+/*
 expand_vars(char *token)
 {
-    
-}
 
+}
+*/
 char *handle_word(char *token, size_t t_len)
 {
     char *new;
@@ -56,11 +73,11 @@ char *handle_word(char *token, size_t t_len)
         else if (*current == '$' && flag != squote)
         {
             flag = dollar_sign;
-            expand_var(&current);
+            // expand_var(&current);
         }
-        if (flag != equote || flag != dollar_sign && !(*current == '\'' && flag == squote) && !(*current == '\"' && flag == dquote))
+        if (flag != equote && flag != dollar_sign && !(*current == '\'' && flag == squote) && !(*current == '\"' && flag == dquote))
         {
-            printf("char %c %d\n", *current, flag);
+            // printf("char %c %d\n", *current, flag);
             if (!new)
                 new = malloc(2);
             else
@@ -142,6 +159,8 @@ void parse_tokens(t_node *tokens)
     {
         if (ft_strncmp(current->token, "echo", 4) == 0)
             echo(current);
+        else if (ft_strncmp(current->token, "pwd", 3) == 0)
+            pwd();
         else if(ft_strncmp(current->token, "exit", 4) == 0)
             exit(0);
         current = current->next;
