@@ -27,6 +27,9 @@ name
 echo $"name"
 $name
 
+echo hello$name{me}
+hellokiru{me}
+
 // not necessary by subject but maybe print literal?
 ```sh
 echo $-     (print shell flags)

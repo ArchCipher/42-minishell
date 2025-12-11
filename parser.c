@@ -21,7 +21,7 @@ char	*expand_var(char **token, char *end)
 	start = *token;
 	while (*token < end && (**token == '_' || ft_isalnum(**token)))
 		(*token)++;
-	if (**token == '{' &&((*token)[1] == '_' || ft_isalnum((*token)[1])) &&(temp = ft_strchr(*token, '}')))
+	if (*token == start && **token == '{' &&((*token)[1] == '_' || ft_isalnum((*token)[1])) &&(temp = ft_strchr(*token, '}')))
 	{
 		start = *token + 1;
 		*token = temp;
@@ -34,23 +34,44 @@ char	*expand_var(char **token, char *end)
 	return (env_var);
 }
 
+char	*handle_dollar(char **token, char *end, size_t *current, size_t *cap, char *new)
+{
+	char	*var;
+	size_t	len;
+
+	(*token)++;
+	len = 0;
+	var = expand_var(token, end);
+	if (var)
+		len = ft_strlen(var);
+	if (*cap < *current + len + (end - *token))
+	{
+		*cap = *current + len + (end - *token);
+		new = realloc(new, (*cap) + 1);
+		if (!new)
+			return (NULL);
+	}
+	ft_memcpy(new + (*current), var, len);
+	(*current) += len;
+	return (new);
+}
+
 char	*handle_word(char *token, char *end)
 {
 	enum e_token_type flag;
 	char	*new;
-	char	*var;
-	size_t	j;
+	size_t	current;
 	size_t	cap;
-	size_t	len;
-
+	
 	new = malloc((end - token) + 1);
 	if (!new)
 		return (NULL);
 	cap = end - token;
-	j = 0;
+	current = 0;
 	flag = word;
 	while (token < end)
 	{
+		printf("check: %c\n", *token);
 		if (*token == '\'' && flag == word && ft_strchr(token + 1, *token))
 			flag = squote;
 		else if (*token == '\"' && flag == word && ft_strchr(token + 1, *token))
@@ -58,28 +79,17 @@ char	*handle_word(char *token, char *end)
 		else if((*token == '\'' && flag == squote) || (*token == '\"' && flag == dquote))
 			flag = word;
 		else if (!(*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || token[1] == '\'' || token[1] == '\"' || ft_isalnum(token[1]))))
-			new[j++] = *token;
+			new[current++] = *token;
 		if (*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || ft_isalnum(token[1])))
 		{
-			token++;
-			len = 0;
-			var = expand_var(&token, end);
-			if (var)
-				len = ft_strlen(var);
-			if (cap < j + len + (end - token))
-			{
-				cap = j + len + (end - token);
-				new = realloc(new, cap + 1);
-				if (!new)
-					return (NULL);
-			}
-			ft_memcpy(new + j, var, len);
-			j += len;
+			new = handle_dollar(&token, end, &current, &cap, new);
+			if (!new)
+				return (NULL);
 		}
 		else
 			token++;
 	}
-	new[j] = 0;
+	new[current] = 0;
 	printf("new: %s\n", new);
 	return (new);
 }
