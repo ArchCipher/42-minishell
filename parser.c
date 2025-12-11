@@ -12,82 +12,75 @@
 
 #include "minishell.h"
 
-char *end_quote(char *s, char c)
-{
-	while (*s)
-	{
-		if (*s == c)
-			return (s);
-		s++;
-	}
-	return (NULL);
-}
-
-char	*expand_var(char *token, char *var, size_t len)
+char	*expand_var(char **token, char *end)
 {
 	char	*env_var;
-	size_t	i;
-	size_t	prefix_len;
-	size_t	suffix_len;
-	size_t	env_len;
-	char	*new;
+	char	*start;
+	char	*temp;
 
-	i = 0;
-	while (var[i] && (var[i] != '\'' && var[i] != '\"' && var[i] != '$'))
-		i++;
-	env_var = ft_strndup(var, i);
-	if (!env_var)
-		return (free(token), NULL);
-	env_var = getenv(env_var);
-	if (!env_var)
-		return (free(token), NULL);
-	prefix_len = var - token - 1;
-	suffix_len = (token + len) - (var + i);
-	env_len = ft_strlen(env_var);
-	new = malloc(prefix_len + env_len + suffix_len + 1);
-	if (!new)
-		return (free(token), NULL);
-	new[prefix_len + env_len + suffix_len] = 0;
-	ft_memcpy(new, token, prefix_len);
-	ft_memcpy(new + prefix_len, env_var, env_len);
-	ft_memcpy(new + prefix_len + env_len, var + i, suffix_len);
-	free(token);
-	return (new);
+	start = *token;
+	while (*token < end && (**token == '_' || ft_isalnum(**token)))
+		(*token)++;
+	if (**token == '{' &&((*token)[1] == '_' || ft_isalnum((*token)[1])) &&(temp = ft_strchr(*token, '}')))
+	{
+		start = *token + 1;
+		*token = temp;
+	}
+	temp = ft_strndup(start, *token - start);
+	env_var = getenv(temp);
+	free(temp);
+	if (**token == '}')
+		(*token)++;
+	return (env_var);
 }
 
-char	*handle_word(char *token, size_t len)
+char	*handle_word(char *token, char *end)
 {
+	enum e_token_type flag;
 	char	*new;
-	char	*s;
-	char	*d;
-	char	*equote;
+	char	*var;
+	size_t	j;
+	size_t	cap;
+	size_t	len;
 
-	s = token;
-	new = NULL;
-	if (*s == '\'' || *s == '\"')
-	{
-		equote = end_quote(s + 1, *s);
-		if (!equote)
-			new = ft_strndup(token, len);
-		else
-			new = ft_strndup(token + 1, (equote - token) - 1);
-	}
-	else
-		new = ft_strndup(token, len);
+	new = malloc((end - token) + 1);
 	if (!new)
 		return (NULL);
-	if (*s == '\'')
-		return (new);
-	d = new;
-	while (d && *d)
+	cap = end - token;
+	j = 0;
+	flag = word;
+	while (token < end)
 	{
-		d = ft_strchr(d, '$');
-		if (!d)
-			break ;
-		new = expand_var(new, ++d, len);
-		if (!new)
-			return (NULL);
+		if (*token == '\'' && flag == word && ft_strchr(token + 1, *token))
+			flag = squote;
+		else if (*token == '\"' && flag == word && ft_strchr(token + 1, *token))
+			flag = dquote;
+		else if((*token == '\'' && flag == squote) || (*token == '\"' && flag == dquote))
+			flag = word;
+		else if (!(*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || token[1] == '\'' || token[1] == '\"' || ft_isalnum(token[1]))))
+			new[j++] = *token;
+		if (*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || ft_isalnum(token[1])))
+		{
+			token++;
+			len = 0;
+			var = expand_var(&token, end);
+			if (var)
+				len = ft_strlen(var);
+			if (cap < j + len + (end - token))
+			{
+				cap = j + len + (end - token);
+				new = realloc(new, cap + 1);
+				if (!new)
+					return (NULL);
+			}
+			ft_memcpy(new + j, var, len);
+			j += len;
+		}
+		else
+			token++;
 	}
+	new[j] = 0;
+	printf("new: %s\n", new);
 	return (new);
 }
 
@@ -99,15 +92,13 @@ t_node	*parse_tokens(t_node *tokens)
 	while (current)
 	{
 		if (current->type == word)
-			current->token = handle_word(current->token, current->len);
+			current->token = handle_word(current->token, current->token + current->len);
 		else
 			current->token = ft_strndup(current->token, current->len);
 		if (!current->token)
 			return (free_list(tokens, true), NULL);
-		printf("tok: %s\n", current->token);
+		// printf("tok: %s\n", current->token);
 		current = current->next;
 	}
 	return (tokens);
 }
-
-// echo $name'hello'"hello" should be kiruhellohello - need to remove all quotes.

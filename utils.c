@@ -17,6 +17,11 @@ int	ft_isspace(int c)
 	return (c == ' ' || (c >= '\t' && c <= '\r'));
 }
 
+int	ft_isalnum(int c)
+{
+	return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'));
+}
+
 void	*ft_memset(void *b, int c, size_t len)
 {
 	size_t	i;

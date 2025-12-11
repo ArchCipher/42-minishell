@@ -55,10 +55,10 @@ t_node					*new_node(void *token);
 
 // parser.c
 t_node					*parse_tokens(t_node *tokens);
-char					*end_quote(char *s, char c);
 
 // utils.c
 int						ft_isspace(int c);
+int						ft_isalnum(int c);
 char					*ft_strchr(const char *s, int c);
 size_t					ft_strspn(const char *s, const char *accept);
 size_t					ft_strcspn(const char *s, const char *reject);
