@@ -40,23 +40,6 @@ void	free_list(t_node *tokens, bool free_content)
 		free(current);
 	}
 }
-/*
-void	save_quote_token(char *s, t_node *new)
-{
-	if (*s != '\'' && *s != '\"')
-		return ;
-	new->type = squote;
-	if (*s == '\"')
-		new->type = dquote;
-	new->token = s;
-	new->len = 1;
-	while (s[new->len] && ((new->type == squote &&s[new->len] != '\'')
-			|| (new->type == dquote &&s[new->len] != '\"')))
-		new->len++;
-	if (s[new->len] == '\'' || s[new->len] == '\"')
-		new->len++;
-}
-*/
 
 t_node	*split_into_tokens(char *s)
 {
@@ -83,6 +66,7 @@ t_node	*split_into_tokens(char *s)
 			current->next = new;
 		current = new;
 		s += current->len;
+		// printf("tok: %s\n", current->token);
 	}
 	return (tokens);
 }
@@ -113,24 +97,21 @@ static void	save_token(char *s, t_node *new)
 static size_t	word_token(char *s)
 {
 	enum e_token_type	flag;
-	size_t				len;
+	char				*p;
 
 	flag = word;
-	len = 0;
-	while (s[len])
+	p = s;
+	while (*p)
 	{
-		if (flag == word && ft_isspace(s[len]))
+		if (flag == word && ft_isspace(*p))
 			break ;
-		if (flag == equote)
-			flag = word;
-		if (s[len] == '\'' && flag != squote && end_quote(s + len + 1, '\''))
+		if (*p == '\'' && flag != squote && end_quote(p + 1, '\''))
 			flag = squote;
-		else if (*s == '\"' && flag != dquote && end_quote(s + len + 1, '\"'))
+		else if (*p == '\"' && flag != dquote && end_quote(p + 1, '\"'))
 			flag = dquote;
-		else if ((s[len] == '\'' && flag == squote) || (s[len] == '\"'
-				&& flag == dquote))
-			flag = equote;
-		len++;
+		else if ((*p == '\'' && flag == squote) || (*p == '\"' && flag == dquote))
+			flag = word;
+		p++;
 	}
-	return (len);
+	return (p - s);
 }

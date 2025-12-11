@@ -12,15 +12,15 @@
 
 #include "minishell.h"
 
-int	end_quote(char *s, char c)
+char *end_quote(char *s, char c)
 {
 	while (*s)
 	{
 		if (*s == c)
-			return (1);
+			return (s);
 		s++;
 	}
-	return (0);
+	return (NULL);
 }
 
 char	*expand_var(char *token, char *var, size_t len)
@@ -35,7 +35,7 @@ char	*expand_var(char *token, char *var, size_t len)
 	i = 0;
 	while (var[i] && (var[i] != '\'' && var[i] != '\"' && var[i] != '$'))
 		i++;
-	env_var = strndup(var, i);
+	env_var = ft_strndup(var, i);
 	if (!env_var)
 		return (free(token), NULL);
 	env_var = getenv(env_var);
@@ -60,11 +60,18 @@ char	*handle_word(char *token, size_t len)
 	char	*new;
 	char	*s;
 	char	*d;
+	char	*equote;
 
 	s = token;
 	new = NULL;
-	if ((*s == '\'' || *s == '\"') && end_quote(s + 1, *s))
-		new = ft_strndup(token + 1, len -= 2);
+	if (*s == '\'' || *s == '\"')
+	{
+		equote = end_quote(s + 1, *s);
+		if (!equote)
+			new = ft_strndup(token, len);
+		else
+			new = ft_strndup(token + 1, (equote - token) - 1);
+	}
 	else
 		new = ft_strndup(token, len);
 	if (!new)
@@ -86,32 +93,21 @@ char	*handle_word(char *token, size_t len)
 
 t_node	*parse_tokens(t_node *tokens)
 {
-	t_node	*p_tokens;
 	t_node	*current;
-	t_node	*p_current;
-	t_node	*new;
-	char	*token;
 
 	current = tokens;
-	p_tokens = NULL;
 	while (current)
 	{
 		if (current->type == word)
-			token = handle_word(current->token, current->len);
+			current->token = handle_word(current->token, current->len);
 		else
-			token = ft_strndup(current->token, current->len);
-		if (!token)
-			return (free_list(tokens, false), free_list(p_tokens, true), NULL);
-		new = new_node(token);
-		if (!new)
-			return (free_list(tokens, false), free_list(p_tokens, true), NULL);
-		if (!p_tokens)
-			tokens = new;
-		else
-			p_current->next = new;
-		p_current = new;
+			current->token = ft_strndup(current->token, current->len);
+		if (!current->token)
+			return (free_list(tokens, true), NULL);
+		printf("tok: %s\n", current->token);
 		current = current->next;
 	}
-	free_list(tokens, false);
-	return (p_tokens);
+	return (tokens);
 }
+
+// echo $name'hello'"hello" should be kiruhellohello - need to remove all quotes.

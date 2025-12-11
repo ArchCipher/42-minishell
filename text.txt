@@ -1,0 +1,23 @@
+echo "hello>me"
+out: hello>me
+
+echo "hello $name"
+out: hellokiru
+
+echo hello $name
+out: hello kiru
+
+echo "hello '$name'"
+out: hello 'kiru
+
+echo hello '$name'
+out: hello $name
+
+echo 'hello $name'
+out: hello $name
+
+echo 'hello' "$name"
+out: hello kiru
+
+echo 'hello'"$name"end
+out: hellokiruend

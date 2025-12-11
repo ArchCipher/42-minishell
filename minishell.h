@@ -30,7 +30,7 @@ enum					e_token_type
 	word,
 	squote,
 	dquote,
-	equote,
+	// equote,
 	pipe_char,
 	redir_in,  // <
 	redir_out, // >
@@ -55,7 +55,7 @@ t_node					*new_node(void *token);
 
 // parser.c
 t_node					*parse_tokens(t_node *tokens);
-int						end_quote(char *s, char c);
+char					*end_quote(char *s, char c);
 
 // utils.c
 int						ft_isspace(int c);
