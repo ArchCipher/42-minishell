@@ -105,9 +105,9 @@ static size_t	word_token(char *s)
 	{
 		if (flag == word && ft_isspace(*p))
 			break ;
-		if (*p == '\'' && flag != squote && end_quote(p + 1, '\''))
+		if (*p == '\'' && flag == word && end_quote(p + 1, *p))
 			flag = squote;
-		else if (*p == '\"' && flag != dquote && end_quote(p + 1, '\"'))
+		else if (*p == '\"' && flag == word && end_quote(p + 1, *p))
 			flag = dquote;
 		else if ((*p == '\'' && flag == squote) || (*p == '\"' && flag == dquote))
 			flag = word;
