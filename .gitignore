@@ -1,0 +1,8 @@
+.DS_Store
+.vscode/
+*.o
+minishell
+en.subject.pdf
+minishell_concepts.md
+text.md
+test.txt
