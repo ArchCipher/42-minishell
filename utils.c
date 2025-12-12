@@ -141,19 +141,23 @@ size_t	ft_strlen(const char *s)
 	return (n);
 }
 
+/*
+libc realloc doesn't free ptr when malloc fails, but this version frees
+ptr when malloc fails.
+*/
+
 void	*ft_realloc(void *ptr, size_t old_size, size_t size)
 {
 	char	*new;
 
-	if (!ptr)
-		return (malloc(size));
 	new = malloc(size);
 	if (!new)
 	{
 		free (ptr);
 		return (NULL);
 	}
-	ft_memcpy(new, ptr, old_size);
+	if (ptr)
+		ft_memcpy(new, ptr, old_size);
 	free(ptr);
 	return (new);
 }
