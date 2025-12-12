@@ -12,7 +12,85 @@
 
 #include "minishell.h"
 
-char	*expand_var(char **token, char *end)
+static char	*handle_word(char *token, char *end);
+static void	handle_dollar(char **token, char *end, t_string *str);
+static char	*expand_var(char **token, char *end);
+
+t_node	*parse_tokens(t_node *tokens)
+{
+	t_node	*current;
+
+	current = tokens;
+	while (current)
+	{
+		if (current->type == word)
+			current->token = handle_word(current->token, current->token + current->len);
+		else
+			current->token = ft_strndup(current->token, current->len);
+		if (!current->token)
+			return (free_list(tokens, true), NULL);
+		current = current->next;
+	}
+	return (tokens);
+}
+
+static char	*handle_word(char *token, char *end)
+{
+	enum e_token_type	flag;
+	t_string			str;
+	
+	str.str = malloc((end - token) + 1);
+	if (!str.str)
+		return (NULL);
+	str.cap = end - token;
+	str.i = 0;
+	flag = word;
+	while (token < end)
+	{
+		if (*token == '\'' && flag == word && ft_strchr(token + 1, *token))
+			flag = squote;
+		else if (*token == '\"' && flag == word && ft_strchr(token + 1, *token))
+			flag = dquote;
+		else if((*token == '\'' && flag == squote) || (*token == '\"' && flag == dquote))
+			flag = word;
+		else if (!(*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || token[1] == '\'' || token[1] == '\"' || ft_isalnum(token[1]))))
+			str.str[(str.i)++] = *token;
+		if (*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || ft_isalnum(token[1])))
+		{
+			handle_dollar(&token, end, &str);
+			if (!str.str)
+				return (NULL);
+		}
+		else
+			token++;
+	}
+	str.str[str.i] = 0;
+	// printf("token: %s\n", str.str);
+	return (str.str);
+}
+
+static void	handle_dollar(char **token, char *end, t_string *str)
+{
+	char	*var;
+	size_t	var_len;
+
+	(*token)++;
+	var_len = 0;
+	var = expand_var(token, end);
+	if (var)
+		var_len = ft_strlen(var);
+	if (str->cap < str->i + var_len + (end - *token))
+	{
+		str->cap = str->i + var_len + (end - *token);
+		str->str = ft_realloc(str->str, str->i, (str->cap) + 1);
+		if (!str->str)
+			return ;
+	}
+	ft_memcpy(str->str + (str->i), var, var_len);
+	str->i += var_len;
+}
+
+static char	*expand_var(char **token, char *end)
 {
 	char	*env_var;
 	char	*start;
@@ -32,83 +110,4 @@ char	*expand_var(char **token, char *end)
 	if (**token == '}')
 		(*token)++;
 	return (env_var);
-}
-
-char	*handle_dollar(char **token, char *end, size_t *current, size_t *cap, char *new)
-{
-	char	*var;
-	size_t	len;
-
-	(*token)++;
-	len = 0;
-	var = expand_var(token, end);
-	if (var)
-		len = ft_strlen(var);
-	if (*cap < *current + len + (end - *token))
-	{
-		*cap = *current + len + (end - *token);
-		new = realloc(new, (*cap) + 1);
-		if (!new)
-			return (NULL);
-	}
-	ft_memcpy(new + (*current), var, len);
-	(*current) += len;
-	return (new);
-}
-
-char	*handle_word(char *token, char *end)
-{
-	enum e_token_type flag;
-	char	*new;
-	size_t	current;
-	size_t	cap;
-	
-	new = malloc((end - token) + 1);
-	if (!new)
-		return (NULL);
-	cap = end - token;
-	current = 0;
-	flag = word;
-	while (token < end)
-	{
-		printf("check: %c\n", *token);
-		if (*token == '\'' && flag == word && ft_strchr(token + 1, *token))
-			flag = squote;
-		else if (*token == '\"' && flag == word && ft_strchr(token + 1, *token))
-			flag = dquote;
-		else if((*token == '\'' && flag == squote) || (*token == '\"' && flag == dquote))
-			flag = word;
-		else if (!(*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || token[1] == '\'' || token[1] == '\"' || ft_isalnum(token[1]))))
-			new[current++] = *token;
-		if (*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || ft_isalnum(token[1])))
-		{
-			new = handle_dollar(&token, end, &current, &cap, new);
-			if (!new)
-				return (NULL);
-		}
-		else
-			token++;
-	}
-	new[current] = 0;
-	printf("new: %s\n", new);
-	return (new);
-}
-
-t_node	*parse_tokens(t_node *tokens)
-{
-	t_node	*current;
-
-	current = tokens;
-	while (current)
-	{
-		if (current->type == word)
-			current->token = handle_word(current->token, current->token + current->len);
-		else
-			current->token = ft_strndup(current->token, current->len);
-		if (!current->token)
-			return (free_list(tokens, true), NULL);
-		// printf("tok: %s\n", current->token);
-		current = current->next;
-	}
-	return (tokens);
 }

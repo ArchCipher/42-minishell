@@ -66,7 +66,6 @@ t_node	*split_into_tokens(char *s)
 			current->next = new;
 		current = new;
 		s += current->len;
-		// printf("tok: %s\n", current->token);
 	}
 	return (tokens);
 }

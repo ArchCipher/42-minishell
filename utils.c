@@ -140,3 +140,20 @@ size_t	ft_strlen(const char *s)
 		n++;
 	return (n);
 }
+
+void	*ft_realloc(void *ptr, size_t old_size, size_t size)
+{
+	char	*new;
+
+	if (!ptr)
+		return (malloc(size));
+	new = malloc(size);
+	if (!new)
+	{
+		free (ptr);
+		return (NULL);
+	}
+	ft_memcpy(new, ptr, old_size);
+	free(ptr);
+	return (new);
+}
