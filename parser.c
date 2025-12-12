@@ -16,9 +16,9 @@ static char	*handle_word(char *token, char *end);
 static void	handle_dollar(char **token, char *end, t_string *str);
 static char	*expand_var(char **token, char *end);
 
-t_node	*parse_tokens(t_node *tokens)
+t_token	*parse_tokens(t_token *tokens)
 {
-	t_node	*current;
+	t_token	*current;
 
 	if (!tokens)
 		return (NULL);

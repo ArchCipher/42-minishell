@@ -33,8 +33,8 @@ void	cleanup_linux(void);
 int	main(void)
 {
 	char		*input;
-	t_node		*tokens;
-	t_command	*cmds;
+	t_token		*tokens;
+	t_cmd	*cmds;
 
 	while (1)
 	{

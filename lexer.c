@@ -12,14 +12,14 @@
 
 #include "minishell.h"
 
-static void		save_token(char *s, t_node *new);
+static void		save_token(char *s, t_token *new);
 static size_t	word_token(char *s);
 
-t_node	*new_node(void *token)
+t_token	*new_node(void *token)
 {
-	t_node	*new;
+	t_token	*new;
 
-	new = malloc(sizeof(t_node));
+	new = malloc(sizeof(t_token));
 	if (!new)
 		return (NULL);
 	new->token = token;
@@ -27,9 +27,9 @@ t_node	*new_node(void *token)
 	return (new);
 }
 
-void	free_list(t_node *tokens, bool free_content)
+void	free_list(t_token *tokens, bool free_content)
 {
-	t_node	*current;
+	t_token	*current;
 
 	while (tokens)
 	{
@@ -41,11 +41,11 @@ void	free_list(t_node *tokens, bool free_content)
 	}
 }
 
-t_node	*split_into_tokens(char *s)
+t_token	*split_into_tokens(char *s)
 {
-	t_node	*tokens;
-	t_node	*current;
-	t_node	*new;
+	t_token	*tokens;
+	t_token	*current;
+	t_token	*new;
 
 	if (!s)
 		return (NULL);
@@ -70,7 +70,7 @@ t_node	*split_into_tokens(char *s)
 	return (tokens);
 }
 
-static void	save_token(char *s, t_node *new)
+static void	save_token(char *s, t_token *new)
 {
 	if (!ft_strchr(OPERATORS, *s))
 	{
