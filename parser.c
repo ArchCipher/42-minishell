@@ -20,6 +20,8 @@ t_node	*parse_tokens(t_node *tokens)
 {
 	t_node	*current;
 
+	if (!tokens)
+		return (NULL);
 	current = tokens;
 	while (current)
 	{
@@ -99,7 +101,7 @@ static char	*expand_var(char **token, char *end)
 	start = *token;
 	while (*token < end && (**token == '_' || ft_isalnum(**token)))
 		(*token)++;
-	if (*token == start && **token == '{' &&((*token)[1] == '_' || ft_isalnum((*token)[1])) &&(temp = ft_strchr(*token, '}')))
+	if (*token == start && **token == '{' && ((*token)[1] == '_' || ft_isalnum((*token)[1])) &&(temp = ft_strchr(*token, '}')))
 	{
 		start = *token + 1;
 		*token = temp;

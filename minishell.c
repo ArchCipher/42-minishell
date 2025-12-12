@@ -32,8 +32,9 @@ void	cleanup_linux(void);
 
 int	main(void)
 {
-	char	*input;
-	t_node	*tokens;
+	char		*input;
+	t_node		*tokens;
+	t_command	*cmds;
 
 	while (1)
 	{
@@ -43,9 +44,11 @@ int	main(void)
 		add_history(input);
 		tokens = split_into_tokens(input);
 		tokens = parse_tokens(tokens);
+		cmds = build_ast(tokens);
 		// execute commands
+		free_cmds(cmds);
 		free(input);
-		free_list(tokens, true);
+		// free_list(tokens, true);
 	}
 	cleanup_linux();
 }

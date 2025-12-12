@@ -24,6 +24,8 @@
 # define BUFLEN 256
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
+# define E_PARSE "parse error"
+# define E_ENV "bad substitution"	// ${{name}}
 
 enum					e_token_type
 {
@@ -53,6 +55,19 @@ typedef struct s_string
 	size_t	cap;
 }			t_string;
 
+typedef struct s_redir
+{
+	char				*file;
+	enum e_token_type	flag;
+}	t_redir;
+
+typedef struct s_command
+{
+	char			**args;
+	t_redir			*redirs;
+	struct s_command *next;
+}			t_command;
+
 // lexer.c
 t_node					*split_into_tokens(char *s);
 void					free_list(t_node *tokens, bool free_content);
@@ -60,6 +75,10 @@ t_node					*new_node(void *token);
 
 // parser.c
 t_node					*parse_tokens(t_node *tokens);
+
+//ast.c
+t_command				*build_ast(t_node *tokens);
+void					free_cmds(t_command *cmds);
 
 // utils.c
 int						ft_isspace(int c);
