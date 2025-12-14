@@ -40,6 +40,13 @@ enum	e_token_type
 				// assignment
 };
 
+typedef enum
+{
+	TYPE_TOKEN,
+	TYPE_CMD,
+	TYPE_REDIR
+}	e_node_type;
+
 typedef struct s_token
 {
 	enum e_token_type	type;
@@ -69,10 +76,18 @@ typedef struct s_cmd
 	struct s_cmd *next;
 }			t_cmd;
 
+typedef union
+{
+	t_token	*token;
+	t_cmd	*cmd;
+	t_redir	*redir;
+}			u_node;
+
 // lexer.c
 t_token					*split_into_tokens(char *s);
 void					free_list(t_token *tokens, bool free_content);
 t_token					*new_node(void *token);
+void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
 t_token					*parse_tokens(t_token *tokens);

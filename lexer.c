@@ -41,6 +41,24 @@ void	free_list(t_token *tokens, bool free_content)
 	}
 }
 
+void	lstadd_back(void **tokens, void *new, void *last, e_node_type type)
+{
+	if (!tokens || !new || !last)
+		return ;
+	if (!*tokens)
+		*tokens = new;
+	else
+	{
+		if (type == TYPE_TOKEN)
+			((t_token *)last)->next = (t_token *)new;
+		else if (type == TYPE_CMD)
+			((t_cmd *)last)->next = (t_cmd *)new;
+		else if (type == TYPE_REDIR)
+			((t_redir *)last)->next = (t_redir *)new;
+	}
+}
+
+
 t_token	*split_into_tokens(char *s)
 {
 	t_token	*tokens;
@@ -60,10 +78,7 @@ t_token	*split_into_tokens(char *s)
 		if (!new)
 			return (free_list(tokens, false), NULL);
 		save_token(s, new);
-		if (!tokens)
-			tokens = new;
-		else
-			current->next = new;
+		lstadd_back((void *)&tokens, new, (void *)current, TYPE_TOKEN);
 		current = new;
 		s += current->len;
 	}
