@@ -15,7 +15,7 @@
 static void		save_token(char *s, t_token *new);
 static size_t	word_token(char *s);
 
-t_token	*new_node(void *token)
+t_token	*create_new_token(void *token)
 {
 	t_token	*new;
 
@@ -74,11 +74,11 @@ t_token	*split_into_tokens(char *s)
 			s++;
 		if (!*s)
 			break ;
-		new = new_node(s);
+		new = create_new_token(s);
 		if (!new)
 			return (free_list(tokens, false), NULL);
 		save_token(s, new);
-		lstadd_back((void *)&tokens, new, (void *)current, TYPE_TOKEN);
+		lstadd_back((void **)&tokens, (void *)new, (void *)current, TYPE_TOKEN);
 		current = new;
 		s += current->len;
 	}
@@ -110,8 +110,8 @@ static void	save_token(char *s, t_token *new)
 
 static size_t	word_token(char *s)
 {
-	enum e_token_type	flag;
-	char				*p;
+	e_token_type	flag;
+	char			*p;
 
 	flag = word;
 	p = s;

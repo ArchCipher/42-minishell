@@ -27,7 +27,9 @@
 # define E_PARSE "minishell: parse error"	// >>> or > >
 # define E_ENV "bad substitution"	// ${{name}}
 
-enum	e_token_type
+
+
+typedef enum
 {
 	word,
 	squote,
@@ -38,7 +40,7 @@ enum	e_token_type
 	append,    // >>
 	heredoc    // <<
 				// assignment
-};
+}	e_token_type;
 
 typedef enum
 {
@@ -49,7 +51,7 @@ typedef enum
 
 typedef struct s_token
 {
-	enum e_token_type	type;
+	e_token_type		type;
 	char				*token;
 	size_t				len;
 	struct s_token		*next;
@@ -65,7 +67,7 @@ typedef struct s_string
 typedef struct s_redir
 {
 	char				*file;
-	enum e_token_type	flag;
+	e_token_type		flag;
 	struct s_redir		*next;
 }	t_redir;
 
@@ -76,17 +78,10 @@ typedef struct s_cmd
 	struct s_cmd *next;
 }			t_cmd;
 
-typedef union
-{
-	t_token	*token;
-	t_cmd	*cmd;
-	t_redir	*redir;
-}			u_node;
-
 // lexer.c
 t_token					*split_into_tokens(char *s);
 void					free_list(t_token *tokens, bool free_content);
-t_token					*new_node(void *token);
+t_token					*create_new_token(void *token);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
