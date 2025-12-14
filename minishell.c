@@ -42,7 +42,7 @@ int	main(void)
 		if (!input)
 			break ;
 		add_history(input);
-		tokens = split_into_tokens(input);
+		tokens = tokenise_input(input);
 		tokens = parse_tokens(tokens);
 		cmds = build_ast(tokens);
 		// execute commands

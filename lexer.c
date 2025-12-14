@@ -12,10 +12,10 @@
 
 #include "minishell.h"
 
-static void		save_token(char *s, t_token *new);
-static size_t	word_token(char *s);
+static void		set_token_type(char *s, t_token *new);
+static size_t	parse_word_token(char *s);
 
-t_token	*create_new_token(void *token)
+t_token	*create_token(void *token)
 {
 	t_token	*new;
 
@@ -27,7 +27,7 @@ t_token	*create_new_token(void *token)
 	return (new);
 }
 
-void	free_list(t_token *tokens, bool free_content)
+void	free_tokens(t_token *tokens, bool free_content)
 {
 	t_token	*current;
 
@@ -35,18 +35,18 @@ void	free_list(t_token *tokens, bool free_content)
 	{
 		current = tokens;
 		tokens = tokens->next;
-		if (free_content)
+		if (free_content && current->token)
 			free(current->token);
 		free(current);
 	}
 }
 
-void	lstadd_back(void **tokens, void *new, void *last, e_node_type type)
+void	lstadd_back(void **head, void *new, void *last, e_node_type type)
 {
-	if (!tokens || !new || !last)
+	if (!head || !new || !last)
 		return ;
-	if (!*tokens)
-		*tokens = new;
+	if (!*head)
+		*head = new;
 	else
 	{
 		if (type == TYPE_TOKEN)
@@ -58,38 +58,35 @@ void	lstadd_back(void **tokens, void *new, void *last, e_node_type type)
 	}
 }
 
-
-t_token	*split_into_tokens(char *s)
+t_token	*tokenise_input(char *s)
 {
-	t_token	*tokens;
-	t_token	*current;
-	t_token	*new;
+	t_list tokens;
 
 	if (!s)
 		return (NULL);
-	tokens = NULL;
+	tokens.head = NULL;
 	while (*s)
 	{
 		while (*s && ft_isspace(*s))
 			s++;
 		if (!*s)
 			break ;
-		new = create_new_token(s);
-		if (!new)
-			return (free_list(tokens, false), NULL);
-		save_token(s, new);
-		lstadd_back((void **)&tokens, (void *)new, (void *)current, TYPE_TOKEN);
-		current = new;
-		s += current->len;
+		tokens.new = create_token(s);
+		if (!tokens.new)
+			return (free_tokens(tokens.head, false), NULL);
+		set_token_type(s, tokens.new);
+		lstadd_back((void **)&tokens, (void *)tokens.new, (void *)tokens.tail, TYPE_TOKEN);
+		tokens.tail = tokens.new;
+		s += ((t_token *)tokens.tail)->len;
 	}
-	return (tokens);
+	return (tokens.head);
 }
 
-static void	save_token(char *s, t_token *new)
+static void	set_token_type(char *s, t_token *new)
 {
 	if (!ft_strchr(OPERATORS, *s))
 	{
-		new->len = word_token(s);
+		new->len = parse_word_token(s);
 		new->type = word;
 		return ;
 	}
@@ -108,7 +105,7 @@ static void	save_token(char *s, t_token *new)
 		new->len = 2;
 }
 
-static size_t	word_token(char *s)
+static size_t	parse_word_token(char *s)
 {
 	e_token_type	flag;
 	char			*p;

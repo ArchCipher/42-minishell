@@ -30,7 +30,7 @@ t_token	*parse_tokens(t_token *tokens)
 		else
 			current->token = ft_strndup(current->token, current->len);
 		if (!current->token)
-			return (free_list(tokens, true), NULL);
+			return (free_tokens(tokens, true), NULL);
 		current = current->next;
 	}
 	return (tokens);
@@ -38,8 +38,8 @@ t_token	*parse_tokens(t_token *tokens)
 
 static char	*handle_word(char *token, char *end)
 {
-	enum e_token_type	flag;
-	t_string			str;
+	e_token_type	flag;
+	t_string		str;
 	
 	str.str = malloc((end - token) + 1);
 	if (!str.str)

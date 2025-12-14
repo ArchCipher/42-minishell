@@ -24,10 +24,8 @@
 # define BUFLEN 256
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
-# define E_PARSE "minishell: parse error"	// >>> or > >
-# define E_ENV "bad substitution"	// ${{name}}
-
-
+# define E_PARSE "minishell: syntax error"	// >>> or > > (bash: syntax error near unexpected token `>')
+# define E_ENV "minishell: bad substitution"	// ${{name}}
 
 typedef enum
 {
@@ -39,7 +37,8 @@ typedef enum
 	redir_out, // >
 	append,    // >>
 	heredoc    // <<
-				// assignment
+	// and_op	// &&
+	// or_op	// ||
 }	e_token_type;
 
 typedef enum
@@ -49,6 +48,13 @@ typedef enum
 	TYPE_REDIR
 }	e_node_type;
 
+typedef struct s_string
+{
+	char	*str;
+	size_t	i;
+	size_t	cap;
+}			t_string;
+
 typedef struct s_token
 {
 	e_token_type		type;
@@ -56,13 +62,6 @@ typedef struct s_token
 	size_t				len;
 	struct s_token		*next;
 }						t_token;
-
-typedef struct s_string
-{
-	char	*str;
-	size_t	i;
-	size_t	cap;
-}			t_string;
 
 typedef struct s_redir
 {
@@ -78,18 +77,28 @@ typedef struct s_cmd
 	struct s_cmd *next;
 }			t_cmd;
 
+typedef struct s_list
+{
+	void *head;
+	void *tail;
+	void *new;
+}		t_list;
+
 // lexer.c
-t_token					*split_into_tokens(char *s);
-void					free_list(t_token *tokens, bool free_content);
-t_token					*create_new_token(void *token);
+t_token					*tokenise_input(char *s);
+void					free_tokens(t_token *tokens, bool free_content);
+t_token					*create_token(void *token);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
 t_token					*parse_tokens(t_token *tokens);
 
 //ast.c
-t_cmd				*build_ast(t_token *tokens);
+t_cmd					*build_ast(t_token *tokens);
+
+// ast_utils.c
 void					free_cmds(t_cmd *cmds);
+t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // utils.c
 int						ft_isspace(int c);
