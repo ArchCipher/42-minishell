@@ -16,7 +16,7 @@ t_cmd *build_ast(t_token *tokens)
     cmd.head = NULL;
     while (current)
 	{
-        if (current->type != word)  // needed?
+        if (current->type != word)
            return (error_free(cmd.head, tokens)); // print parse error? 
         cmd.new = build_cmd(&current);
         if (!cmd.new)

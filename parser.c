@@ -67,7 +67,6 @@ static char	*handle_word(char *token, char *end)
 			token++;
 	}
 	str.str[str.i] = 0;
-	// printf("token: %s\n", str.str);
 	return (str.str);
 }
 

@@ -67,6 +67,7 @@ size_t	ft_strcspn(const char *s, const char *reject)
 		i++;
 	return (i);
 }
+*/
 
 char	*ft_strtok_r(char *s, const char *sep, char **p)
 {
@@ -87,7 +88,7 @@ char	*ft_strtok_r(char *s, const char *sep, char **p)
 		*p = NULL;
 	return (s);
 }
-*/
+
 
 int	ft_strncmp(const char *s1, const char *s2, size_t n)
 {
@@ -101,24 +102,6 @@ int	ft_strncmp(const char *s1, const char *s2, size_t n)
 	return (((int)(unsigned char)*s1) - ((int)(unsigned char)*s2));
 }
 
-char	*ft_strndup(const char *s1, size_t len)
-{
-	char	*dst;
-	size_t	i;
-
-	dst = malloc(len + 1);
-	if (!dst)
-		return (NULL);
-	i = 0;
-	while (i < len)
-	{
-		dst[i] = s1[i];
-		i++;
-	}
-	dst[i] = '\0';
-	return (dst);
-}
-
 void	*ft_memcpy(void *dst, const void *src, size_t n)
 {
 	unsigned char			*d;
@@ -128,6 +111,33 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 	s = (unsigned char *)src;
 	while (n-- > 0)
 		*d++ = *s++;
+	return (dst);
+}
+
+char	*ft_strdup(const char *s1)
+{
+	char	*dst;
+	size_t	len;
+
+	len = ft_strlen(s1);
+	dst = malloc(len + 1);
+	if (!dst)
+		return (NULL);
+	memcpy(dst, s1, len);
+	dst[len] = '\0';
+	return (dst);
+}
+
+char	*ft_strndup(const char *s1, size_t len)
+{
+	char	*dst;
+	size_t	i;
+
+	dst = malloc(len + 1);
+	if (!dst)
+		return (NULL);
+	ft_memcpy(dst, s1, len);
+	dst[len] = '\0';
 	return (dst);
 }
 
@@ -160,4 +170,26 @@ void	*ft_realloc(void *ptr, size_t old_size, size_t size)
 		ft_memcpy(new, ptr, old_size);
 	free(ptr);
 	return (new);
+}
+
+char	*ft_strjoin3(const char *s1, const char *s2, const char *s3)
+{
+	size_t	slen1;
+	size_t	slen2;
+	size_t	slen3;
+	char	*dst;
+
+	if (!s1 || !s2 || !s3)
+		return (NULL);
+	slen1 = ft_strlen(s1);
+	slen2 = ft_strlen(s2);
+	slen3 = ft_strlen(s3);
+	dst = malloc(slen1 + slen2 + slen3 + 1);
+	if (!dst)
+		return (NULL);
+	ft_memcpy(dst, s1, slen1);
+	ft_memcpy(dst + slen1, s2, slen2);
+	ft_memcpy(dst + slen1 + slen2, s3, slen3);
+	dst[slen1 + slen2 + slen3] = '\0';
+	return (dst);
 }

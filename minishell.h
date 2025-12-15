@@ -18,14 +18,17 @@
 # include <readline/readline.h> // readline
 # include <stdbool.h>           // boolean
 # include <stdio.h>             // printf, readline     //, strerror, perror
-# include <stdlib.h>            // free      // malloc, free, exit, getenv
-# include <unistd.h>            // chdir,
+# include <stdlib.h>            // malloc, free, exit, getenv
+# include <sys/stat.h>			// stat
+# include <sys/wait.h>			// waitpid
+# include <unistd.h>            // read, write, pipe, fork, execve, access, chdir 
 
 # define BUFLEN 256
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
 # define E_PARSE "minishell: syntax error"	// >>> or > > (bash: syntax error near unexpected token `>')
 # define E_ENV "minishell: bad substitution"	// ${{name}}
+// # define E_PATH "ls: bin: No such file or directory" // ls bin
 
 typedef enum
 {
@@ -39,7 +42,10 @@ typedef enum
 	heredoc    // <<
 	// and_op	// &&
 	// or_op	// ||
+	// parenthesis	// ()
 }	e_token_type;
+
+// for wildcard (*) check glob()
 
 typedef enum
 {
@@ -74,7 +80,7 @@ typedef struct s_cmd
 {
 	char			**args;
 	t_redir			*redirs;
-	struct s_cmd *next;
+	struct s_cmd	*next;
 }			t_cmd;
 
 typedef struct s_list
@@ -83,6 +89,14 @@ typedef struct s_list
 	void *tail;
 	void *new;
 }		t_list;
+
+typedef struct s_exec
+{
+	char	*path;
+	char	**av;
+	int		write_fd;
+	int		read_fd;
+}	t_exec;
 
 // lexer.c
 t_token					*tokenise_input(char *s);
@@ -100,6 +114,9 @@ t_cmd					*build_ast(t_token *tokens);
 void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
+// execute.c
+void execute(t_cmd *cmds);
+
 // utils.c
 int						ft_isspace(int c);
 int						ft_isalnum(int c);
@@ -112,5 +129,6 @@ void					*ft_memcpy(void *dst, const void *src, size_t n);
 size_t					ft_strlen(const char *s);
 char					*ft_strjoin(const char *s1, const char *s2);
 void					*ft_realloc(void *ptr, size_t old_size, size_t size);
+char					*ft_strtok_r(char *s, const char *sep, char **p);
 
 #endif

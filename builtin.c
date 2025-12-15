@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-void	print_pwd(void)
+void	exec_pwd(void)
 {
 	char	*buf;
 
@@ -24,7 +24,7 @@ void	print_pwd(void)
 	free(buf);
 }
 
-void	print_cd(const char *path)
+void	exec_cd(const char *path)
 {
 	if (chdir(path) == -1)
 		perror("Error: ");

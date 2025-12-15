@@ -32,8 +32,8 @@ void	cleanup_linux(void);
 
 int	main(void)
 {
-	char		*input;
-	t_token		*tokens;
+	char	*input;
+	t_token	*tokens;
 	t_cmd	*cmds;
 
 	while (1)
@@ -45,10 +45,10 @@ int	main(void)
 		tokens = tokenise_input(input);
 		tokens = parse_tokens(tokens);
 		cmds = build_ast(tokens);
-		// execute commands
+		if (cmds)
+			execute(cmds);
 		free_cmds(cmds);
 		free(input);
-		// free_list(tokens, true);
 	}
 	cleanup_linux();
 }
