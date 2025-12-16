@@ -46,7 +46,7 @@ int	main(void)
 		tokens = parse_tokens(tokens);
 		cmds = build_ast(tokens);
 		if (cmds)
-			execute(cmds);
+			exec_cmds(cmds);
 		free_cmds(cmds);
 		free(input);
 	}

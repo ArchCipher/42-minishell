@@ -123,7 +123,7 @@ char	*ft_strdup(const char *s1)
 	dst = malloc(len + 1);
 	if (!dst)
 		return (NULL);
-	memcpy(dst, s1, len);
+	ft_memcpy(dst, s1, len);
 	dst[len] = '\0';
 	return (dst);
 }
@@ -131,7 +131,6 @@ char	*ft_strdup(const char *s1)
 char	*ft_strndup(const char *s1, size_t len)
 {
 	char	*dst;
-	size_t	i;
 
 	dst = malloc(len + 1);
 	if (!dst)

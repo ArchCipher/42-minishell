@@ -115,7 +115,7 @@ void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // execute.c
-void execute(t_cmd *cmds);
+void exec_cmds(t_cmd *cmds);
 
 // utils.c
 int						ft_isspace(int c);
@@ -124,11 +124,13 @@ char					*ft_strchr(const char *s, int c);
 size_t					ft_strspn(const char *s, const char *accept);
 size_t					ft_strcspn(const char *s, const char *reject);
 int						ft_strncmp(const char *s1, const char *s2, size_t n);
+char					*ft_strdup(const char *s1);
 char					*ft_strndup(const char *s1, size_t len);
 void					*ft_memcpy(void *dst, const void *src, size_t n);
 size_t					ft_strlen(const char *s);
 char					*ft_strjoin(const char *s1, const char *s2);
 void					*ft_realloc(void *ptr, size_t old_size, size_t size);
 char					*ft_strtok_r(char *s, const char *sep, char **p);
+char					*ft_strjoin3(const char *s1, const char *s2, const char *s3);
 
 #endif

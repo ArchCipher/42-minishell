@@ -144,43 +144,58 @@ char    *build_path(char *filename)
         if (!new_path)
             return (free(full_path), NULL);
         if(stat(new_path, &buf) == 0)
-            break;
+            break ;
         free(new_path);
         new_path = NULL;
         path = ft_strtok_r(NULL, ":", &p);
+    }
+    if (new_path && !(access(new_path, X_OK) == 0))
+    {
+        free(new_path);
+        new_path = NULL;
     }
     free(full_path);
     return (new_path);
 }
 
-// void exec_cmds(t_cmd *cmds)
+void exec_cmds(t_cmd *cmds)
+{
+    t_cmd   *current;
+    char    *path;
+    bool    free_path;
+
+    if (!cmds)
+        return ;
+    current = cmds;
+    if (current)
+    {
+        path = current->args[0];
+        free_path = false;
+        if (!ft_strchr(current->args[0], '/'))
+        {
+            path = build_path(current->args[0]);
+            if (!path)
+                return ;
+            free_path = true;
+        }
+        printf("path: %s\n", path);
+        if (free_path)
+            free(path);
+    }
+    // while(current)
+    // {
+        // if (current->next)
+        //     create_pipes(current, current->next);
+    // }
+}
+
+// int main(int ac, char **av, char **envp)
 // {
-//     t_cmd   *current;
 //     char    *path;
 
-//     if (!cmds)
-//         return ;
-//     current = cmds;
-//     if (current)
-//     {
-//         path = build_path(current->args[0]);
-//         printf("path: %s\n", path);
-//         free(path);
-//     }
-//     // while(current)
-//     // {
-//         // if (current->next)
-//         //     create_pipes(current, current->next);
-//     // }
+//     int ret = exec_pipe(envp);
+//     printf("return: %d\n", ret);
+//     path = build_path("ls");
+//     printf("path: %s\n", path);
+//     free(path);
 // }
-
-int main(int ac, char **av, char **envp)
-{
-    char    *path;
-
-    int ret = exec_pipe(envp);
-    printf("return: %d\n", ret);
-    path = build_path("ls");
-    printf("path: %s\n", path);
-    free(path);
-}
