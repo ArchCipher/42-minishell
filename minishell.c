@@ -30,12 +30,16 @@ void	cleanup_linux(void);
 		open, close, read, write, malloc, free, perror, exit
 */
 
-int	main(void)
+int	main(int ac, char **av, char **envp)
 {
 	char	*input;
 	t_token	*tokens;
 	t_cmd	*cmds;
+	int		status;
 
+	(void)ac;
+	(void)av;
+	(void)envp;
 	while (1)
 	{
 		input = readline("$> ");
@@ -46,7 +50,7 @@ int	main(void)
 		tokens = parse_tokens(tokens);
 		cmds = build_ast(tokens);
 		if (cmds)
-			exec_cmds(cmds);
+			status = exec_cmds(cmds, envp, &status);
 		free_cmds(cmds);
 		free(input);
 	}

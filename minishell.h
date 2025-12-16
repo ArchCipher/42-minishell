@@ -80,6 +80,7 @@ typedef struct s_cmd
 {
 	char			**args;
 	t_redir			*redirs;
+	pid_t			pid;
 	struct s_cmd	*next;
 }			t_cmd;
 
@@ -92,16 +93,13 @@ typedef struct s_list
 
 typedef struct s_exec
 {
-	char	*path;
-	char	**av;
+	char	**args;
 	int		write_fd;
 	int		read_fd;
 }	t_exec;
 
 // lexer.c
 t_token					*tokenise_input(char *s);
-void					free_tokens(t_token *tokens, bool free_content);
-t_token					*create_token(void *token);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
@@ -110,12 +108,13 @@ t_token					*parse_tokens(t_token *tokens);
 //ast.c
 t_cmd					*build_ast(t_token *tokens);
 
-// ast_utils.c
+// error.c
+void					free_tokens(t_token *tokens, bool free_content);
 void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // execute.c
-void exec_cmds(t_cmd *cmds);
+int exec_cmds(t_cmd *cmds, char **envp, int *status);
 
 // utils.c
 int						ft_isspace(int c);

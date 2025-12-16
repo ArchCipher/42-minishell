@@ -12,51 +12,9 @@
 
 #include "minishell.h"
 
+static t_token	*create_token(void *token);
 static void		set_token_type(char *s, t_token *new);
 static size_t	parse_word_token(char *s);
-
-t_token	*create_token(void *token)
-{
-	t_token	*new;
-
-	new = malloc(sizeof(t_token));
-	if (!new)
-		return (NULL);
-	new->token = token;
-	new->next = NULL;
-	return (new);
-}
-
-void	free_tokens(t_token *tokens, bool free_content)
-{
-	t_token	*current;
-
-	while (tokens)
-	{
-		current = tokens;
-		tokens = tokens->next;
-		if (free_content && current->token)
-			free(current->token);
-		free(current);
-	}
-}
-
-void	lstadd_back(void **head, void *new, void *last, e_node_type type)
-{
-	if (!head || !new || !last)
-		return ;
-	if (!*head)
-		*head = new;
-	else
-	{
-		if (type == TYPE_TOKEN)
-			((t_token *)last)->next = (t_token *)new;
-		else if (type == TYPE_CMD)
-			((t_cmd *)last)->next = (t_cmd *)new;
-		else if (type == TYPE_REDIR)
-			((t_redir *)last)->next = (t_redir *)new;
-	}
-}
 
 t_token	*tokenise_input(char *s)
 {
@@ -80,6 +38,35 @@ t_token	*tokenise_input(char *s)
 		s += ((t_token *)tokens.tail)->len;
 	}
 	return (tokens.head);
+}
+
+static t_token	*create_token(void *token)
+{
+	t_token	*new;
+
+	new = malloc(sizeof(t_token));
+	if (!new)
+		return (NULL);
+	new->token = token;
+	new->next = NULL;
+	return (new);
+}
+
+void	lstadd_back(void **head, void *new, void *last, e_node_type type)
+{
+	if (!head || !new || !last)
+		return ;
+	if (!*head)
+		*head = new;
+	else
+	{
+		if (type == TYPE_TOKEN)
+			((t_token *)last)->next = (t_token *)new;
+		else if (type == TYPE_CMD)
+			((t_cmd *)last)->next = (t_cmd *)new;
+		else if (type == TYPE_REDIR)
+			((t_redir *)last)->next = (t_redir *)new;
+	}
 }
 
 static void	set_token_type(char *s, t_token *new)

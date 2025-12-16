@@ -1,23 +1,35 @@
 #include "minishell.h"
 
-void    free_cmds(t_cmd *cmds)
+void	free_tokens(t_token *tokens, bool free_content)
+{
+	t_token	*current;
+
+	while (tokens)
+	{
+		current = tokens;
+		tokens = tokens->next;
+		if (free_content && current->token)
+			free(current->token);
+		free(current);
+	}
+}
+
+void    free_cmds(t_cmd *cmd)
 {
 	t_cmd	*tmp;
     t_redir *cur_redir;
     size_t	i;
+    t_cmd   *cmds;
 
+    cmds = cmd;
     while(cmds)
     {
         i = 0;
         while(cmds->args[i])
-        {
-            printf("cmd[%zu]: %s\n", i, cmds->args[i]);
             free(cmds->args[i++]);
-        }
         free(cmds->args);
         while (cmds->redirs)
         {
-            printf("redir: %s %d\n", cmds->redirs->file, cmds->redirs->flag);
             cur_redir = cmds->redirs;
             cmds->redirs = cmds->redirs->next;
             free(cur_redir->file);
