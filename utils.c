@@ -89,6 +89,15 @@ char	*ft_strtok_r(char *s, const char *sep, char **p)
 	return (s);
 }
 
+int	ft_strcmp(const char *s1, const char *s2)
+{
+	while (*s1 && *s1 == *s2)
+	{
+		s1++;
+		s2++;
+	}
+	return (((int)(unsigned char)*s1) - ((int)(unsigned char)*s2));
+}
 
 int	ft_strncmp(const char *s1, const char *s2, size_t n)
 {
@@ -191,4 +200,74 @@ char	*ft_strjoin3(const char *s1, const char *s2, const char *s3)
 	ft_memcpy(dst + slen1 + slen2, s3, slen3);
 	dst[slen1 + slen2 + slen3] = '\0';
 	return (dst);
+}
+
+int	ft_atoi(const char *str)
+{
+	long	num;
+	int		sign;
+
+	num = 0;
+	sign = 1;
+	while (ft_isspace(*str))
+		str++;
+	if (*str == '-')
+	{
+		sign = -1;
+		str++;
+	}
+	else if (*str == '+')
+		str++;
+	while (*str >= '0' && *str <= '9')
+	{
+		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
+			return ((int)LONG_MAX);
+		if (sign == -1 && (LONG_MAX - (num * 10)) <= (*str - '0') - 1)
+			return ((int)LONG_MIN);
+		num = (num * 10) + (*str - '0');
+		str++;
+	}
+	return ((int)(num * sign));
+}
+
+static size_t	ft_numlen(int n, int base)
+{
+	size_t	count;
+
+	count = 0;
+	if (n <= 0)
+		count++;
+	while (n)
+	{
+		count++;
+		n /= base;
+	}
+	return (count);
+}
+
+char	*ft_itoa(int n)
+{
+	char	*num;
+	int		sign;
+	size_t	len;
+
+	sign = 1;
+	len = ft_numlen (n, 10);
+	num = malloc (len + 1);
+	if (!num)
+		return (NULL);
+	num[len] = '\0';
+	if (n == 0)
+		num[0] = '0';
+	else if (n < 0)
+	{
+		num[0] = '-';
+		sign = -1;
+	}
+	while (len-- > 0 && n)
+	{
+		num[len] = ((n % 10) * sign) + '0';
+		n /= 10;
+	}
+	return (num);
 }

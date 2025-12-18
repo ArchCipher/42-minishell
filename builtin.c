@@ -30,47 +30,31 @@ void	exec_cd(const char *path)
 		perror("Error: ");
 }
 
-/*
-void echo(t_node *current)
+void exec_echo(char **args)
 {
     bool nl;
 
     nl = true;
-    current = current->next;
-    if (ft_strncmp(current->token, "-n", 2) == 0)
+    if (ft_strcmp(*args, "-n") == 0)
     {
         nl = false;
-        current = current->next;
+        args++;
     }
-    while (current && current->type == word)
+    while (*args)
     {
-        // handle quotes, env vars etc
-        if (*(current->token) == '\'' || *(current->token) == '\"')
-        {
-            (current->token)++;
-            current->len -= 2;
-        }
-        write(1, current->token, current->len);
-        current = current->next;
+        printf("%s", *args);
+        if (!args[1])
+            break ;
+        printf(" ");
+        args++;
     }
     if (nl == true)
-            write(1, "\n", 1);
+        printf("\n");
 }
 
-void parse_tokens(t_node *tokens)
+void    exec_exit(char *s)
 {
-    t_node *current;
-
-    current = tokens;
-    while (current)
-    {
-        if (ft_strncmp(current->token, "echo", 4) == 0)
-            echo(current);
-        else if (ft_strncmp(current->token, "pwd", 3) == 0)
-            pwd();
-        else if(ft_strncmp(current->token, "exit", 4) == 0)
-            exit(0);
-        current = current->next;
-    }
+    if (s == NULL)
+        exit(0);
+    exit(ft_atoi(s));
 }
-*/

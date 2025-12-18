@@ -13,7 +13,9 @@
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
+# include <fcntl.h>				// open
 # include <errno.h>             // errno
+# include <limits.h>			// LONG_MAX (ft_atoi)
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
 # include <stdbool.h>           // boolean
@@ -23,7 +25,6 @@
 # include <sys/wait.h>			// waitpid
 # include <unistd.h>            // read, write, pipe, fork, execve, access, chdir 
 
-# define BUFLEN 256
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
 # define E_PARSE "minishell: syntax error"	// >>> or > > (bash: syntax error near unexpected token `>')
@@ -54,6 +55,17 @@ typedef enum
 	TYPE_REDIR
 }	e_node_type;
 
+typedef enum
+{
+	ECHO,
+	CD,
+	PWD,
+	EXPORT,
+	UNSET,
+	ENV,
+	EXIT
+}	e_built_in;
+
 typedef struct s_string
 {
 	char	*str;
@@ -81,6 +93,7 @@ typedef struct s_cmd
 	char			**args;
 	t_redir			*redirs;
 	pid_t			pid;
+	int				built_in;
 	struct s_cmd	*next;
 }			t_cmd;
 
@@ -103,7 +116,7 @@ t_token					*tokenise_input(char *s);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
-t_token					*parse_tokens(t_token *tokens);
+t_token					*parse_tokens(t_token *tokens, int status);
 
 //ast.c
 t_cmd					*build_ast(t_token *tokens);
@@ -116,13 +129,19 @@ t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 // execute.c
 int exec_cmds(t_cmd *cmds, char **envp, int *status);
 
+// builtin.c
+void	exec_echo(char **args);
+void	exec_cd(const char *path);
+void	exec_pwd(void);
+void    exec_exit(char *s);
+
 // utils.c
 int						ft_isspace(int c);
 int						ft_isalnum(int c);
 char					*ft_strchr(const char *s, int c);
 size_t					ft_strspn(const char *s, const char *accept);
 size_t					ft_strcspn(const char *s, const char *reject);
-int						ft_strncmp(const char *s1, const char *s2, size_t n);
+int						ft_strcmp(const char *s1, const char *s2);
 char					*ft_strdup(const char *s1);
 char					*ft_strndup(const char *s1, size_t len);
 void					*ft_memcpy(void *dst, const void *src, size_t n);
@@ -131,5 +150,7 @@ char					*ft_strjoin(const char *s1, const char *s2);
 void					*ft_realloc(void *ptr, size_t old_size, size_t size);
 char					*ft_strtok_r(char *s, const char *sep, char **p);
 char					*ft_strjoin3(const char *s1, const char *s2, const char *s3);
+int						ft_atoi(const char *str);
+char					*ft_itoa(int n);
 
 #endif
