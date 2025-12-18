@@ -39,7 +39,7 @@ int	main(int ac, char **av, char **envp)
 
 	(void)ac;
 	(void)av;
-	(void)envp;
+	// (void)envp;
 	while (1)
 	{
 		input = readline("$> ");
@@ -47,7 +47,7 @@ int	main(int ac, char **av, char **envp)
 			break ;
 		add_history(input);
 		tokens = tokenise_input(input);
-		tokens = parse_tokens(tokens, status);
+		tokens = parse_tokens(tokens);
 		cmds = build_ast(tokens);
 		if (cmds)
 			status = exec_cmds(cmds, envp, &status);

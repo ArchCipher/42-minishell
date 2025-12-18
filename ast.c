@@ -23,6 +23,7 @@ t_cmd *build_ast(t_token *tokens)
             return (error_free(cmd.head, tokens));
         lstadd_back((void **)&cmd.head, (void *)cmd.new, (void *)cmd.tail, TYPE_CMD);
         cmd.tail = cmd.new;
+        // should be built within cmd
         if (!build_redir(&current, &cmd))
            return (error_free(cmd.head, tokens));
         if (current && current->type == pipe_char)
@@ -41,7 +42,7 @@ static t_cmd   *build_cmd(t_token **current)
 
     tmp = *current;
     word_count = 0;
-    while(tmp && tmp->type == (*current)->type)
+    while(tmp && tmp->type == word)
     {
         word_count++;
         tmp = tmp->next;
@@ -64,7 +65,7 @@ static int build_redir(t_token **current, t_list *cmd)
 {
     t_list redir;
 
-    while (*current && (*current)->type != pipe_char)
+    while (*current && (*current)->type != pipe_char && (*current)->type != word)
     {
         if ((*current)->next && (*current)->next->type != word)    // print parse error
             return (0);

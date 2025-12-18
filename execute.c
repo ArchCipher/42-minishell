@@ -234,6 +234,21 @@ int return_status(t_cmd *cmds, int *status)
     return (WEXITSTATUS(*status));
 }
 
+int exec_in_parent(t_cmd *cmd)
+{
+    int actual_stdout;
+    int ret;
+
+    if ((actual_stdout = dup(STDOUT_FILENO)) == -1)
+        return (-1);
+    if (setup_redirs(cmd->redirs) == -1)
+        return (1); // is returning 1 okay?
+    ret = exec_built_in(cmd);
+    if (dup2(actual_stdout, STDOUT_FILENO) == -1)
+        return (-1);
+    return (ret);
+}
+
 /*
 PIPE: 
 // fd[2] first fd i.e., fd[0] connects to read end and second i.e., fd[1] to write end.
@@ -258,9 +273,7 @@ int exec_cmds(t_cmd *cmds, char **envp, int *status)
         cmd->built_in = is_builtin(cmd->args[0]);
         if (cmd->built_in != -1 && !need_pipe)
         {
-            if (setup_redirs(cmd->redirs) == -1)
-                return (1); // is returning 1 okay?
-            return (exec_built_in(cmd));
+            return (exec_in_parent(cmd));
         }
         else
         {

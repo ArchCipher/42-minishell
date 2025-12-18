@@ -26,10 +26,14 @@ void    free_cmds(t_cmd *cmd)
     {
         i = 0;
         while(cmds->args[i])
+        {
+            printf("arg[%zu] %s\n", i, cmds->args[i]);
             free(cmds->args[i++]);
+        }
         free(cmds->args);
         while (cmds->redirs)
         {
+            printf("redir: %s\n", cmds->redirs->file);
             cur_redir = cmds->redirs;
             cmds->redirs = cmds->redirs->next;
             free(cur_redir->file);

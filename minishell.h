@@ -23,7 +23,7 @@
 # include <stdlib.h>            // malloc, free, exit, getenv
 # include <sys/stat.h>			// stat
 # include <sys/wait.h>			// waitpid
-# include <unistd.h>            // read, write, pipe, fork, execve, access, chdir 
+# include <unistd.h>            // read, write, pipe, fork, execve, access, chdir, dup, dup2
 
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
@@ -116,7 +116,7 @@ t_token					*tokenise_input(char *s);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
-t_token					*parse_tokens(t_token *tokens, int status);
+t_token					*parse_tokens(t_token *tokens);
 
 //ast.c
 t_cmd					*build_ast(t_token *tokens);
@@ -127,7 +127,7 @@ void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // execute.c
-int exec_cmds(t_cmd *cmds, char **envp, int *status);
+int						exec_cmds(t_cmd *cmds, char **envp, int *status);
 
 // builtin.c
 void	exec_echo(char **args);

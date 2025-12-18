@@ -12,11 +12,11 @@
 
 #include "minishell.h"
 
-static char	*handle_word(char *token, char *end, int status);
+static char	*handle_word(char *token, char *end);
 static void	handle_dollar(char **token, char *end, t_string *str);
 static char	*expand_var(char **token, char *end);
 
-t_token	*parse_tokens(t_token *tokens, int status)
+t_token	*parse_tokens(t_token *tokens)
 {
 	t_token	*current;
 
@@ -26,7 +26,7 @@ t_token	*parse_tokens(t_token *tokens, int status)
 	while (current)
 	{
 		if (current->type == word)
-			current->token = handle_word(current->token, current->token + current->len, status);
+			current->token = handle_word(current->token, current->token + current->len);
 		else
 			current->token = ft_strndup(current->token, current->len);
 		if (!current->token)
@@ -36,7 +36,7 @@ t_token	*parse_tokens(t_token *tokens, int status)
 	return (tokens);
 }
 
-static char	*handle_word(char *token, char *end, int status)
+static char	*handle_word(char *token, char *end)
 {
 	e_token_type	flag;
 	t_string		str;
@@ -59,7 +59,7 @@ static char	*handle_word(char *token, char *end, int status)
 			str.str[(str.i)++] = *token;
 		if (*token == '$' && flag != squote && (token[1] == '_' || token[1] == '{' || ft_isalnum(token[1])))
 		{
-			handle_dollar(&token, end, &str, status);
+			handle_dollar(&token, end, &str);
 			if (!str.str)
 				return (NULL);
 		}
@@ -70,17 +70,14 @@ static char	*handle_word(char *token, char *end, int status)
 	return (str.str);
 }
 
-static void	handle_dollar(char **token, char *end, t_string *str, int status)
+static void	handle_dollar(char **token, char *end, t_string *str)
 {
 	char	*var;
 	size_t	var_len;
 
 	(*token)++;
 	var_len = 0;
-	if (**token == '?')
-		var = ft_itoa(status);
-	else
-		var = expand_var(token, end);
+	var = expand_var(token, end);
 	if (var)
 		var_len = ft_strlen(var);
 	if (str->cap < str->i + var_len + (end - *token))
