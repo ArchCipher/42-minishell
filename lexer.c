@@ -31,7 +31,7 @@ t_token	*tokenise_input(char *s)
 			break ;
 		tokens.new = create_token(s);
 		if (!tokens.new)
-			return (free_tokens(tokens.head, false), NULL);
+			return (free_tokens(tokens.head, false, NULL), NULL);
 		set_token_type(s, tokens.new);
 		lstadd_back((void **)&tokens, (void *)tokens.new, (void *)tokens.tail, TYPE_TOKEN);
 		tokens.tail = tokens.new;
@@ -52,9 +52,13 @@ static t_token	*create_token(void *token)
 	return (new);
 }
 
+/*
+must update tail in the caller function
+*/
+
 void	lstadd_back(void **head, void *new, void *last, e_node_type type)
 {
-	if (!head || !new || !last)
+	if (!head || !new || (*head && !last))
 		return ;
 	if (!*head)
 		*head = new;

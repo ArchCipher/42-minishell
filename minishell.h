@@ -19,8 +19,9 @@
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
 # include <stdbool.h>           // boolean
-# include <stdio.h>             // printf, readline     //, strerror, perror
+# include <stdio.h>             // printf, readline, perror
 # include <stdlib.h>            // malloc, free, exit, getenv
+# include <string.h>			// strerror
 # include <sys/stat.h>			// stat
 # include <sys/wait.h>			// waitpid
 # include <unistd.h>            // read, write, pipe, fork, execve, access, chdir, dup, dup2
@@ -28,9 +29,12 @@
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
 # define E_PARSE "syntax error near unexpected token "
-# define E_ENV "minishell: bad substitution"	// ${{name}}
+# define E_PATH "command not found"
+# define E_ENV "bad substitution"	// ${{name}}
 # define MINI "minishell"
-# define E_EINVAL 255
+# define EXIT_STATUS_MOD 256
+// EXIT_STATUS_MAX = 255
+# define EXIT_NUMERIC_ERROR 255
 // # define E_PATH "ls: bin: No such file or directory" // ls bin
 
 typedef enum
@@ -118,13 +122,13 @@ t_token					*tokenise_input(char *s);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
 
 // parser.c
-t_token					*parse_tokens(t_token *tokens);
+t_token					*parse_tokens(t_token *tokens, int status);
 
 //ast.c
 t_cmd					*build_ast(t_token *tokens);
 
 // error.c
-void					free_tokens(t_token *tokens, bool free_content);
+void					free_tokens(t_token *tokens, bool free_content, t_token *end);
 void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
@@ -152,6 +156,5 @@ char					*ft_strjoin(const char *s1, const char *s2);
 void					*ft_realloc(void *ptr, size_t old_size, size_t size);
 char					*ft_strtok_r(char *s, const char *sep, char **p);
 char					*ft_strjoin3(const char *s1, const char *s2, const char *s3);
-// char					*ft_itoa(int n);
 
 #endif

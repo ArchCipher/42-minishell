@@ -27,15 +27,21 @@ t_cmd *build_ast(t_token *tokens)
         }
         if (current && current->type == pipe_char)
         {
-            // current->token = NULL;
             current = current->next;
             if (current->type != word)
                 return (perror("MINI"), error_free(cmd.head, tokens));   // print parse error 
         }
 	}
-    free_tokens(tokens, false);
+    free_tokens(tokens, false, NULL);
 	return (cmd.head);
 }
+
+/*
+token->next && token->next->type == word:
+when token is an operator and next token is a word, skips counting operator and word after it
+else if
+when token is an operator and next token is not word, prints parse error
+*/
 
 ssize_t count_args(t_token *token)
 {
@@ -46,12 +52,10 @@ ssize_t count_args(t_token *token)
     {
         if (token->type == word)
             word_count++;
-        else if (token->next && token->next->type != word)
-        {
-            return (printf("%s: %s`%c'\n", MINI, E_PARSE, token->next->token[0]), -1);    // print parse error 
-        }
-        else
+        else if (token->next && token->next->type == word)
             token = token->next;
+        else
+            return (printf("%s: %s`%c'\n", MINI, E_PARSE, token->next->token[0]), -1);
         token = token->next;
     }
     return (word_count);

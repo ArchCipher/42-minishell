@@ -92,17 +92,15 @@ int	simple_atoi(const char *str)
 	long	num;
 	int		sign;
 
+    errno = 0;
 	num = 0;
 	sign = 1;
 	if (*str == '-')
-	{
 		sign = -1;
-		str++;
-	}
-	else if (*str == '+')
+	if (*str == '-' || *str == '+')
 		str++;
     if (!(*str >= '0' && *str <= '9'))
-        return (errno = EINVAL, E_EINVAL);
+        return (errno = EINVAL, EXIT_NUMERIC_ERROR);
 	while (*str >= '0' && *str <= '9')
 	{
 		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
@@ -129,7 +127,7 @@ void    exec_exit(char *s)
 
     if (s == NULL)
         exit(0);
-    i = simple_atoi(s); // must be modulo 256
+    i = simple_atoi(s) % EXIT_STATUS_MOD;
     if (errno == EINVAL)
         printf("%s: exit: %s: numeric argument required\n", MINI, s);
     exit(i);

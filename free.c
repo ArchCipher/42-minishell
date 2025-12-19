@@ -1,10 +1,10 @@
 #include "minishell.h"
 
-void	free_tokens(t_token *tokens, bool free_content)
+void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 {
 	t_token	*current;
 
-	while (tokens)
+	while (tokens && tokens != end)
 	{
 		current = tokens;
 		tokens = tokens->next;
@@ -26,14 +26,10 @@ void    free_cmds(t_cmd *cmd)
     {
         i = 0;
         while(cmds->args[i])
-        {
-            // printf("arg[%zu] %s\n", i, cmds->args[i]);
             free(cmds->args[i++]);
-        }
         free(cmds->args);
         while (cmds->redirs)
         {
-            // printf("redir: %s %d\n", cmds->redirs->file, cmds->redirs->flag);
             cur_redir = cmds->redirs;
             cmds->redirs = cmds->redirs->next;
             free(cur_redir->file);
@@ -48,6 +44,6 @@ void    free_cmds(t_cmd *cmd)
 t_cmd    *error_free(t_cmd *cmds, t_token *tokens)
 {
     free_cmds(cmds);
-    free_tokens(tokens, true);
+    free_tokens(tokens, true, NULL);
     return (NULL);
 }

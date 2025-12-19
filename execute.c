@@ -1,9 +1,8 @@
 #include "minishell.h"
 
 /*
-handle redirections < > << >>
-implement redirection operator logic
 execve wrapper
+make sure errors are not printed twice
 */
 
 int exec_built_in(t_cmd *cmd)
@@ -65,12 +64,16 @@ void    check_path_validity(char *path, bool free_path)
 {
     struct stat sb;
 
-    if (!path || stat(path, &sb) == -1)
+    if (stat(path, &sb) == -1)
+    {
+        printf("%s: %s: %s\n", MINI, path, strerror(errno));
         exit(127);
+    }
     if (!S_ISREG(sb.st_mode) || !(access(path, X_OK) == 0))
     {
         if (free_path)
             free(path);
+        printf("%s: %s: %s\n", MINI, path, strerror(errno));
         exit(126);  // directory or insufficient permissions
     }
 }
@@ -109,6 +112,11 @@ char    *build_path(char *filename)
         path = ft_strtok_r(NULL, ":", &p);
     }
     free(full_path);
+    if (!new_path)
+    {
+        printf("%s: %s: %s\n", MINI, filename, E_PATH);
+        exit(127);
+    }
     check_path_validity(new_path, true);
     return (new_path);
 }
@@ -147,6 +155,7 @@ int setup_redirs(t_redir *redirs)
         if (((redirs->flag == redir_in || redirs->flag == heredoc) && dup2(fd, STDIN_FILENO) == -1) || ((redirs->flag == redir_out || redirs->flag == append) && dup2(fd, STDOUT_FILENO) == -1))
         {
             close(fd);
+            perror(MINI);
             return (-1);
         }
         close(fd);
@@ -176,6 +185,7 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
     if (pid == -1)
     {
         close_pipe_fds(fd, prev_fd);
+        perror(MINI);
         return (-1); // handle error (close pipe fds if any)
     }
     if (pid == 0)
@@ -183,6 +193,7 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
         if (fd && (dup2(fd[1], STDOUT_FILENO) == - 1))
         {
             close_pipe_fds(fd, prev_fd);
+            perror(MINI);
             exit(-1); // handle_error
         }
         if (fd)
@@ -190,6 +201,7 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
         if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
         {
             close(prev_fd);
+            perror(MINI); 
             exit(-1);
         }
         if (prev_fd != -1)
@@ -245,18 +257,18 @@ int exec_in_parent(t_cmd *cmd)
     int ret;
 
     if ((actual_stdout = dup(STDOUT_FILENO)) == -1)
-        return (-1);
+        return (perror(MINI), -1);
     if ((actual_stdin = dup(STDIN_FILENO)) == -1)
-        return (close(actual_stdout), -1);
+        return (close(actual_stdout), perror(MINI), -1);
     if (setup_redirs(cmd->redirs) == -1)
         return (close(actual_stdout), close(actual_stdin), 1); // is returning 1 okay?
     if (cmd->built_in == EXIT)
         write(actual_stdout, "exit\n", 5);
     ret = exec_built_in(cmd);
     if (dup2(actual_stdout, STDOUT_FILENO) == -1)
-        return (close(actual_stdout), close(actual_stdin), -1);
+        return (close(actual_stdout), close(actual_stdin), perror(MINI), -1);
     if (dup2(actual_stdin, STDIN_FILENO) == -1)
-        return (close(actual_stdout), close(actual_stdin), -1);
+        return (close(actual_stdout), close(actual_stdin), perror(MINI), -1);
     close(actual_stdout);
     close(actual_stdin);
     return (ret);
@@ -285,15 +297,13 @@ int exec_cmds(t_cmd *cmds, char **envp)
     {
         cmd->built_in = is_builtin(cmd->args[0]);
         if (cmd->built_in != -1 && !need_pipe)
-        {
             return (exec_in_parent(cmd));
-        }
         else
         {
             if (cmd->next)
             {
                 if (pipe(fd) == -1)
-                    return (-1); // handle error
+                    return (perror(MINI), -1); // handle error
                 cmd->pid = exec_fork(cmd, fd, prev_pipe, envp);
                 prev_pipe = fd[0];
             }
