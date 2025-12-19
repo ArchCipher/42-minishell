@@ -1,7 +1,7 @@
 #include "minishell.h"
 
 static t_cmd    *build_cmd(t_token **current);
-static int      build_redir(t_token **current, t_list *cmd);
+static int      build_redir(t_token **current, t_redir **head, t_list *redir);
 static t_cmd    *create_cmd(size_t word_count);
 static t_redir  *create_redir(char *file, e_token_type type);
 
@@ -14,68 +14,90 @@ t_cmd *build_ast(t_token *tokens)
         return (NULL);
     current = tokens;
     cmd.head = NULL;
+    cmd.new = NULL;
     while (current)
 	{
-        if (current->type != word)
-           return (error_free(cmd.head, tokens)); // print parse error? 
-        cmd.new = build_cmd(&current);
-        if (!cmd.new)
-            return (error_free(cmd.head, tokens));
-        lstadd_back((void **)&cmd.head, (void *)cmd.new, (void *)cmd.tail, TYPE_CMD);
-        cmd.tail = cmd.new;
-        // should be built within cmd
-        if (!build_redir(&current, &cmd))
-           return (error_free(cmd.head, tokens));
+        if(current->type != pipe_char)
+        {
+            cmd.new = build_cmd(&current);
+            if (!cmd.new)
+                return (error_free(cmd.head, tokens));
+            lstadd_back((void **)&cmd.head, (void *)cmd.new, (void *)cmd.tail, TYPE_CMD);
+            cmd.tail = cmd.new;
+        }
         if (current && current->type == pipe_char)
+        {
+            // current->token = NULL;
             current = current->next;
+            if (current->type != word)
+                return (perror("MINI"), error_free(cmd.head, tokens));   // print parse error 
+        }
 	}
     free_tokens(tokens, false);
 	return (cmd.head);
 }
 
+ssize_t count_args(t_token *token)
+{
+    ssize_t word_count;
+
+    word_count = 0;
+    while(token && token->type != pipe_char)
+    {
+        if (token->type == word)
+            word_count++;
+        else if (token->next && token->next->type != word)
+        {
+            return (printf("%s: %s`%c'\n", MINI, E_PARSE, token->next->token[0]), -1);    // print parse error 
+        }
+        else
+            token = token->next;
+        token = token->next;
+    }
+    return (word_count);
+}
+
 static t_cmd   *build_cmd(t_token **current)
 {
     t_cmd   *new;
-    t_token *tmp;
-    size_t  word_count;
-    size_t  i;
+    t_list  redir;
+    ssize_t  word_count;
+    ssize_t  i;
 
-    tmp = *current;
-    word_count = 0;
-    while(tmp && tmp->type == word)
-    {
-        word_count++;
-        tmp = tmp->next;
-    }
+    if ((word_count = count_args(*current)) == -1)
+        return (NULL);
     new = create_cmd(word_count);
     if (!new)
-        return (NULL);
+        return (perror(MINI), NULL);
     i = 0;
-    while (i < word_count)
+    while (*current && (*current)->type != pipe_char)
     {
-        new->args[i++] = (*current)->token;
-        (*current)->token = NULL;
-        *current = (*current)->next;
+        if ((*current)->type == word)
+        {
+            new->args[i++] = (*current)->token;
+            (*current)->token = NULL;
+            *current = (*current)->next;
+        }
+        else if (!build_redir(current, &new->redirs, &redir))
+        {
+            new->args[i] = NULL;
+            free_cmds(new);
+            return (NULL);
+        }
     }
     new->args[i] = NULL;
     return (new);
 }
 
-static int build_redir(t_token **current, t_list *cmd)
+static int build_redir(t_token **current, t_redir **head, t_list *redir)
 {
-    t_list redir;
-
     while (*current && (*current)->type != pipe_char && (*current)->type != word)
     {
-        if ((*current)->next && (*current)->next->type != word)    // print parse error
-            return (0);
-        free((*current)->token);
-        (*current)->token = NULL;
-        redir.new = create_redir((*current)->next->token, (*current)->type);
-        if (!redir.new)
-            return (0);
-        lstadd_back((void **)&((t_cmd *)cmd->new)->redirs, (void *)redir.new, (void *)redir.tail, TYPE_REDIR);
-        redir.tail = redir.new;
+        redir->new = create_redir((*current)->next->token, (*current)->type);
+        if (!redir->new)
+            return (perror(MINI), 0);
+        lstadd_back((void **)head, (void *)redir->new, (void *)redir->tail, TYPE_REDIR);
+        redir->tail = redir->new;
         (*current) = (*current)->next->next;
     }
     return (1);

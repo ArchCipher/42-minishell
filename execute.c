@@ -9,11 +9,11 @@ execve wrapper
 int exec_built_in(t_cmd *cmd)
 {
     if (cmd->built_in == ECHO)
-        exec_echo(cmd->args + 1);
+        return (exec_echo(cmd->args + 1));
     else if (cmd->built_in == CD)
-        exec_cd(cmd->args[1]);
+        return (exec_cd(cmd->args[1]));
     else if (cmd->built_in == PWD)
-        exec_pwd();
+        return (exec_pwd());
     // no skeleton yet
     // else if (cmd->built_in == EXPORT)
     //     exec_export();
@@ -21,9 +21,8 @@ int exec_built_in(t_cmd *cmd)
     //     exec_unset();
     // else if (cmd->built_in == ENV)
     //     exec_env();
-    else if (cmd->built_in == EXIT)
-        exec_exit(cmd->args[1]);
-    return (0); // return value on error as well
+    else    // if (cmd->built_in == EXIT)
+        return (exec_exit(cmd->args[1]), 0);
 }
 
 /*
@@ -119,7 +118,7 @@ void    close_pipe_fds(int *fd, int prev_fd)
     if (fd)
     {
         close(fd[0]);
-        close(fd[1]); 
+        close(fd[1]);
     }
     if (prev_fd != -1)
         close(prev_fd);
@@ -144,7 +143,7 @@ int setup_redirs(t_redir *redirs)
         else
             fd = open(redirs->file, O_WRONLY | O_CREAT | O_APPEND, 0660);
         if (fd == -1)
-            return (-1);
+            return (perror(MINI), -1);
         if (((redirs->flag == redir_in || redirs->flag == heredoc) && dup2(fd, STDIN_FILENO) == -1) || ((redirs->flag == redir_out || redirs->flag == append) && dup2(fd, STDOUT_FILENO) == -1))
         {
             close(fd);
@@ -208,7 +207,7 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
         // if returned
         if (!ft_strchr(cmd->args[0], '/'))
             free(path);
-        perror("minishell: ");
+        perror(MINI);
         exit(1);
     }
     return (pid);
@@ -222,30 +221,44 @@ WAITPID:
         return (-1); // handle error
 */
 
-int return_status(t_cmd *cmds, int *status)
+int return_status(t_cmd *cmds)
 {
+    int status;
+
     while(cmds)
     {
         if (cmds->pid == -1)
             return (-1);
-        waitpid(cmds->pid, status, 0);
+        waitpid(cmds->pid, &status, 0);
         cmds = cmds->next;
     }
-    return (WEXITSTATUS(*status));
+    if (WIFEXITED(status))
+        return (WEXITSTATUS(status));
+    else    // if (WIFSIGNALED(status))
+        return (128 + WTERMSIG(status));
 }
 
 int exec_in_parent(t_cmd *cmd)
 {
     int actual_stdout;
+    int actual_stdin;
     int ret;
 
     if ((actual_stdout = dup(STDOUT_FILENO)) == -1)
         return (-1);
+    if ((actual_stdin = dup(STDIN_FILENO)) == -1)
+        return (close(actual_stdout), -1);
     if (setup_redirs(cmd->redirs) == -1)
-        return (1); // is returning 1 okay?
+        return (close(actual_stdout), close(actual_stdin), 1); // is returning 1 okay?
+    if (cmd->built_in == EXIT)
+        write(actual_stdout, "exit\n", 5);
     ret = exec_built_in(cmd);
     if (dup2(actual_stdout, STDOUT_FILENO) == -1)
-        return (-1);
+        return (close(actual_stdout), close(actual_stdin), -1);
+    if (dup2(actual_stdin, STDIN_FILENO) == -1)
+        return (close(actual_stdout), close(actual_stdin), -1);
+    close(actual_stdout);
+    close(actual_stdin);
     return (ret);
 }
 
@@ -256,7 +269,7 @@ PIPE:
 */
 
 // separate execve wrapper for built-in and executables
-int exec_cmds(t_cmd *cmds, char **envp, int *status)
+int exec_cmds(t_cmd *cmds, char **envp)
 {
     int     fd[2];
     int     prev_pipe;
@@ -265,9 +278,9 @@ int exec_cmds(t_cmd *cmds, char **envp, int *status)
 
     cmd = cmds;
     prev_pipe = -1;
-    need_pipe = 0;
+    need_pipe = false;
     if (cmd->next)
-        need_pipe = 1;
+        need_pipe = true;
     while(cmd)
     {
         cmd->built_in = is_builtin(cmd->args[0]);
@@ -295,5 +308,5 @@ int exec_cmds(t_cmd *cmds, char **envp, int *status)
         }
         cmd = cmd->next;
     }
-    return (return_status(cmds, status));
+    return (return_status(cmds));
 }

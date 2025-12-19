@@ -27,8 +27,10 @@
 
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
-# define E_PARSE "minishell: syntax error"	// >>> or > > (bash: syntax error near unexpected token `>')
+# define E_PARSE "syntax error near unexpected token "
 # define E_ENV "minishell: bad substitution"	// ${{name}}
+# define MINI "minishell"
+# define E_EINVAL 255
 // # define E_PATH "ls: bin: No such file or directory" // ls bin
 
 typedef enum
@@ -127,13 +129,13 @@ void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // execute.c
-int						exec_cmds(t_cmd *cmds, char **envp, int *status);
+int						exec_cmds(t_cmd *cmds, char **envp);
 
 // builtin.c
-void	exec_echo(char **args);
-void	exec_cd(const char *path);
-void	exec_pwd(void);
-void    exec_exit(char *s);
+int	exec_echo(char **args);
+int	exec_cd(const char *path);
+int	exec_pwd(void);
+void	exec_exit(char *s);
 
 // utils.c
 int						ft_isspace(int c);
@@ -150,7 +152,6 @@ char					*ft_strjoin(const char *s1, const char *s2);
 void					*ft_realloc(void *ptr, size_t old_size, size_t size);
 char					*ft_strtok_r(char *s, const char *sep, char **p);
 char					*ft_strjoin3(const char *s1, const char *s2, const char *s3);
-int						ft_atoi(const char *str);
-char					*ft_itoa(int n);
+// char					*ft_itoa(int n);
 
 #endif

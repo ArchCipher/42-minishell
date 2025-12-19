@@ -40,6 +40,7 @@ int	main(int ac, char **av, char **envp)
 	(void)ac;
 	(void)av;
 	// (void)envp;
+	status = 0;
 	while (1)
 	{
 		input = readline("$> ");

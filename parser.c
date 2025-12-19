@@ -16,6 +16,10 @@ static char	*handle_word(char *token, char *end);
 static void	handle_dollar(char **token, char *end, t_string *str);
 static char	*expand_var(char **token, char *end);
 
+/*
+maybe no need to strndup other than word tokens,
+they can be null with just the token->type.
+*/
 t_token	*parse_tokens(t_token *tokens)
 {
 	t_token	*current;
@@ -26,11 +30,11 @@ t_token	*parse_tokens(t_token *tokens)
 	while (current)
 	{
 		if (current->type == word)
+		{
 			current->token = handle_word(current->token, current->token + current->len);
-		else
-			current->token = ft_strndup(current->token, current->len);
-		if (!current->token)
-			return (free_tokens(tokens, true), NULL);
+			if (!current->token)
+				return (free_tokens(tokens, true), NULL);
+		}
 		current = current->next;
 	}
 	return (tokens);
@@ -73,10 +77,15 @@ static char	*handle_word(char *token, char *end)
 static void	handle_dollar(char **token, char *end, t_string *str)
 {
 	char	*var;
+	// char	exit_code[4];
 	size_t	var_len;
 
 	(*token)++;
 	var_len = 0;
+	// if (*token == '?')
+	// {
+	// 	var = ft_itoa();
+	// }
 	var = expand_var(token, end);
 	if (var)
 		var_len = ft_strlen(var);

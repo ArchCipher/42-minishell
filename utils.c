@@ -202,34 +202,6 @@ char	*ft_strjoin3(const char *s1, const char *s2, const char *s3)
 	return (dst);
 }
 
-int	ft_atoi(const char *str)
-{
-	long	num;
-	int		sign;
-
-	num = 0;
-	sign = 1;
-	while (ft_isspace(*str))
-		str++;
-	if (*str == '-')
-	{
-		sign = -1;
-		str++;
-	}
-	else if (*str == '+')
-		str++;
-	while (*str >= '0' && *str <= '9')
-	{
-		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
-			return ((int)LONG_MAX);
-		if (sign == -1 && (LONG_MAX - (num * 10)) <= (*str - '0') - 1)
-			return ((int)LONG_MIN);
-		num = (num * 10) + (*str - '0');
-		str++;
-	}
-	return ((int)(num * sign));
-}
-
 static size_t	ft_numlen(int n, int base)
 {
 	size_t	count;

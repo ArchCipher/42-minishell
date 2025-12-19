@@ -12,23 +12,37 @@
 
 #include "minishell.h"
 
-void	exec_pwd(void)
+/*
+echo	0 unless write error
+pwd	0 unless error
+cd	0 on success, 1 on failure
+exit	does not return
+export	0 / 1 depending on validity
+unset	0
+env	0
+command not found	127
+permission denied	126
+*/
+
+int exec_pwd(void)
 {
 	char	*buf;
 
 	buf = NULL;
 	buf = getcwd(buf, 0);
 	if (!buf)
-		return (perror("Error: "));
-	write(STDOUT_FILENO, buf, ft_strlen(buf));
-    write(STDOUT_FILENO, "\n", 1);
+		return (perror(MINI), 1);
+	if (write(STDOUT_FILENO, buf, ft_strlen(buf))== -1 || write(STDOUT_FILENO, "\n", 1) == -1)
+        return (free(buf), 1);
 	free(buf);
+    return (0);
 }
 
-void	exec_cd(const char *path)
+int exec_cd(const char *path)
 {
 	if (chdir(path) == -1)
-		perror("Error: ");
+		return (perror(MINI), 1);
+    return (0);
 }
 
 /*
@@ -46,13 +60,13 @@ Or when you explicitly call fflush(stdout)
 So must use write
 */
 
-void exec_echo(char **args)
+int exec_echo(char **args)
 {
-    bool nl;
+    bool    nl;
 
     nl = true;
     if (!args || !*args)
-        return ;
+        return (write(1, "\n", 1));
     if (ft_strcmp(*args, "-n") == 0)
     {
         nl = false;
@@ -60,19 +74,63 @@ void exec_echo(char **args)
     }
     while (*args)
     {
-        write(STDOUT_FILENO, *args, ft_strlen(*args));
+        if (write(STDOUT_FILENO, *args, ft_strlen(*args)) == -1)
+            return (1);
         if (!args[1])
             break ;
-        write(STDOUT_FILENO, " ", 1);
+        if (write(STDOUT_FILENO, " ", 1) == -1)
+            return (1);
         args++;
     }
-    if (nl == true)
-        write(STDOUT_FILENO, "\n", 1);
+    if (nl == true && write(STDOUT_FILENO, "\n", 1) == -1)
+        return (1);
+    return (0);
 }
+
+int	simple_atoi(const char *str)
+{
+	long	num;
+	int		sign;
+
+	num = 0;
+	sign = 1;
+	if (*str == '-')
+	{
+		sign = -1;
+		str++;
+	}
+	else if (*str == '+')
+		str++;
+    if (!(*str >= '0' && *str <= '9'))
+        return (errno = EINVAL, E_EINVAL);
+	while (*str >= '0' && *str <= '9')
+	{
+		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
+			return ((int)LONG_MAX);
+		if (sign == -1 && (LONG_MAX - (num * 10)) <= (*str - '0') - 1)
+			return ((int)LONG_MIN);
+		num = (num * 10) + (*str - '0');
+		str++;
+	}
+	return ((int)(num * sign));
+}
+
+/*
+The env utility exits 0 on success, and >0 if an error occurs.
+An exit status of 126 indicates that utility was found, but could not be executed.
+An exit status of 127 indicates that utility could not be found.
+
+int exec_env();
+*/
 
 void    exec_exit(char *s)
 {
+    int i;
+
     if (s == NULL)
         exit(0);
-    exit(ft_atoi(s));
+    i = simple_atoi(s); // must be modulo 256
+    if (errno == EINVAL)
+        printf("%s: exit: %s: numeric argument required\n", MINI, s);
+    exit(i);
 }
