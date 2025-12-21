@@ -16,12 +16,12 @@
 # include <fcntl.h>				// open
 # include <errno.h>             // errno
 # include <limits.h>			// LONG_MAX (ft_atoi)
+# include <stdio.h>             // printf, readline, perror (must be before readline.h)
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
 # include <signal.h>    		// sigaction, sigemptyset, sigaddset
 # include <termios.h>			// tcsetattr, tcgetattr, termios
 # include <stdbool.h>           // boolean
-# include <stdio.h>             // printf, readline, perror
 # include <stdlib.h>            // malloc, free, exit, getenv
 # include <string.h>			// strerror
 # include <sys/stat.h>			// stat

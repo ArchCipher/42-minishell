@@ -4,10 +4,10 @@ volatile sig_atomic_t g_signal = 0;
 static struct termios original_term;
 
 /*
-Context	SIGINT	SIGQUIT
-Parent shell	custom handler	ignored
-Normal child	default	default
-Heredoc child	default	ignored
+        Context	SIGINT          SIGQUIT
+Parent  shell	custom handler	ignored
+Normal  child	default         default
+Heredoc child	default         ignored
 */
 
 
@@ -69,14 +69,22 @@ Terminates normally
 DESCRIPTION:
     It is a wrapper function that calls sigaction to set up a signal handler.
     If the sigaction fails, it prints an error message and exits the program.
+    
+    Minishell exits itself on sigaction initialisation error.
+    sigaction() failing means your shell cannot control signals, and a shell
+    without proper signal handling is broken and unsafe.
 
     sigaction blocks SIGINT while processing SIGQUIT and vice-versa.
     signature used for the sigaction handler:
         union __sigaction_u = void (*__sa_handler)(int);
 
-    Minishell exits itself on sigaction initialisation error.
-    sigaction() failing means your shell cannot control signals, and a shell
-    without proper signal handling is broken and unsafe.
+    Without SA_RESTART (flags = 0):
+    System calls (like read(), write(), readline()) are interrupted by signals
+    They return with EINTR error
+    This is what you want for SIGINT — so readline() returns immediately when Ctrl+C is pressed
+    With SA_RESTART:
+    System calls automatically restart after the signal handler returns
+    This is NOT what you want for SIGINT — readline() would continue waiting instead of returning
 */    
 
 void    setup_handler(int sig, void (*handler)(int))
@@ -118,7 +126,6 @@ DESCRIPTION:
 
     set SA_RESTART where appropriate
 */
-void	replace_line(void);
 
 void    parent_handler(int sig)
 {
@@ -126,25 +133,16 @@ void    parent_handler(int sig)
     {
         g_signal = sig;
         write(1, "\n", 1);
-        replace_line();
+        rl_replace_line("", 0);
         rl_on_new_line();
         rl_redisplay();
     }
 }
 
-#ifdef __linux__
-
-void	replace_line(void)
-{
-	rl_replace_line("", 0);
-}
-#else
-
-void	replace_line(void)
-{
-    write(1, "$> ", 3);
-}
-#endif
+/*
+using sigaction to setup did not work, so using signal instead.
+term.c_lflag &= ~ECHOCTL; // prevents terminal from printing ^C before handler runs.
+*/
 
 void    init_signals(void)
 {
@@ -152,14 +150,10 @@ void    init_signals(void)
 
     tcgetattr(STDIN_FILENO, &original_term);
     term = original_term;
-#ifdef __APPLE__
-    term.c_lflag &= ~0x00000200;
-#else
-    term.c_lflag &= ~(1UL << 10);
-#endif
+    term.c_lflag &= ~ECHOCTL;
     tcsetattr(STDIN_FILENO, TCSANOW, &term);
-    signal(SIGINT, parent_handler);
-    signal(SIGQUIT, SIG_IGN);
+    setup_handler(SIGINT, parent_handler);
+    setup_handler(SIGQUIT, SIG_IGN);
 }
 
 /*
@@ -167,6 +161,6 @@ void    init_signals(void)
 */
 void    handle_parent_signal(int *status)
 {
-    *status = SIG_EXIT_BASE + g_signal;
+    *status = 1;
     g_signal = 0;
 }

@@ -41,9 +41,7 @@ int	main(int ac, char **av, char **envp)
 	(void)av;
 	// (void)envp;
 	status = 0;
-	// init_signals();
-	signal(SIGINT, parent_handler);
-    signal(SIGQUIT, SIG_IGN);
+	init_signals();
 	while (1)
 	{
 		input = readline("$> ");
