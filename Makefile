@@ -16,6 +16,8 @@ MSRCS			= minishell lexer parser ast free heredoc execute builtin signal utils
 SRCS			= $(addsuffix .c, $(MSRCS))
 OBJS			= $(SRCS:.c=.o)
 
+# .DEFAULT_GOAL := all
+
 #				Compiler and Flags
 CC				= cc
 FLAGS			= -Wall -Werror -Wextra
@@ -26,21 +28,10 @@ CFLAGS			= $(FLAGS) $(SFLAGS) $(READLINE_INC) $(READLINE_LIB) -lreadline
 %.o: %.c
 	$(CC) $(FLAGS) $(INC) $(READLINE_INC) -g -c $< -o $@
 
-.PHONY: check_readline
-
-check_readline:
-	@if [ "$(UNAME_S)" = "Darwin" ]; then \
-		if [ -z "$(READLINE_DIR)" ] || [ ! -d "$(READLINE_DIR)" ]; then \
-			echo "Error: GNU readline not found."; \
-			echo "Please install it with: brew install readline"; \
-			exit 1; \
-		fi; \
-	fi
-
-all: check_readline $(NAME)
+all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -g $^ -o $@
+	$(CC) $(CFLAGS) -g $(OBJS) -o $@
 
 clean:
 	rm -f $(OBJS)
@@ -48,6 +39,6 @@ clean:
 fclean: clean
 	rm -f $(NAME)
 
-re: fclean all bonus
+re: fclean all
 
-.PHONY: all clean fclean re bonus
+.PHONY: all clean fclean re check_readline

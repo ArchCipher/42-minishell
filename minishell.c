@@ -46,29 +46,17 @@ int	main(int ac, char **av, char **envp)
 	{
 		input = readline("$> ");
 		if (g_signal == SIGINT)
-			handle_parent_signal(&status);
+			handle_shell_signal(&status);
 		if (!input)
 			break ;
 		add_history(input);
 		tokens = tokenise_input(input);
 		tokens = parse_tokens(tokens, status);
 		cmds = build_ast(tokens);
-		if (cmds && handle_heredoc(cmds))
+		if (cmds && !process_heredoc(cmds, &status))
 			status = exec_cmds(cmds, envp);
 		free_cmds(cmds);
 		free(input);
 	}
-	cleanup_linux();
+	rl_clear_history();	
 }
-#ifdef __linux__
-
-void	cleanup_linux(void)
-{
-	rl_clear_history();
-}
-#else
-
-void	cleanup_linux(void)
-{
-}
-#endif

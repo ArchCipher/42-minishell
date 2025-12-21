@@ -71,14 +71,14 @@ typedef enum
 
 typedef enum
 {
-	BI_ECHO,
-	CD,
-	PWD,
-	EXPORT,
-	UNSET,
-	ENV,
-	EXIT
-}	e_built_in;
+	BUILTIN_ECHO,
+	BUILTIN_CD,
+	BUILTIN_PWD,
+	BUILTIN_EXPORT,
+	BUILTIN_UNSET,
+	BUILTIN_ENV,
+	BUILTIN_EXIT
+}	e_builtin;
 
 typedef struct s_string
 {
@@ -108,7 +108,7 @@ typedef struct s_cmd
 	char			**args;
 	t_redir			*redirs;
 	pid_t			pid;
-	int				built_in;
+	int				builtin;
 	struct s_cmd	*next;
 }			t_cmd;
 
@@ -142,15 +142,15 @@ void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // heredoc.c
-int						handle_heredoc(t_cmd *cmds);
+int						process_heredoc(t_cmd *cmds, int *status);
 
 // execute.c
 int						exec_cmds(t_cmd *cmds, char **envp);
 
 // signal.h
 void    setup_handler(int sig, void (*handler)(int));
-void	parent_handler(int sig);
-void	handle_parent_signal(int *status);
+void	shell_handler(int sig);
+void	handle_shell_signal(int *status);
 void	init_signals(void);
 
 void    setup_child_handler(int sig);

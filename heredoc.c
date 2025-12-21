@@ -1,14 +1,82 @@
 #include "minishell.h"
 
+static int  handle_heredoc(t_redir *redir);
+static int  exec_heredoc(char *limiter, int fd);
+static int  heredoc_waitpid(pid_t pid);
+static int  heredoc_fork_error(int *fd);
+
+
 /*
-heredoc reads from terminal and writes to write end of a pipe and later read by command via stdin.
-not write soon but save to buffer.
+DESCRIPTION:
+    Handles the heredoc and sets the file descriptor to the read end of the pipe.
+
+    SIGINT is ignored (SIG_IGN) during waitpid(). This prevents the parent from
+    handling SIGINT during waitpid(). If the parent kept the handler, it would run
+    while blocked in waitpid(), causing issues. With SIG_IGN, the signal still
+    reaches the child (which has SIG_DFL), so the child dies.
+    After waitpid() signal is handled, the parent process displays a new prompt on a new line.
 */
 
-int exec_heredoc(char *limiter, int fd)
+int process_heredoc(t_cmd *cmds, int *status)
+{
+    t_redir *current;
+
+    while(cmds)
+    {
+        current = cmds->redirs;
+        while(current)
+        {
+            if (current->flag == heredoc && handle_heredoc(current))
+                return (*status = 1);
+            current = current->next;
+        }
+        cmds = cmds->next;
+    }
+    return (0);
+}
+
+/*
+DESCRIPTION:
+    Handles the heredoc and sets the file descriptor to the read end of the pipe.
+    It creates a pipe and forks a child process.
+    The child process reads from the readline() and writes to the write end of the pipe.
+    The parent process waits for the child process to finish and returns the status.
+    It returns 1 if there is an error, 0 if successful.
+*/
+
+static int  handle_heredoc(t_redir *redir)
+{
+    int     fd[2];
+    pid_t   pid;
+
+    if (pipe(fd) == -1)
+        return (perror(MINI), 1);
+    pid = fork();
+    if (pid == -1)
+        return (heredoc_fork_error(fd));
+    if (pid == 0)
+    {
+        setup_handler(SIGINT, SIG_DFL);
+        setup_handler(SIGQUIT, SIG_IGN);
+        close(fd[0]);
+        exit (exec_heredoc(redir->file, fd[1]));
+    }
+    close(fd[1]);
+    if (heredoc_waitpid(pid))
+        return (close(fd[0]), 1);
+    redir->fd = fd[0];
+    return (0);
+}
+
+/*
+DESCRIPTION:
+    Executes the heredoc and returns the status.
+    It reads from terminal and writes to write end of a pipe and later read by command via stdin.
+*/
+
+static int  exec_heredoc(char *limiter, int fd)
 {
     char *line;
-    // char *buffer;
 
     while(1)
     {
@@ -22,98 +90,22 @@ int exec_heredoc(char *limiter, int fd)
     return (0);
 }
 
-int handle_heredoc(t_cmd *cmds)
+static int heredoc_waitpid(pid_t pid)
 {
-    int     fd[2];
-    pid_t   pid;
-    t_redir *current;
-    int     status;
+    int status;
 
-    while(cmds)
-    {
-        current = cmds->redirs;
-        while(current)
-        {
-            if (current->flag == heredoc)
-            {
-                if (pipe(fd) == -1)
-                    return (perror(MINI), 0);
-                pid = fork();
-                if (pid == -1)
-                {
-                    close(fd[0]);
-                    close(fd[1]);
-                    perror(MINI);
-                    return (0);
-                }
-                if (pid == 0)
-                {
-                    setup_handler(SIGINT, SIG_DFL);
-                    setup_handler(SIGQUIT, SIG_IGN);
-                    close(fd[0]);
-                    exit (exec_heredoc(current->file, fd[1]));
-                }
-                setup_handler(SIGINT, SIG_IGN);
-                close(fd[1]);
-                waitpid(pid, &status, 0);
-                setup_handler(SIGINT, parent_handler);
-                if (WIFSIGNALED(status) || WEXITSTATUS(status))
-                    return (close(fd[0]), write(1, "\n", 1), 0);
-                current->fd = fd[0];
-            }
-            current = current->next;
-        }
-        cmds = cmds->next;
-    }
-    return (1);
+    setup_handler(SIGINT, SIG_IGN);
+    waitpid(pid, &status, 0);
+    setup_handler(SIGINT, shell_handler);
+    if (WIFSIGNALED(status) || WEXITSTATUS(status))
+        return (write(1, "\n", 1), 1);
+    return (0);  
 }
 
-/*
-chatgpt: 
-
-What actually happens:
-Prompt for A
-User types input (or hits Ctrl-C)
-Only if A succeeds, prompt for B
-If any heredoc is interrupted, the entire command is aborted
-If you delay waitpid():
-Multiple heredoc children could run
-Prompts interleave
-SIGINT handling breaks
-You lose which heredoc failed
-$? becomes wrong
-Correct behavior (bash-compatible)
-For each heredoc redirection:
-pipe()
-fork()
-Child:
-default SIGINT
-read lines, write to pipe
-exit
-Parent:
-close write end
-waitpid(child)
-check:
-WIFSIGNALED(SIGINT) → abort whole command
-non-zero exit → abort
-store read-end FD in redir
-Only then move to the next heredoc.
-Why not wait at the end?
-Waiting later causes:
-Problem	Why it breaks
-Zombie processes	children exit early
-Ctrl-C ignored	parent doesn’t see interruption
-Wrong $?	status lost
-Wrong prompts	heredocs overlap
-Mental rule (remember this)
-A heredoc is synchronous.
-It blocks parsing until it finishes.
-Practical takeaway
-✔️ One heredoc → fork → wait immediately
-✔️ On SIGINT → stop building commands
-✔️ Execution must not happen
-If you want, next I can:
-sketch the correct heredoc control flow (no code)
-explain how bash cancels pipelines on heredoc SIGINT
-help you store heredoc status cleanly with your g_signal rule
-*/
+static int heredoc_fork_error(int *fd)
+{
+    close(fd[0]);
+    close(fd[1]);
+    perror(MINI);
+    return (1);
+}

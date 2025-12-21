@@ -6,13 +6,13 @@ execve wrapper
 make sure errors are not printed twice
 */
 
-int exec_built_in(t_cmd *cmd)
+int exec_builtin(t_cmd *cmd)
 {
-    if (cmd->built_in == BI_ECHO)
+    if (cmd->builtin == BUILTIN_ECHO)
         return (exec_echo(cmd->args + 1));
-    else if (cmd->built_in == CD)
+    else if (cmd->builtin == BUILTIN_CD)
         return (exec_cd(cmd->args[1]));
-    else if (cmd->built_in == PWD)
+    else if (cmd->builtin == BUILTIN_PWD)
         return (exec_pwd());
     // no skeleton yet
     // else if (cmd->built_in == EXPORT)
@@ -32,19 +32,19 @@ returns -1 if not a builtin
 int is_builtin(char *s)
 {
     if (ft_strcmp(s, "echo") == 0)
-        return (BI_ECHO);
+        return (BUILTIN_ECHO);
     else if (ft_strcmp(s, "cd") == 0)
-        return (CD);
+        return (BUILTIN_CD);
     else if (ft_strcmp(s, "pwd") == 0)
-        return (PWD);
+        return (BUILTIN_PWD);
     else if (ft_strcmp(s, "export") == 0)
-        return (EXPORT);
+        return (BUILTIN_EXPORT);
     else if (ft_strcmp(s, "unset") == 0)
-        return (UNSET);
+        return (BUILTIN_UNSET);
     else if (ft_strcmp(s, "env") == 0)
-        return (ENV);
+        return (BUILTIN_ENV);
     else if(ft_strcmp(s, "exit") == 0)
-        return (EXIT);
+        return (BUILTIN_EXIT);
     return (-1);
 }
 
@@ -228,8 +228,8 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
         if (setup_redirs(cmd->redirs) == -1)
             exit(1);
         path = cmd->args[0];
-        if (cmd->built_in != -1)
-            exit(exec_built_in(cmd));
+        if (cmd->builtin != -1)
+            exit(exec_builtin(cmd));
         if (ft_strchr(cmd->args[0], '/'))
             check_path_validity(path, false);
         else
@@ -281,9 +281,9 @@ int exec_in_parent(t_cmd *cmd)
         return (close(actual_stdout), perror(MINI), 1);
     if (setup_redirs(cmd->redirs) == -1)
         return (close(actual_stdout), close(actual_stdin), 1); // is returning 1 okay?
-    if (cmd->built_in == EXIT)
+    if (cmd->builtin == BUILTIN_EXIT)
         write(actual_stdout, "exit\n", 5);
-    ret = exec_built_in(cmd);
+    ret = exec_builtin(cmd);
     if (dup2(actual_stdout, STDOUT_FILENO) == -1)
         return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
     if (dup2(actual_stdin, STDIN_FILENO) == -1)
@@ -314,8 +314,8 @@ int exec_cmds(t_cmd *cmds, char **envp)
         need_pipe = true;
     while(cmd)
     {
-        cmd->built_in = is_builtin(cmd->args[0]);
-        if (cmd->built_in != -1 && !need_pipe)
+        cmd->builtin = is_builtin(cmd->args[0]);
+        if (cmd->builtin != -1 && !need_pipe)
             return (exec_in_parent(cmd));
         else
         {

@@ -4,87 +4,45 @@ volatile sig_atomic_t g_signal = 0;
 static struct termios original_term;
 
 /*
-        Context	SIGINT          SIGQUIT
-Parent  shell	custom handler	ignored
-Normal  child	default         default
-Heredoc child	default         ignored
-*/
+NOTES:
+    Handle ctrl-C, ctrl-D and ctrl-\ which should behave like in bash.
+    In interactive mode (shell):
+        ctrl-C (SIGINT) displays a new prompt on a new line. exit status 1
+        ctrl-\ (SIGQUIT) does nothing.
+        ctrl-D exits the shell. This is not a signal. End Of File (EOF) on stdin
 
+    In child process (within fork):
+        SIGINT and SIGQUIT is set to default (SIG_DFL).
+        This is to prevent the child process from terminating when ctrl-C is pressed.
 
-/*
-Handle ctrl-C, ctrl-D and ctrl-\ which should behave like in bash.
-• In interactive mode:
-◦ ctrl-C (SIGINT) displays a new prompt on a new line.
-exit status 128 + SIGINT
-
-Parent shell:
-Do not exit
-Reset prompt
-Child process:
-Default behavior → terminate
-
-◦ ctrl-D exits the shell.
-This is not a signal. End Of File (EOF) on stdin
-
-In bash:
-At empty prompt → exit shell
-While typing → behaves like EOF
-In heredoc → ends input
-
-If readline() returns NULL → treat as Ctrl+D
-At prompt:
-Print exit
-Exit shell
-
-◦ ctrl-\ (SIGQUIT) does nothing.
-
-Default behavior: terminate + core dump
-
-In bash:
-At prompt → ignored
-While command runs → child may terminate
-Bash suppresses the “Quit (core dumped)” message in many cases
-
-Parent shell:
-Ignore it
-Child:
-Default handling (or let kernel do it)
-
------
-Parent shell
-Ignores SIGINT, SIGQUIT
-Handles Ctrl+D via EOF
-Never dies from terminal signals
-
-Child process
-Restores default signal handling
-Receives SIGINT / SIGQUIT
-Terminates normally
-
+    In heredoc:
+    child process:
+        SIGINT is set to default (SIG_DFL).
+        SIGQUIT is ignored (SIG_IGN).
+    parent process:
+        SIGINT is ignored (SIG_IGN) during waitpid().
+        After waitpid() signal is handled, the parent process displays a new prompt on a new line.
+    
+    Summary of signal handling:
+            Context	SIGINT          SIGQUIT
+    Parent  shell	custom handler	ignored
+    Normal  child	default         default
+    Heredoc child	default         ignored
 */
 
 
 
 /*
 DESCRIPTION:
-    It is a wrapper function that calls sigaction to set up a signal handler.
-    If the sigaction fails, it prints an error message and exits the program.
+    Wrapper function that calls sigaction to set up a signal handler.
+    On sigaction initialization error, Minishell exits itself as a shell
+    without proper signal handling is unsafe.
     
-    Minishell exits itself on sigaction initialisation error.
-    sigaction() failing means your shell cannot control signals, and a shell
-    without proper signal handling is broken and unsafe.
+    Sigaction blocks SIGINT while processing SIGQUIT and vice-versa.
+    To prevent this, SA_RESTART is used to restart the system call after the signal handler returns.
 
-    sigaction blocks SIGINT while processing SIGQUIT and vice-versa.
-    signature used for the sigaction handler:
+    Signature used for the sigaction handler:
         union __sigaction_u = void (*__sa_handler)(int);
-
-    Without SA_RESTART (flags = 0):
-    System calls (like read(), write(), readline()) are interrupted by signals
-    They return with EINTR error
-    This is what you want for SIGINT — so readline() returns immediately when Ctrl+C is pressed
-    With SA_RESTART:
-    System calls automatically restart after the signal handler returns
-    This is NOT what you want for SIGINT — readline() would continue waiting instead of returning
 */    
 
 void    setup_handler(int sig, void (*handler)(int))
@@ -110,24 +68,11 @@ void    setup_handler(int sig, void (*handler)(int))
 
 /*
 DESCRIPTION:
-    It is the signal handler for the client that receives the acknowledgment signal from the server.
-
-    In interactive mode:
-    SIGINT(ctrl-C), displays a new prompt on a new line.
-    SIGQUIT(ctrl-\), does nothing.
-    ctrl-D exits the shell. This is not a signal. End Of File (EOF) on stdin
-
-    Ctrl+D:
-        Ends heredoc early
-    Ctrl+C:
-        Cancels heredoc
-    signal(SIGINT, SIG_DFL);
-    signal(SIGQUIT, SIG_IGN);
-
-    set SA_RESTART where appropriate
+    Parent signal handler sets the global signal variable and displays a new prompt on a new line
+    and replaces the line with an empty string.
 */
 
-void    parent_handler(int sig)
+void    shell_handler(int sig)
 {
     if (sig == SIGINT)
     {
@@ -140,8 +85,20 @@ void    parent_handler(int sig)
 }
 
 /*
-using sigaction to setup did not work, so using signal instead.
-term.c_lflag &= ~ECHOCTL; // prevents terminal from printing ^C before handler runs.
+DESCRIPTION:
+    Handles the parent signal and sets the status to 1.
+*/
+void    handle_shell_signal(int *status)
+{
+    *status = 1;
+    g_signal = 0;
+}
+
+
+/*
+DESCRIPTION:
+    Initializes the signals and sets the terminal to not echo control characters.
+    Setting ECHOCTL to 0 is to prevent the terminal from printing ^C before the handler runs.
 */
 
 void    init_signals(void)
@@ -152,15 +109,6 @@ void    init_signals(void)
     term = original_term;
     term.c_lflag &= ~ECHOCTL;
     tcsetattr(STDIN_FILENO, TCSANOW, &term);
-    setup_handler(SIGINT, parent_handler);
+    setup_handler(SIGINT, shell_handler);
     setup_handler(SIGQUIT, SIG_IGN);
-}
-
-/*
-
-*/
-void    handle_parent_signal(int *status)
-{
-    *status = 1;
-    g_signal = 0;
 }
