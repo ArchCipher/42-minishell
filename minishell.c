@@ -41,19 +41,14 @@ int	main(int ac, char **av, char **envp)
 	(void)av;
 	// (void)envp;
 	status = 0;
-	setup_handler(SIGINT, parent_handler);
-    setup_handler(SIGQUIT, SIG_IGN);
+	// init_signals();
+	signal(SIGINT, parent_handler);
+    signal(SIGQUIT, SIG_IGN);
 	while (1)
 	{
 		input = readline("$> ");
 		if (g_signal == SIGINT)
-		{
-			status = SIG_EXIT_BASE + g_signal;
-			g_signal = 0;
-			if (input)
-				free(input);
-			continue;
-		}
+			handle_parent_signal(&status);
 		if (!input)
 			break ;
 		add_history(input);

@@ -1,6 +1,7 @@
 #include "minishell.h"
 
 volatile sig_atomic_t g_signal = 0;
+static struct termios original_term;
 
 /*
 Context	SIGINT	SIGQUIT
@@ -84,10 +85,14 @@ void    setup_handler(int sig, void (*handler)(int))
 
     sa.sa_handler = handler;
     sigemptyset(&sa.sa_mask);
-    // if (sig == SIGINT)
-    sa.sa_flags = 0;
-    // else
-    //     sa.sa_flags = SA_RESTART;
+    if (sig == SIGINT)
+        sigaddset(&sa.sa_mask, SIGQUIT);
+    else if (sig == SIGQUIT)
+        sigaddset(&sa.sa_mask, SIGINT);
+    if (sig == SIGINT)
+        sa.sa_flags = 0;
+    else
+        sa.sa_flags = SA_RESTART;
     if (sigaction(sig, &sa, NULL) < 0)
     {
         perror(MINI);
@@ -113,6 +118,7 @@ DESCRIPTION:
 
     set SA_RESTART where appropriate
 */
+void	replace_line(void);
 
 void    parent_handler(int sig)
 {
@@ -120,7 +126,40 @@ void    parent_handler(int sig)
     {
         g_signal = sig;
         write(1, "\n", 1);
+        replace_line();
+        rl_on_new_line();
+        rl_redisplay();
     }
+}
+
+#ifdef __linux__
+
+void	replace_line(void)
+{
+	rl_replace_line("", 0);
+}
+#else
+
+void	replace_line(void)
+{
+    write(1, "$> ", 3);
+}
+#endif
+
+void    init_signals(void)
+{
+    struct termios term;
+
+    tcgetattr(STDIN_FILENO, &original_term);
+    term = original_term;
+#ifdef __APPLE__
+    term.c_lflag &= ~0x00000200;
+#else
+    term.c_lflag &= ~(1UL << 10);
+#endif
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+    signal(SIGINT, parent_handler);
+    signal(SIGQUIT, SIG_IGN);
 }
 
 /*

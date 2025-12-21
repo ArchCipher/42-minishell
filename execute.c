@@ -8,7 +8,7 @@ make sure errors are not printed twice
 
 int exec_built_in(t_cmd *cmd)
 {
-    if (cmd->built_in == ECHO)
+    if (cmd->built_in == BI_ECHO)
         return (exec_echo(cmd->args + 1));
     else if (cmd->built_in == CD)
         return (exec_cd(cmd->args[1]));
@@ -32,7 +32,7 @@ returns -1 if not a builtin
 int is_builtin(char *s)
 {
     if (ft_strcmp(s, "echo") == 0)
-        return (ECHO);
+        return (BI_ECHO);
     else if (ft_strcmp(s, "cd") == 0)
         return (CD);
     else if (ft_strcmp(s, "pwd") == 0)

@@ -19,6 +19,7 @@
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
 # include <signal.h>    		// sigaction, sigemptyset, sigaddset
+# include <termios.h>			// tcsetattr, tcgetattr, termios
 # include <stdbool.h>           // boolean
 # include <stdio.h>             // printf, readline, perror
 # include <stdlib.h>            // malloc, free, exit, getenv
@@ -70,7 +71,7 @@ typedef enum
 
 typedef enum
 {
-	ECHO,
+	BI_ECHO,
 	CD,
 	PWD,
 	EXPORT,
@@ -150,6 +151,7 @@ int						exec_cmds(t_cmd *cmds, char **envp);
 void    setup_handler(int sig, void (*handler)(int));
 void	parent_handler(int sig);
 void	handle_parent_signal(int *status);
+void	init_signals(void);
 
 void    setup_child_handler(int sig);
 
