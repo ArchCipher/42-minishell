@@ -84,8 +84,10 @@ void    setup_handler(int sig, void (*handler)(int))
 
     sa.sa_handler = handler;
     sigemptyset(&sa.sa_mask);
-    sigaddset(&sa.sa_mask, SIGINT);
-    sigaddset(&sa.sa_mask, SIGQUIT);
+    // if (sig == SIGINT)
+    sa.sa_flags = 0;
+    // else
+    //     sa.sa_flags = SA_RESTART;
     if (sigaction(sig, &sa, NULL) < 0)
     {
         perror(MINI);
@@ -117,21 +119,15 @@ void    parent_handler(int sig)
     if (sig == SIGINT)
     {
         g_signal = sig;
+        write(1, "\n", 1);
     }
 }
 
 /*
 
 */
-char    *handle_parent_signal(int *status, char *input)
+void    handle_parent_signal(int *status)
 {
     *status = SIG_EXIT_BASE + g_signal;
     g_signal = 0;
-    write(1, "\n", 1);
-    free(input);
-    rl_on_new_line();
-    // rl_replace_line("", 0); // only in linux?
-    rl_redisplay();
-    
-    return (readline("$> "));
 }

@@ -149,7 +149,7 @@ int						exec_cmds(t_cmd *cmds, char **envp);
 // signal.h
 void    setup_handler(int sig, void (*handler)(int));
 void	parent_handler(int sig);
-char	*handle_parent_signal(int *status, char *input);
+void	handle_parent_signal(int *status);
 
 void    setup_child_handler(int sig);
 

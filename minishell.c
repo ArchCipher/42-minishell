@@ -46,11 +46,13 @@ int	main(int ac, char **av, char **envp)
 	while (1)
 	{
 		input = readline("$> ");
-		printf("exit readline\n");
-		while (g_signal)
+		if (g_signal == SIGINT)
 		{
-			printf("handler: %d\n", g_signal);
-			input = handle_parent_signal(&status, input);
+			status = SIG_EXIT_BASE + g_signal;
+			g_signal = 0;
+			if (input)
+				free(input);
+			continue;
 		}
 		if (!input)
 			break ;

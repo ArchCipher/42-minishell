@@ -99,8 +99,6 @@ int	simple_atoi(const char *str)
 		sign = -1;
 	if (*str == '-' || *str == '+')
 		str++;
-    if (!(*str >= '0' && *str <= '9'))
-        return (errno = EINVAL, EXIT_NUMERIC_ERROR);
 	while (*str >= '0' && *str <= '9')
 	{
 		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
@@ -111,7 +109,10 @@ int	simple_atoi(const char *str)
 		str++;
 	}
     if (*str)
-        return (errno = EINVAL, EXIT_NUMERIC_ERROR);
+    {
+        errno = EINVAL;
+        return (EXIT_NUMERIC_ERROR);
+    }
 	return ((int)(num * sign));
 }
 
