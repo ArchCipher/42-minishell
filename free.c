@@ -33,6 +33,8 @@ void    free_cmds(t_cmd *cmd)
             cur_redir = cmds->redirs;
             cmds->redirs = cmds->redirs->next;
             free(cur_redir->file);
+            if (cur_redir->fd != -1)
+                close(cur_redir->fd);
             free(cur_redir);
         }
         tmp = cmds;

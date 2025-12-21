@@ -110,6 +110,8 @@ int	simple_atoi(const char *str)
 		num = (num * 10) + (*str - '0');
 		str++;
 	}
+    if (*str)
+        return (errno = EINVAL, EXIT_NUMERIC_ERROR);
 	return ((int)(num * sign));
 }
 
@@ -119,6 +121,11 @@ An exit status of 126 indicates that utility was found, but could not be execute
 An exit status of 127 indicates that utility could not be found.
 
 int exec_env();
+*/
+
+/*
+should print numeric argument required for any non numeric value.
+Floats letters, numbers mixed with letters should error.
 */
 
 void    exec_exit(char *s)

@@ -41,16 +41,24 @@ int	main(int ac, char **av, char **envp)
 	(void)av;
 	// (void)envp;
 	status = 0;
+	setup_handler(SIGINT, parent_handler);
+    setup_handler(SIGQUIT, SIG_IGN);
 	while (1)
 	{
 		input = readline("$> ");
+		printf("exit readline\n");
+		while (g_signal)
+		{
+			printf("handler: %d\n", g_signal);
+			input = handle_parent_signal(&status, input);
+		}
 		if (!input)
 			break ;
 		add_history(input);
 		tokens = tokenise_input(input);
 		tokens = parse_tokens(tokens, status);
 		cmds = build_ast(tokens);
-		if (cmds)
+		if (cmds && handle_heredoc(cmds))
 			status = exec_cmds(cmds, envp);
 		free_cmds(cmds);
 		free(input);

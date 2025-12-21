@@ -18,6 +18,7 @@
 # include <limits.h>			// LONG_MAX (ft_atoi)
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
+# include <signal.h>    		// sigaction, sigemptyset, sigaddset
 # include <stdbool.h>           // boolean
 # include <stdio.h>             // printf, readline, perror
 # include <stdlib.h>            // malloc, free, exit, getenv
@@ -28,14 +29,20 @@
 
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
-# define E_PARSE "syntax error near unexpected token "
-# define E_PATH "command not found"
-# define E_ENV "bad substitution"	// ${{name}}
-# define MINI "minishell"
+
+# define EXIT_CANNOT_EXEC 126
+# define EXIT_CMD_NOT_FOUND 127
+# define SIG_EXIT_BASE 128
 # define EXIT_STATUS_MOD 256
 // EXIT_STATUS_MAX = 255
 # define EXIT_NUMERIC_ERROR 255
-// # define E_PATH "ls: bin: No such file or directory" // ls bin
+
+# define E_PARSE "syntax error near unexpected token "
+# define E_PATH "command not found"
+# define E_ENV "bad substitution"	// ${{name}}　${,name}
+# define MINI "minishell"
+
+extern volatile sig_atomic_t g_signal;
 
 typedef enum
 {
@@ -91,6 +98,7 @@ typedef struct s_redir
 {
 	char				*file;
 	e_token_type		flag;
+	int					fd;
 	struct s_redir		*next;
 }	t_redir;
 
@@ -132,13 +140,23 @@ void					free_tokens(t_token *tokens, bool free_content, t_token *end);
 void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
+// heredoc.c
+int						handle_heredoc(t_cmd *cmds);
+
 // execute.c
 int						exec_cmds(t_cmd *cmds, char **envp);
 
+// signal.h
+void    setup_handler(int sig, void (*handler)(int));
+void	parent_handler(int sig);
+char	*handle_parent_signal(int *status, char *input);
+
+void    setup_child_handler(int sig);
+
 // builtin.c
-int	exec_echo(char **args);
-int	exec_cd(const char *path);
-int	exec_pwd(void);
+int		exec_echo(char **args);
+int		exec_cd(const char *path);
+int		exec_pwd(void);
 void	exec_exit(char *s);
 
 // utils.c

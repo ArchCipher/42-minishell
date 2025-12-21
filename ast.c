@@ -131,6 +131,7 @@ static t_redir *create_redir(char *file, e_token_type type)
         return (NULL);
     new->file = file;
     new->flag = type;
+    new->fd = -1;
     new->next = NULL;
     return (new);
 }

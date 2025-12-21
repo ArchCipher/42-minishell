@@ -1,6 +1,7 @@
 #include "minishell.h"
 
 /*
+heredoc
 execve wrapper
 make sure errors are not printed twice
 */
@@ -48,12 +49,15 @@ int is_builtin(char *s)
 }
 
 /*
-POSIX exit codes:
-127 → command not found
-126 → found but not executable (insufficient permissions)
-1   → general error
-0   → success
-128 + N → fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
+0:  success
+1:  general error
+126:    found but not executable (insufficient permissions)
+127:    command not found
+
+normal exit codes: 0-127
+128 + N:    fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
+255:    exit status out of range (exit takes only integer args in the range 0 - 255)
+non numeric argument for exit also return 255
 
 If buils_path returns NULL path, or if stat(path) fails, it exits with code 127(command not found)
 It hecks S_ISREG(sb.st_mode) to check if it is a directory.
@@ -67,14 +71,14 @@ void    check_path_validity(char *path, bool free_path)
     if (stat(path, &sb) == -1)
     {
         printf("%s: %s: %s\n", MINI, path, strerror(errno));
-        exit(127);
+        exit(EXIT_CMD_NOT_FOUND);
     }
     if (!S_ISREG(sb.st_mode) || !(access(path, X_OK) == 0))
     {
         if (free_path)
             free(path);
         printf("%s: %s: %s\n", MINI, path, strerror(errno));
-        exit(126);  // directory or insufficient permissions
+        exit(EXIT_CANNOT_EXEC);  // directory or insufficient permissions
     }
 }
 
@@ -115,7 +119,7 @@ char    *build_path(char *filename)
     if (!new_path)
     {
         printf("%s: %s: %s\n", MINI, filename, E_PATH);
-        exit(127);
+        exit(EXIT_CMD_NOT_FOUND);
     }
     check_path_validity(new_path, true);
     return (new_path);
@@ -135,6 +139,17 @@ void    close_pipe_fds(int *fd, int prev_fd)
 /*
 if no infile:
 no such file or directory: infile_name
+
+for heredoc, no need to open file, it is a delimiter and not file.
+
+fork a heredoc child, read line from readline().
+it should create a pipe and write to copy of stdin, dup2(pipe[0], STDIN_FILENO)
+stop on limiter or ctrl+D.
+
+parent:
+wait for heredoc child
+if sigint, abort command
+use read end(pipe[0]) as stdin
 */
 int setup_redirs(t_redir *redirs)
 {
@@ -144,12 +159,14 @@ int setup_redirs(t_redir *redirs)
         return (0);
     while(redirs)
     {
-        if (redirs->flag == redir_in)
-        fd = open(redirs->file, O_RDONLY);
-        else if (redirs->flag == redir_out || redirs->flag == heredoc)
+        if (redirs->flag == redir_in )
+            fd = open(redirs->file, O_RDONLY);
+        else if (redirs->flag == redir_out)
             fd = open(redirs->file, O_WRONLY | O_CREAT | O_TRUNC, 0660);
-        else
+        else if (redirs->flag == append)
             fd = open(redirs->file, O_WRONLY | O_CREAT | O_APPEND, 0660);
+        else if (redirs->flag == heredoc)
+            fd = redirs->fd;
         if (fd == -1)
             return (perror(MINI), -1);
         if (((redirs->flag == redir_in || redirs->flag == heredoc) && dup2(fd, STDIN_FILENO) == -1) || ((redirs->flag == redir_out || redirs->flag == append) && dup2(fd, STDOUT_FILENO) == -1))
@@ -190,11 +207,13 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
     }
     if (pid == 0)
     {
-        if (fd && (dup2(fd[1], STDOUT_FILENO) == - 1))
+        setup_handler(SIGINT, SIG_DFL);
+        setup_handler(SIGQUIT, SIG_DFL); 
+        if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
         {
             close_pipe_fds(fd, prev_fd);
             perror(MINI);
-            exit(-1); // handle_error
+            exit(1); // handle_error
         }
         if (fd)
             close_pipe_fds(fd, -1);
@@ -202,7 +221,7 @@ int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
         {
             close(prev_fd);
             perror(MINI); 
-            exit(-1);
+            exit(1);
         }
         if (prev_fd != -1)
             close(prev_fd);
@@ -240,14 +259,14 @@ int return_status(t_cmd *cmds)
     while(cmds)
     {
         if (cmds->pid == -1)
-            return (-1);
+            return (1);
         waitpid(cmds->pid, &status, 0);
         cmds = cmds->next;
     }
     if (WIFEXITED(status))
         return (WEXITSTATUS(status));
     else    // if (WIFSIGNALED(status))
-        return (128 + WTERMSIG(status));
+        return (SIG_EXIT_BASE + WTERMSIG(status));
 }
 
 int exec_in_parent(t_cmd *cmd)
@@ -257,18 +276,18 @@ int exec_in_parent(t_cmd *cmd)
     int ret;
 
     if ((actual_stdout = dup(STDOUT_FILENO)) == -1)
-        return (perror(MINI), -1);
+        return (perror(MINI), 1);
     if ((actual_stdin = dup(STDIN_FILENO)) == -1)
-        return (close(actual_stdout), perror(MINI), -1);
+        return (close(actual_stdout), perror(MINI), 1);
     if (setup_redirs(cmd->redirs) == -1)
         return (close(actual_stdout), close(actual_stdin), 1); // is returning 1 okay?
     if (cmd->built_in == EXIT)
         write(actual_stdout, "exit\n", 5);
     ret = exec_built_in(cmd);
     if (dup2(actual_stdout, STDOUT_FILENO) == -1)
-        return (close(actual_stdout), close(actual_stdin), perror(MINI), -1);
+        return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
     if (dup2(actual_stdin, STDIN_FILENO) == -1)
-        return (close(actual_stdout), close(actual_stdin), perror(MINI), -1);
+        return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
     close(actual_stdout);
     close(actual_stdin);
     return (ret);
