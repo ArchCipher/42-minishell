@@ -84,6 +84,14 @@ typedef enum
 	BUILTIN_EXIT
 }	e_builtin;
 
+typedef struct s_path_vars
+{
+	char    *path;
+    char    *full_path;
+    char    *p;
+    char    *new_path;
+}			t_path_vars;
+
 typedef struct s_string
 {
 	char	*str;
@@ -99,6 +107,13 @@ typedef struct s_token
 	struct s_token		*next;
 }						t_token;
 
+typedef struct s_exec
+{
+	int				builtin;
+	pid_t			pid;
+	int				prev_fd;	
+}					t_exec;
+
 typedef struct s_redir
 {
 	char				*file;
@@ -111,8 +126,7 @@ typedef struct s_cmd
 {
 	char			**args;
 	t_redir			*redirs;
-	pid_t			pid;
-	int				builtin;
+	t_exec			exec;
 	struct s_cmd	*next;
 }			t_cmd;
 
@@ -172,6 +186,7 @@ size_t					ft_strlen(const char *s);
 char					*ft_strjoin(const char *s1, const char *s2);
 void					*ft_realloc(void *ptr, size_t old_size, size_t size);
 char					*ft_strtok_r(char *s, const char *sep, char **p);
+char					*ft_strjoin(const char *s1, const char *s2);
 char					*ft_strjoin3(const char *s1, const char *s2, const char *s3);
 
 #endif

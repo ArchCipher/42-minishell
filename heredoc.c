@@ -20,17 +20,19 @@ DESCRIPTION:
 int process_heredoc(t_cmd *cmds, int *status)
 {
     t_redir *current;
+    t_cmd   *cmd;
 
-    while(cmds)
+    cmd = cmds;
+    while(cmd)
     {
-        current = cmds->redirs;
+        current = cmd->redirs;
         while(current)
         {
             if (current->flag == heredoc && handle_heredoc(current))
                 return (*status = 1);
             current = current->next;
         }
-        cmds = cmds->next;
+        cmd = cmd->next;
     }
     return (0);
 }
@@ -102,8 +104,11 @@ static int heredoc_waitpid(pid_t pid)
     waitpid(pid, &status, 0);
     setup_handler(SIGINT, shell_handler);
     if (WIFSIGNALED(status) || WEXITSTATUS(status))
-        return (write(1, "\n", 1), 1);
-    return (0);  
+    {
+        write(1, "\n", 1);
+        return (1);
+    }
+    return (0);
 }
 
 static int heredoc_fork_error(int *fd)

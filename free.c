@@ -14,31 +14,31 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 	}
 }
 
-void    free_cmds(t_cmd *cmd)
+void    free_cmds(t_cmd *cmds)
 {
 	t_cmd	*tmp;
     t_redir *cur_redir;
     size_t	i;
-    t_cmd   *cmds;
+    t_cmd   *cmd;
 
-    cmds = cmd;
-    while(cmds)
+    cmd = cmds;
+    while(cmd)
     {
         i = 0;
-        while(cmds->args[i])
-            free(cmds->args[i++]);
-        free(cmds->args);
-        while (cmds->redirs)
+        while(cmd->args[i])
+            free(cmd->args[i++]);
+        free(cmd->args);
+        while (cmd->redirs)
         {
-            cur_redir = cmds->redirs;
-            cmds->redirs = cmds->redirs->next;
+            cur_redir = cmd->redirs;
+            cmd->redirs = cmd->redirs->next;
             free(cur_redir->file);
             if (cur_redir->fd != -1)
                 close(cur_redir->fd);
             free(cur_redir);
         }
-        tmp = cmds;
-        cmds = cmds->next;
+        tmp = cmd;
+        cmd = cmd->next;
         free(tmp);
     }
 }

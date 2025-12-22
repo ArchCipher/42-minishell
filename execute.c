@@ -8,21 +8,22 @@ make sure errors are not printed twice
 
 int exec_builtin(t_cmd *cmd)
 {
-    if (cmd->builtin == BUILTIN_ECHO)
+    if (cmd->exec.builtin == BUILTIN_ECHO)
         return (exec_echo(cmd->args + 1));
-    else if (cmd->builtin == BUILTIN_CD)
+    else if (cmd->exec.builtin == BUILTIN_CD)
         return (exec_cd(cmd->args[1]));
-    else if (cmd->builtin == BUILTIN_PWD)
+    else if (cmd->exec.builtin == BUILTIN_PWD)
         return (exec_pwd());
     // no skeleton yet
-    // else if (cmd->built_in == EXPORT)
+    // else if (cmd->exec.builtin == BUILTIN_EXPORT)
     //     exec_export();
-    // else if (cmd->built_in == UNSET)
+    // else if (cmd->exec.builtin == BUILTIN_UNSET)
     //     exec_unset();
-    // else if (cmd->built_in == ENV)
+    // else if (cmd->exec.builtin == BUILTIN_ENV)
     //     exec_env();
-    else    // if (cmd->built_in == EXIT)
+    else if (cmd->exec.builtin == BUILTIN_EXIT)
         return (exec_exit(cmd->args[1]), 0);
+    return (0);
 }
 
 /*
@@ -48,38 +49,12 @@ int is_builtin(char *s)
     return (-1);
 }
 
-/*
-0:  success
-1:  general error
-126:    found but not executable (insufficient permissions)
-127:    command not found
-
-normal exit codes: 0-127
-128 + N:    fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
-255:    exit status out of range (exit takes only integer args in the range 0 - 255)
-non numeric argument for exit also return 255
-
-If buils_path returns NULL path, or if stat(path) fails, it exits with code 127(command not found)
-It hecks S_ISREG(sb.st_mode) to check if it is a directory.
-It checks access(path, X_OK) for execute permissions.
-*/
-
-void    check_path_validity(char *path, bool free_path)
+void    child_path_error(char *filename, char *msg, int exit_code, char *path)
 {
-    struct stat sb;
-
-    if (stat(path, &sb) == -1)
-    {
-        printf("%s: %s: %s\n", MINI, path, strerror(errno));
-        exit(EXIT_CMD_NOT_FOUND);
-    }
-    if (!S_ISREG(sb.st_mode) || !(access(path, X_OK) == 0))
-    {
-        if (free_path)
-            free(path);
-        printf("%s: %s: %s\n", MINI, path, strerror(errno));
-        exit(EXIT_CANNOT_EXEC);  // directory or insufficient permissions
-    }
+    printf("%s: %s: %s\n", MINI, filename, msg);
+    if (!ft_strchr(filename, '/') && path)
+        free(path);
+    exit(exit_code); 
 }
 
 /*
@@ -94,35 +69,69 @@ DESCRIPTION
 */
 char    *build_path(char *filename)
 {
-    char    *path;
-    char    *full_path;
-    char    *p;
-    char    *new_path;
+    t_path_vars vars;
     struct stat sb;
 
-    // maybe use strndup instead as this is only place i use strdup()
-    if (!(path = getenv("PATH")) || !(full_path = ft_strdup(path))) 
-        return (NULL);
-    path = ft_strtok_r(full_path, ":", &p);
-    while(path)
+    if (!(vars.path = getenv("PATH")) || !(vars.full_path = ft_strdup(vars.path)))
     {
-        new_path = ft_strjoin3(path, "/", filename);
-        if (!new_path)
-            return (free(full_path), NULL);
-        if(stat(new_path, &sb) == 0)
+        perror(MINI);
+        exit(1);
+    }
+    vars.path = ft_strtok_r(vars.full_path, ":", &vars.p);
+    while(vars.path)
+    {
+        if (!*(vars.path))
+            vars.new_path = ft_strjoin("./", filename);
+        else
+            vars.new_path = ft_strjoin3(vars.path, "/", filename);
+        if (!vars.new_path)
+        {
+            free(vars.full_path);
+            perror(MINI);
+            exit(1);
+        }
+        if(stat(vars.new_path, &sb) == 0)
             break ;
-        free(new_path);
-        new_path = NULL;
-        path = ft_strtok_r(NULL, ":", &p);
+        free(vars.new_path);
+        vars.new_path = NULL;
+        vars.path = ft_strtok_r(NULL, ":", &vars.p);
     }
-    free(full_path);
-    if (!new_path)
-    {
-        printf("%s: %s: %s\n", MINI, filename, E_PATH);
-        exit(EXIT_CMD_NOT_FOUND);
-    }
-    check_path_validity(new_path, true);
-    return (new_path);
+    free(vars.full_path);
+    return (vars.new_path);
+}
+
+/*
+0:  success
+1:  general error
+126:    found but not executable (insufficient permissions)
+127:    command not found
+
+normal exit codes: 0-127
+128 + N:    fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
+255:    exit status out of range (exit takes only integer args in the range 0 - 255)
+non numeric argument for exit also return 255
+
+If buils_path returns NULL path, or if stat(path) fails, it exits with code 127(command not found)
+It checks S_ISREG(sb.st_mode) to check if it is a directory.
+It checks access(path, X_OK) for execute permissions.
+*/
+
+char    *get_valid_path(char *filename)
+{
+    struct stat sb;
+    char        *path;
+
+    if (ft_strchr(filename, '/'))
+        path = filename;
+    else
+        path = build_path(filename);
+    if (!path)
+        child_path_error(filename, E_PATH, EXIT_CMD_NOT_FOUND, path);
+    if (stat(path, &sb) == -1)
+        child_path_error(filename, strerror(errno), EXIT_CMD_NOT_FOUND, path);
+    if (!S_ISREG(sb.st_mode) || !(access(path, X_OK) == 0))
+        child_path_error(filename, strerror(errno), EXIT_CANNOT_EXEC, path);
+    return (path);
 }
 
 void    close_pipe_fds(int *fd, int prev_fd)
@@ -137,111 +146,116 @@ void    close_pipe_fds(int *fd, int prev_fd)
 }
 
 /*
-if no infile:
-no such file or directory: infile_name
-
-for heredoc, no need to open file, it is a delimiter and not file.
-
-fork a heredoc child, read line from readline().
-it should create a pipe and write to copy of stdin, dup2(pipe[0], STDIN_FILENO)
-stop on limiter or ctrl+D.
-
-parent:
-wait for heredoc child
-if sigint, abort command
-use read end(pipe[0]) as stdin
+    if no infile, prints errror.
+    for heredoc, redirs->file stores the delimiter and redirs->fd is read end of the a pipe created by:
+        int process_heredoc(t_cmd *cmds, int *status)
 */
+
 int setup_redirs(t_redir *redirs)
 {
-    int fd;
-
     if (!redirs)
         return (0);
     while(redirs)
     {
         if (redirs->flag == redir_in )
-            fd = open(redirs->file, O_RDONLY);
+            redirs->fd = open(redirs->file, O_RDONLY);
         else if (redirs->flag == redir_out)
-            fd = open(redirs->file, O_WRONLY | O_CREAT | O_TRUNC, 0660);
+            redirs->fd = open(redirs->file, O_WRONLY | O_CREAT | O_TRUNC, 0660);
         else if (redirs->flag == append)
-            fd = open(redirs->file, O_WRONLY | O_CREAT | O_APPEND, 0660);
-        else if (redirs->flag == heredoc)
-            fd = redirs->fd;
-        if (fd == -1)
+            redirs->fd = open(redirs->file, O_WRONLY | O_CREAT | O_APPEND, 0660);
+        if (redirs->fd == -1)
             return (perror(MINI), -1);
-        if (((redirs->flag == redir_in || redirs->flag == heredoc) && dup2(fd, STDIN_FILENO) == -1) || ((redirs->flag == redir_out || redirs->flag == append) && dup2(fd, STDOUT_FILENO) == -1))
+        if (((redirs->flag == redir_in || redirs->flag == heredoc) && dup2(redirs->fd, STDIN_FILENO) == -1) || ((redirs->flag == redir_out || redirs->flag == append) && dup2(redirs->fd, STDOUT_FILENO) == -1))
         {
-            close(fd);
+            close(redirs->fd);
             perror(MINI);
             return (-1);
         }
-        close(fd);
+        close(redirs->fd);
         redirs = redirs->next;
     }
     return (0);
 }
 
 /*
-FROM EXECVE() MAN PAGE
-int execve(const char *path, char *const argv[], char *const envp[]);
-When a program is executed as a result of an execve() call, it is entered as follows:
-    int main(int argc, char **argv, char **envp);
-
-As the execve() function overlays the current process image  with a new process image,
-the successful call has no process to return to.
-If execve() does return to the calling process, an error has occurred;
-the return value will be -1 and the global variable errno is set to indicate the error.
+DESCRIPTION:
+    stores actual stdin and stdout and executes builtin in parent and restores stdin and stdout after execution.
 */
 
-int exec_fork(t_cmd *cmd, int *fd, int prev_fd, char **envp)
+int exec_in_parent(t_cmd *cmd)
 {
-    pid_t   pid;
-    char    *path;
+    int actual_stdout;
+    int actual_stdin;
+    int ret;
 
-    pid = fork();
-    if (pid == -1)
-    {
-        close_pipe_fds(fd, prev_fd);
-        perror(MINI);
-        return (-1); // handle error (close pipe fds if any)
-    }
-    if (pid == 0)
-    {
-        setup_handler(SIGINT, SIG_DFL);
-        setup_handler(SIGQUIT, SIG_DFL); 
-        if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
-        {
-            close_pipe_fds(fd, prev_fd);
-            perror(MINI);
-            exit(1); // handle_error
-        }
-        if (fd)
-            close_pipe_fds(fd, -1);
-        if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
-        {
-            close(prev_fd);
-            perror(MINI); 
-            exit(1);
-        }
-        if (prev_fd != -1)
-            close(prev_fd);
-        if (setup_redirs(cmd->redirs) == -1)
-            exit(1);
-        path = cmd->args[0];
-        if (cmd->builtin != -1)
-            exit(exec_builtin(cmd));
-        if (ft_strchr(cmd->args[0], '/'))
-            check_path_validity(path, false);
-        else
-            path = build_path(cmd->args[0]);
-        execve(path, cmd->args, envp); // should never return
-        // if returned
-        if (!ft_strchr(cmd->args[0], '/'))
-            free(path);
-        perror(MINI);
+    if ((actual_stdout = dup(STDOUT_FILENO)) == -1)
+        return (perror(MINI), 1);
+    if ((actual_stdin = dup(STDIN_FILENO)) == -1)
+        return (close(actual_stdout), perror(MINI), 1);
+    if (setup_redirs(cmd->redirs) == -1)
+        return (close(actual_stdout), close(actual_stdin), 1);
+    if (cmd->exec.builtin == BUILTIN_EXIT)
+        write(actual_stdout, "exit\n", 5);
+    ret = exec_builtin(cmd);
+    if (dup2(actual_stdout, STDOUT_FILENO) == -1)
+        return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
+    if (dup2(actual_stdin, STDIN_FILENO) == -1)
+        return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
+    close(actual_stdout);
+    close(actual_stdin);
+    return (ret);
+}
+
+// separate execve wrapper for built-in and executables
+
+/*
+DESCRIPTION:
+    closes fds, prints error message and exits child on error.
+*/
+
+void    child_dup_error(int *fd, int prev_fd)
+{
+    close_pipe_fds(fd, prev_fd);
+    perror(MINI);
+    exit(1);
+}
+
+/*
+DESCRIPTION:
+    It sets up signals to default and duplicates required fds adn closes all fds.
+    It then builds path if necessary and executes the command. If execve returns, cleans up and prints error.
+
+    EXECVE:
+    When a program is executed as a result of an execve() call, it is entered as follows:
+        int main(int argc, char **argv, char **envp);
+    As the execve() function overlays the current process image  with a new process image,
+    the successful call has no process to return to.
+    If execve() does return to the calling process, an error has occurred;
+    the return value will be -1 and the global variable errno is set to indicate the error.
+*/
+
+void    exec_child(t_cmd *cmd, int *fd, int prev_fd, char **envp)
+{
+    char *path;
+
+    setup_handler(SIGINT, SIG_DFL);
+    setup_handler(SIGQUIT, SIG_DFL);
+    if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
+        child_dup_error(fd, prev_fd);
+    if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
+        child_dup_error(fd, prev_fd);
+    close_pipe_fds(fd, prev_fd);
+    if (setup_redirs(cmd->redirs) == -1)
         exit(1);
-    }
-    return (pid);
+    path = cmd->args[0];
+    if (cmd->exec.builtin != -1)
+        exit(exec_builtin(cmd));
+    path = get_valid_path(cmd->args[0]);
+    execve(path, cmd->args, envp);
+    if (!ft_strchr(cmd->args[0], '/'))
+        free(path);
+    perror(MINI);
+    exit(1);
 }
 
 /*
@@ -255,86 +269,80 @@ WAITPID:
 int cmds_waitpid(t_cmd *cmds)
 {
     int status;
+    int last_status;
 
+    last_status = 0;
     while(cmds)
     {
-        if (cmds->pid == -1)
-            return (1);
-        waitpid(cmds->pid, &status, 0);
+        if (cmds->exec.pid == -1)
+            break ;
+        waitpid(cmds->exec.pid, &status, 0);
+        if (WIFEXITED(status))
+            last_status = WEXITSTATUS(status);
+        else if (WIFSIGNALED(status))
+            last_status = SIG_EXIT_BASE + WTERMSIG(status);
         cmds = cmds->next;
     }
-    if (WIFEXITED(status))
-        return (WEXITSTATUS(status));
-    else    // if (WIFSIGNALED(status))
-        return (SIG_EXIT_BASE + WTERMSIG(status));
-}
-
-int exec_in_parent(t_cmd *cmd)
-{
-    int actual_stdout;
-    int actual_stdin;
-    int ret;
-
-    if ((actual_stdout = dup(STDOUT_FILENO)) == -1)
-        return (perror(MINI), 1);
-    if ((actual_stdin = dup(STDIN_FILENO)) == -1)
-        return (close(actual_stdout), perror(MINI), 1);
-    if (setup_redirs(cmd->redirs) == -1)
-        return (close(actual_stdout), close(actual_stdin), 1); // is returning 1 okay?
-    if (cmd->builtin == BUILTIN_EXIT)
-        write(actual_stdout, "exit\n", 5);
-    ret = exec_builtin(cmd);
-    if (dup2(actual_stdout, STDOUT_FILENO) == -1)
-        return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
-    if (dup2(actual_stdin, STDIN_FILENO) == -1)
-        return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
-    close(actual_stdout);
-    close(actual_stdin);
-    return (ret);
+    return (last_status);
 }
 
 /*
-PIPE: 
-// fd[2] first fd i.e., fd[0] connects to read end and second i.e., fd[1] to write end.
-// pipe returns 0 on succes, -1 on error & errno is set.
+DESCRIPTION:
+    If forks a child preocess, and if there is a next command, it creates a pipe and then forks.
+    If fork succeeds, it executes the child, closes fds appropriately and stores the
+    read_end of pipe for next command if there is a next command.
+    Returns 0 on success and 1 on pipe or fork error.
+
+    PIPE: a pipe with 2 fds with read and write ends are created.
+        fd[0] connects to read end, fd[1] to write end.
+    FORK: On success, a child process is created. It returns 0 to the child process and
+        the process ID of the child to the parent process.
+    On error, both pipe and fork return -1.
 */
 
-// separate execve wrapper for built-in and executables
+int fork_with_pipe(t_cmd *cmd, char **envp, int *prev_fd)
+{
+    int fd[2];
+    int *pipe_fd;
+
+    pipe_fd = NULL;
+    if (cmd->next && pipe(fd) == -1)
+        return (perror(MINI), 1);
+    if (cmd->next)
+        pipe_fd = fd;
+    cmd->exec.pid = fork();
+    if (cmd->exec.pid == -1)
+    {
+        close_pipe_fds(pipe_fd, *prev_fd);
+        return (perror(MINI), 1);
+    }
+    if (cmd->exec.pid == 0)
+        exec_child(cmd, pipe_fd, *prev_fd, envp);
+    if (*prev_fd != -1)
+        close(*prev_fd);
+    if (pipe_fd)
+    {
+        close(pipe_fd[1]);
+        *prev_fd = pipe_fd[0];
+    }
+    return (0);
+}
+
 int exec_cmds(t_cmd *cmds, char **envp)
 {
-    int     fd[2];
-    int     prev_pipe;
     t_cmd   *cmd;
-    bool    need_pipe;
+    int     prev_fd;
 
     cmd = cmds;
-    prev_pipe = -1;
-    need_pipe = false;
-    if (cmd->next)
-        need_pipe = true;
+    prev_fd = -1;
+    cmd->exec.builtin = is_builtin(cmd->args[0]);
+    if (cmd->exec.builtin != -1 && !cmd->next)
+        return (exec_in_parent(cmd));
     while(cmd)
     {
-        cmd->builtin = is_builtin(cmd->args[0]);
-        if (cmd->builtin != -1 && !need_pipe)
-            return (exec_in_parent(cmd));
-        else
-        {
-            if (cmd->next)
-            {
-                if (pipe(fd) == -1)
-                    return (perror(MINI), -1); // handle error
-                cmd->pid = exec_fork(cmd, fd, prev_pipe, envp);
-                prev_pipe = fd[0];
-            }
-            else
-                cmd->pid = exec_fork(cmd, NULL, prev_pipe, envp);
-            if (cmd->pid == -1)
-                break ;    //handle error
-            if (cmd->next)
-                close(fd[1]);
-            else if (prev_pipe != -1)
-                close(prev_pipe); // read end
-        }
+        cmd->exec.builtin = is_builtin(cmd->args[0]);
+        if (fork_with_pipe(cmd, envp, &prev_fd))
+            break ;
         cmd = cmd->next;
     }
     return (cmds_waitpid(cmds));

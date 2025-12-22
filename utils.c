@@ -47,27 +47,6 @@ char	*ft_strchr(const char *s, int c)
 		return ((char *)s);
 	return (NULL);
 }
-/*
-size_t	ft_strspn(const char *s, const char *accept)
-{
-	size_t	i;
-
-	i = 0;
-	while (s[i] && ft_strchr(accept, s[i]))
-		i++;
-	return (i);
-}
-
-size_t	ft_strcspn(const char *s, const char *reject)
-{
-	size_t	i;
-
-	i = 0;
-	while (s[i] && !ft_strchr(reject, s[i]))
-		i++;
-	return (i);
-}
-*/
 
 char	*ft_strtok_r(char *s, const char *sep, char **p)
 {
@@ -123,20 +102,27 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 	return (dst);
 }
 
+// musl version simply uses ft_strlen and not
+// strndup(as strndup uses strnlen to check again)
+// but strnlen uses memchr() and not strchr()
 char	*ft_strdup(const char *s1)
 {
-	char	*dst;
-	size_t	len;
-
-	len = ft_strlen(s1);
-	dst = malloc(len + 1);
-	if (!dst)
-		return (NULL);
-	ft_memcpy(dst, s1, len);
-	dst[len] = '\0';
-	return (dst);
+	return (ft_strndup(s1, ft_strlen(s1)));
 }
 
+/*
+size_t	strnlen(const char *s, size_t n)
+{
+	const char *p;
+
+	p = memchr(s, 0, n);
+	if (p)
+		return (p - s);
+	return (n);
+}
+*/
+
+// musl version uses strnlen to search for null within len ans use that len.
 char	*ft_strndup(const char *s1, size_t len)
 {
 	char	*dst;
@@ -178,6 +164,25 @@ void	*ft_realloc(void *ptr, size_t old_size, size_t size)
 		ft_memcpy(new, ptr, old_size);
 	free(ptr);
 	return (new);
+}
+
+char	*ft_strjoin(const char *s1, const char *s2)
+{
+	size_t	slen1;
+	size_t	slen2;
+	char	*dst;
+
+	if (!s1 || !s2)
+		return (NULL);
+	slen1 = ft_strlen(s1);
+	slen2 = ft_strlen(s2);
+	dst = malloc(slen1 + slen2 + 1);
+	if (!dst)
+		return (NULL);
+	ft_memcpy(dst, s1, slen1);
+	ft_memcpy(dst + slen1, s2, slen2);
+	dst[slen1 + slen2] = '\0';
+	return (dst);
 }
 
 char	*ft_strjoin3(const char *s1, const char *s2, const char *s3)

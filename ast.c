@@ -119,6 +119,8 @@ static t_cmd   *create_cmd(size_t word_count)
         return (free(new), NULL);
     new->redirs = NULL;
     new->next = NULL;
+    new->exec.builtin = -1;
+    new->exec.pid = -1;
     return (new);
 }
 
