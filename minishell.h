@@ -110,8 +110,7 @@ typedef struct s_token
 typedef struct s_exec
 {
 	int				builtin;
-	pid_t			pid;
-	int				prev_fd;	
+	pid_t			pid;	
 }					t_exec;
 
 typedef struct s_redir
