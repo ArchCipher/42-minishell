@@ -32,19 +32,19 @@ void	cleanup_linux(void);
 
 int	main(int ac, char **av, char **envp)
 {
+	struct termios original_term;
+	int		status;
 	char	*input;
 	t_token	*tokens;
 	t_cmd	*cmds;
-	int		status;
 
 	(void)ac;
 	(void)av;
-	// (void)envp;
 	status = 0;
-	init_signals();
+	init_signals(&original_term);
 	while (1)
 	{
-		input = readline("$> ");
+		input = readline(PROMPT);
 		if (g_signal == SIGINT)
 			handle_shell_signal(&status);
 		if (!input)
@@ -58,5 +58,6 @@ int	main(int ac, char **av, char **envp)
 		free_cmds(cmds);
 		free(input);
 	}
+	tcsetattr(STDIN_FILENO, TCSANOW, &original_term);// should be done during any exit from shell
 	rl_clear_history();	
 }

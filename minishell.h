@@ -21,12 +21,17 @@
 # include <readline/readline.h> // readline
 # include <signal.h>    		// sigaction, sigemptyset, sigaddset
 # include <termios.h>			// tcsetattr, tcgetattr, termios
+# include <curses.h>
+# include <term.h>
 # include <stdbool.h>           // boolean
 # include <stdlib.h>            // malloc, free, exit, getenv
 # include <string.h>			// strerror
 # include <sys/stat.h>			// stat
 # include <sys/wait.h>			// waitpid
 # include <unistd.h>            // read, write, pipe, fork, execve, access, chdir, dup, dup2
+
+# define PROMPT "$> "
+# define MINI "minishell"
 
 # define REJECT " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
@@ -41,7 +46,6 @@
 # define E_PARSE "syntax error near unexpected token "
 # define E_PATH "command not found"
 # define E_ENV "bad substitution"	// ${{name}}　${,name}
-# define MINI "minishell"
 
 extern volatile sig_atomic_t g_signal;
 
@@ -119,13 +123,6 @@ typedef struct s_list
 	void *new;
 }		t_list;
 
-typedef struct s_exec
-{
-	char	**args;
-	int		write_fd;
-	int		read_fd;
-}	t_exec;
-
 // lexer.c
 t_token					*tokenise_input(char *s);
 void					lstadd_back(void **tokens, void *new, void *last, e_node_type type);
@@ -151,7 +148,7 @@ int						exec_cmds(t_cmd *cmds, char **envp);
 void    setup_handler(int sig, void (*handler)(int));
 void	shell_handler(int sig);
 void	handle_shell_signal(int *status);
-void	init_signals(void);
+void    init_signals(struct termios *original_term);
 
 void    setup_child_handler(int sig);
 

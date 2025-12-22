@@ -69,6 +69,8 @@ static int  handle_heredoc(t_redir *redir)
 }
 
 /*
+// should expland variables
+
 DESCRIPTION:
     Executes the heredoc and returns the status.
     It reads from terminal and writes to write end of a pipe and later read by command via stdin.
@@ -87,6 +89,8 @@ static int  exec_heredoc(char *limiter, int fd)
             return (free(line), 1);
         free(line);
     }
+    if (line)
+        free(line);
     return (0);
 }
 

@@ -252,7 +252,7 @@ WAITPID:
         return (-1); // handle error
 */
 
-int return_status(t_cmd *cmds)
+int cmds_waitpid(t_cmd *cmds)
 {
     int status;
 
@@ -337,5 +337,5 @@ int exec_cmds(t_cmd *cmds, char **envp)
         }
         cmd = cmd->next;
     }
-    return (return_status(cmds));
+    return (cmds_waitpid(cmds));
 }

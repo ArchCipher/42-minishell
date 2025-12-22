@@ -1,7 +1,6 @@
 #include "minishell.h"
 
 volatile sig_atomic_t g_signal = 0;
-static struct termios original_term;
 
 /*
 NOTES:
@@ -29,8 +28,6 @@ NOTES:
     Normal  child	default         default
     Heredoc child	default         ignored
 */
-
-
 
 /*
 DESCRIPTION:
@@ -101,12 +98,12 @@ DESCRIPTION:
     Setting ECHOCTL to 0 is to prevent the terminal from printing ^C before the handler runs.
 */
 
-void    init_signals(void)
+void    init_signals(struct termios *original_term)
 {
     struct termios term;
 
-    tcgetattr(STDIN_FILENO, &original_term);
-    term = original_term;
+    tcgetattr(STDIN_FILENO, original_term);
+    term = *original_term;
     term.c_lflag &= ~ECHOCTL;
     tcsetattr(STDIN_FILENO, TCSANOW, &term);
     setup_handler(SIGINT, shell_handler);
