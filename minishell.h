@@ -33,7 +33,7 @@
 # define PROMPT "$> "
 # define MINI "minishell"
 
-# define REJECT " \f\n\r\t\v<>|"
+# define WORD_DELIMITERS " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
 
 # define EXIT_CANNOT_EXEC 126
@@ -46,6 +46,7 @@
 # define E_PARSE "syntax error near unexpected token "
 # define E_PATH "command not found"
 # define E_ENV "bad substitution"	// ${{name}}　${,name}
+# define E_EXIT_CODE "numeric argument required"
 
 extern volatile sig_atomic_t g_signal;
 
@@ -83,6 +84,13 @@ typedef enum
 	BUILTIN_ENV,
 	BUILTIN_EXIT
 }	e_builtin;
+
+typedef struct s_shell
+{
+    struct termios	original_term;
+    int				status;
+    char			**envp;
+}					t_shell;
 
 typedef struct s_path_vars
 {
@@ -152,20 +160,28 @@ void					free_cmds(t_cmd *cmds);
 t_cmd					*error_free(t_cmd *cmds, t_token *tokens);
 
 // heredoc.c
-int						process_heredoc(t_cmd *cmds, int *status);
+int						process_heredoc(t_cmd *cmds, t_shell *shell);
 
 // execute.c
 int						exec_cmds(t_cmd *cmds, char **envp);
 
-// signal.h
-void    setup_handler(int sig, void (*handler)(int));
-void	shell_handler(int sig);
-void	handle_shell_signal(int *status);
-void    init_signals(struct termios *original_term);
+// exec_utils.c
+int						setup_redirs(t_redir *redirs);
+void    				close_pipe_fds(int *fd, int prev_fd);
 
-void    setup_child_handler(int sig);
+// exec_child.c
+void    				exec_child(t_cmd *cmd, int *fd, int prev_fd, char **envp);
+
+// signal.h
+int						setup_handler(int sig, void (*handler)(int));
+void					shell_handler(int sig);
+void					handle_shell_signal(int *status);
+void    				init_signals(struct termios *original_term);
+
+// void    setup_child_handler(int sig);
 
 // builtin.c
+int		exec_builtin(t_cmd *cmd);
 int		exec_echo(char **args);
 int		exec_cd(const char *path);
 int		exec_pwd(void);

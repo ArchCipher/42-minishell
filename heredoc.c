@@ -3,8 +3,7 @@
 static int  handle_heredoc(t_redir *redir);
 static int  exec_heredoc(char *limiter, int fd);
 static int  heredoc_waitpid(pid_t pid);
-static int  heredoc_fork_error(int *fd);
-
+static void exit_shell(t_cmd *cmds, t_shell *shell);
 
 /*
 DESCRIPTION:
@@ -17,10 +16,11 @@ DESCRIPTION:
     After waitpid() signal is handled, the parent process displays a new prompt on a new line.
 */
 
-int process_heredoc(t_cmd *cmds, int *status)
+int process_heredoc(t_cmd *cmds, t_shell *shell)
 {
     t_redir *current;
     t_cmd   *cmd;
+    int     ret;
 
     cmd = cmds;
     while(cmd)
@@ -28,8 +28,14 @@ int process_heredoc(t_cmd *cmds, int *status)
         current = cmd->redirs;
         while(current)
         {
-            if (current->flag == heredoc && handle_heredoc(current))
-                return (*status = 1);
+            if (current->flag == heredoc)
+            {
+                ret = handle_heredoc(current);
+                if (ret == 1)
+                    return (shell->status = 1);
+                else if (ret == -1)
+                    exit_shell(cmds, shell);
+            }
             current = current->next;
         }
         cmd = cmd->next;
@@ -43,35 +49,40 @@ DESCRIPTION:
     It creates a pipe and forks a child process.
     The child process reads from the readline() and writes to the write end of the pipe.
     The parent process waits for the child process to finish and returns the status.
-    It returns 1 if there is an error, 0 if successful.
+    Returns 0 on success, 1 on heredoc error, -1 on signal error.
+    Signal error should terminate the shell.
 */
 
 static int  handle_heredoc(t_redir *redir)
 {
     int     fd[2];
     pid_t   pid;
+    int     ret;
 
     if (pipe(fd) == -1)
         return (perror(MINI), 1);
     pid = fork();
     if (pid == -1)
-        return (heredoc_fork_error(fd));
+        return (perror(MINI), close_pipe_fds(fd, -1), 1);
     if (pid == 0)
     {
-        setup_handler(SIGINT, SIG_DFL);
-        setup_handler(SIGQUIT, SIG_IGN);
+        if (setup_handler(SIGINT, SIG_DFL) == -1 || setup_handler(SIGQUIT, SIG_IGN) == -1)
+        {
+            close_pipe_fds(fd, -1);
+            exit(1);
+        }
         close(fd[0]);
-        exit (exec_heredoc(redir->file, fd[1]));
+        ret = exec_heredoc(redir->file, fd[1]);
+        close(fd[1]);
+        exit(ret);
     }
     close(fd[1]);
-    if (heredoc_waitpid(pid))
-        return (close(fd[0]), 1);
     redir->fd = fd[0];
-    return (0);
+    return (heredoc_waitpid(pid));
 }
 
 /*
-// should expland variables
+!!! should expland variables !!!
 
 DESCRIPTION:
     Executes the heredoc and returns the status.
@@ -96,13 +107,26 @@ static int  exec_heredoc(char *limiter, int fd)
     return (0);
 }
 
+/*
+ctrl+D should not print newline.
+
+handle setup handler errors
+Returns 0 on success, 1 on heredoc error, -1 on signal error.
+    Signal error should terminate the shell.
+*/
+
 static int heredoc_waitpid(pid_t pid)
 {
     int status;
+    int ret;
 
-    setup_handler(SIGINT, SIG_IGN);
-    waitpid(pid, &status, 0);
-    setup_handler(SIGINT, shell_handler);
+    if (setup_handler(SIGINT, SIG_IGN) == -1)
+        return (-1);
+    ret = waitpid(pid, &status, 0);
+    if (setup_handler(SIGINT, shell_handler) == -1)
+        return (-1);
+    if (ret == -1)
+        return (perror(MINI), 1);
     if (WIFSIGNALED(status) || WEXITSTATUS(status))
     {
         write(1, "\n", 1);
@@ -111,10 +135,14 @@ static int heredoc_waitpid(pid_t pid)
     return (0);
 }
 
-static int heredoc_fork_error(int *fd)
+// exits in heredoc should cleanup...
+// garge collector + exit
+
+
+static void exit_shell(t_cmd *cmds, t_shell *shell)
 {
-    close(fd[0]);
-    close(fd[1]);
-    perror(MINI);
-    return (1);
+    free_cmds(cmds);
+    tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
+    rl_clear_history();
+    exit(EXIT_FAILURE);
 }

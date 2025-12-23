@@ -26,7 +26,7 @@ t_token	*tokenise_input(char *s)
 	while (*s)
 	{
 		while (*s && ft_isspace(*s))
-			s++;
+			s++;	
 		if (!*s)
 			break ;
 		tokens.new = create_token(s);
@@ -105,7 +105,7 @@ static size_t	parse_word_token(char *s)
 	p = s;
 	while (*p)
 	{
-		if (flag == word && ft_isspace(*p))
+		if (flag == word && (ft_strchr(WORD_DELIMITERS, *p)))
 			break ;
 		if (*p == '\'' && flag == word && ft_strchr(p + 1, *p))
 			flag = squote;

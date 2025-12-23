@@ -32,32 +32,32 @@ void	cleanup_linux(void);
 
 int	main(int ac, char **av, char **envp)
 {
-	struct termios original_term;
-	int		status;
+	t_shell	shell;
 	char	*input;
 	t_token	*tokens;
 	t_cmd	*cmds;
 
 	(void)ac;
 	(void)av;
-	status = 0;
-	init_signals(&original_term);
+	shell.status = 0;
+	shell.envp = envp;
+	init_signals(&shell.original_term);
 	while (1)
 	{
 		input = readline(PROMPT);
 		if (g_signal == SIGINT)
-			handle_shell_signal(&status);// free(input); continue;
+			handle_shell_signal(&shell.status);// free(input); continue;
 		if (!input)
 			break ;
 		add_history(input);
 		tokens = tokenise_input(input);
-		tokens = parse_tokens(tokens, status);
+		tokens = parse_tokens(tokens, shell.status);
 		cmds = build_ast(tokens);
-		if (cmds && !process_heredoc(cmds, &status))
-			status = exec_cmds(cmds, envp);
-		free_cmds(cmds);
 		free(input);
+		if (cmds && !process_heredoc(cmds, &shell))
+			shell.status = exec_cmds(cmds, envp);
+		free_cmds(cmds);
 	}
-	tcsetattr(STDIN_FILENO, TCSANOW, &original_term);// should be done during any exit from shell
+	tcsetattr(STDIN_FILENO, TCSANOW, &shell.original_term);// should be done during any exit from shell
 	rl_clear_history();	
 }

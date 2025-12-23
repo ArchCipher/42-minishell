@@ -29,10 +29,34 @@ NOTES:
     Heredoc child	default         ignored
 */
 
+
+/*
+DESCRIPTION:
+    Initializes the signals and sets the terminal to not echo control characters.
+    Setting ECHOCTL to 0 is to prevent the terminal from printing ^C before the handler runs.
+*/
+
+void    init_signals(struct termios *original_term)
+{
+    struct termios term;
+
+    if (setup_handler(SIGINT, shell_handler) == -1 || setup_handler(SIGQUIT, SIG_IGN) == -1)
+        exit(1);
+    if (tcgetattr(STDIN_FILENO, original_term) == -1)
+        exit(1);
+    term = *original_term;
+    term.c_lflag &= ~ECHOCTL;
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &term) == -1)
+    {
+        tcsetattr(STDIN_FILENO, TCSANOW, original_term);
+        exit(1);
+    }
+}
+
 /*
 DESCRIPTION:
     Wrapper function that calls sigaction to set up a signal handler.
-    On sigaction initialization error, Minishell exits itself as a shell
+    On sigaction initialization error, Minishell should exit itself as a shell
     without proper signal handling is unsafe.
     
     Sigaction blocks SIGINT while processing SIGQUIT and vice-versa.
@@ -42,7 +66,9 @@ DESCRIPTION:
         union __sigaction_u = void (*__sa_handler)(int);
 */    
 
-void    setup_handler(int sig, void (*handler)(int))
+
+// should exit(EXIT_FAILURE); when setup_handler returns 1.
+int setup_handler(int sig, void (*handler)(int))
 {
     struct sigaction sa;
 
@@ -57,10 +83,8 @@ void    setup_handler(int sig, void (*handler)(int))
     else
         sa.sa_flags = SA_RESTART;
     if (sigaction(sig, &sa, NULL) < 0)
-    {
-        perror(MINI);
-        exit(EXIT_FAILURE);
-    }
+        return (perror(MINI), -1);
+    return (0);
 }
 
 /*
@@ -89,23 +113,4 @@ void    handle_shell_signal(int *status)
 {
     *status = 1;
     g_signal = 0;
-}
-
-
-/*
-DESCRIPTION:
-    Initializes the signals and sets the terminal to not echo control characters.
-    Setting ECHOCTL to 0 is to prevent the terminal from printing ^C before the handler runs.
-*/
-
-void    init_signals(struct termios *original_term)
-{
-    struct termios term;
-
-    tcgetattr(STDIN_FILENO, original_term);
-    term = *original_term;
-    term.c_lflag &= ~ECHOCTL;
-    tcsetattr(STDIN_FILENO, TCSANOW, &term);
-    setup_handler(SIGINT, shell_handler);
-    setup_handler(SIGQUIT, SIG_IGN);
 }

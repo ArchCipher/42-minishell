@@ -1,9 +1,8 @@
 #include "minishell.h"
 
 static t_cmd    *build_cmd(t_token **current);
-static int      build_redir(t_token **current, t_redir **head, t_list *redir);
+static int      build_redir(t_token **current, t_redir **head, t_redir **last);
 static t_cmd    *create_cmd(size_t word_count);
-static t_redir  *create_redir(char *file, e_token_type type);
 
 t_cmd *build_ast(t_token *tokens)
 {
@@ -14,7 +13,6 @@ t_cmd *build_ast(t_token *tokens)
         return (NULL);
     current = tokens;
     cmd.head = NULL;
-    cmd.new = NULL;
     while (current)
 	{
         if(current->type != pipe_char)
@@ -52,10 +50,8 @@ ssize_t count_args(t_token *token)
     {
         if (token->type == word)
             word_count++;
-        else if (token->next && token->next->type == word)
+        else if (token->next && token->next->type == word) // can be else
             token = token->next;
-        else
-            return (printf("%s: %s`%c'\n", MINI, E_PARSE, token->next->token[0]), -1);
         token = token->next;
     }
     return (word_count);
@@ -64,7 +60,7 @@ ssize_t count_args(t_token *token)
 static t_cmd   *build_cmd(t_token **current)
 {
     t_cmd   *new;
-    t_list  redir;
+    t_redir *last;
     ssize_t  word_count;
     ssize_t  i;
 
@@ -82,7 +78,7 @@ static t_cmd   *build_cmd(t_token **current)
             (*current)->token = NULL;
             *current = (*current)->next;
         }
-        else if (!build_redir(current, &new->redirs, &redir))
+        else if (!build_redir(current, &new->redirs, &last))
         {
             new->args[i] = NULL;
             free_cmds(new);
@@ -91,20 +87,6 @@ static t_cmd   *build_cmd(t_token **current)
     }
     new->args[i] = NULL;
     return (new);
-}
-
-static int build_redir(t_token **current, t_redir **head, t_list *redir)
-{
-    while (*current && (*current)->type != pipe_char && (*current)->type != word)
-    {
-        redir->new = create_redir((*current)->next->token, (*current)->type);
-        if (!redir->new)
-            return (perror(MINI), 0);
-        lstadd_back((void **)head, (void *)redir->new, (void *)redir->tail, TYPE_REDIR);
-        redir->tail = redir->new;
-        (*current) = (*current)->next->next;
-    }
-    return (1);
 }
 
 static t_cmd   *create_cmd(size_t word_count)
@@ -124,16 +106,22 @@ static t_cmd   *create_cmd(size_t word_count)
     return (new);
 }
 
-static t_redir *create_redir(char *file, e_token_type type)
+static int build_redir(t_token **current, t_redir **head, t_redir **last)
 {
     t_redir *new;
 
-    new = malloc(sizeof(t_redir));
-    if (!new)
-        return (NULL);
-    new->file = file;
-    new->flag = type;
-    new->fd = -1;
-    new->next = NULL;
-    return (new);
+    while (*current && (*current)->type != pipe_char && (*current)->type != word)
+    {
+        new = malloc(sizeof(t_redir));
+        if (!new)
+            return (perror(MINI), 0);
+        new->file = (*current)->next->token;
+        new->flag = (*current)->type;
+        new->fd = -1;
+        new->next = NULL;
+        lstadd_back((void **)head, (void *)new, (void *)*last, TYPE_REDIR);
+        *last = new;
+        *current = (*current)->next->next;
+    }
+    return (1);
 }

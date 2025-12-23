@@ -12,7 +12,30 @@
 
 #include "minishell.h"
 
+
+int exec_builtin(t_cmd *cmd)
+{
+    if (cmd->exec.builtin == BUILTIN_ECHO)
+        return (exec_echo(cmd->args + 1));
+    else if (cmd->exec.builtin == BUILTIN_CD)
+        return (exec_cd(cmd->args[1]));
+    else if (cmd->exec.builtin == BUILTIN_PWD)
+        return (exec_pwd());
+    // no skeleton yet
+    // else if (cmd->exec.builtin == BUILTIN_EXPORT)
+    //     exec_export();
+    // else if (cmd->exec.builtin == BUILTIN_UNSET)
+    //     exec_unset();
+    // else if (cmd->exec.builtin == BUILTIN_ENV)
+    //     exec_env();
+    else if (cmd->exec.builtin == BUILTIN_EXIT)
+        return (exec_exit(cmd->args[1]), 0);
+    return (0);
+}
+
 /*
+return values:
+
 echo	0 unless write error
 pwd	0 unless error
 cd	0 on success, 1 on failure
@@ -20,8 +43,6 @@ exit	does not return
 export	0 / 1 depending on validity
 unset	0
 env	0
-command not found	127
-permission denied	126
 */
 
 int exec_pwd(void)
@@ -125,8 +146,10 @@ int exec_env();
 */
 
 /*
-should print numeric argument required for any non numeric value.
-Floats letters, numbers mixed with letters should error.
+prints numeric argument required for any non numeric value
+(floats, letters, numbers mixed with letters etc)
+
+!!! should cleanup before exit !!!
 */
 
 void    exec_exit(char *s)
@@ -137,6 +160,6 @@ void    exec_exit(char *s)
         exit(0);
     i = simple_atoi(s) % EXIT_STATUS_MOD;
     if (errno == EINVAL)
-        printf("%s: exit: %s: numeric argument required\n", MINI, s);
+        printf("%s: exit: %s: %s\n", MINI, s, E_EXIT_CODE);
     exit(i);
 }
