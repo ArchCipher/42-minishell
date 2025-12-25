@@ -149,3 +149,49 @@ static int	handle_dollar(char **token, char *end, t_string *str, int status)
 	str->i += var_len;
 	return (1);
 }
+
+int	valid_substitution(char *token, size_t len)
+{
+	char	*tmp_str;
+	size_t i;
+
+	if (token[len - 1] == '\'' || token[len - 1] == '\"')
+		len--;
+	if (len == 1)
+		return (printf("%s: %s\n",MINI, E_ENV), 0);
+	tmp_str = ft_strndup(token, len);
+	if (!tmp_str)
+		return (perror(MINI), 0);
+	
+	i = 1;
+	while(i < len && (token[i] == '_' || ft_isalnum(token[i])))
+		i++;
+	if (token[i] != '}')
+		return (printf("%s: $%s: %s\n",MINI, tmp_str, E_ENV), free(tmp_str), 0);
+	free(tmp_str);
+	return (1);
+}
+
+static char	*expand_var(char **token, char *end)
+{
+	char	*env_var;
+	char	*start;
+	char	*tmp;
+
+	start = *token;
+	while (*token < end && (**token == '_' || ft_isalnum(**token)))
+		(*token)++;
+	if (*token == start && **token == '{' &&  valid_substitution(*token, end - *token))
+	{
+		start = *token + 1;
+		*token = ft_memchr(*token, '}', end - *token);
+	}
+	else if (**token == '{')
+		return ((char *)-1);
+	tmp = ft_strndup(start, *token - start);
+	env_var = getenv(tmp);
+	free(tmp);
+	if (**token == '}')
+		(*token)++;
+	return (env_var);
+}
