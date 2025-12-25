@@ -91,6 +91,10 @@ int setup_handler(int sig, void (*handler)(int))
 DESCRIPTION:
     Parent signal handler sets the global signal variable and displays a new prompt on a new line
     and replaces the line with an empty string.
+
+    Other option: faking input uding TIOCSTI (check man 2 ioctl_tty)
+        ioctl(0, TIOCSTI, "\n");
+    But maybe this is also not signal safe and one more issue with this is it prints 2 newlines to terminal, instead of one
 */
 
 void    shell_handler(int sig)

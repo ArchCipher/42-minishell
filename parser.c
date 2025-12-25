@@ -17,8 +17,7 @@ static int	handle_dollar(char **token, char *end, t_string *str, int status);
 static char	*expand_var(char **token, char *end);
 
 /*
-maybe no need to strndup other than word tokens,
-they can be null with just the token->type.
+strndup only word tokens, others are pointers input with just the token->type.
 */
 t_token	*parse_tokens(t_token *tokens, int status)
 {
@@ -44,6 +43,9 @@ t_token	*parse_tokens(t_token *tokens, int status)
 	return (tokens);
 }
 
+// when accessign token + 1 or token[1],
+// check if token + 1 < end and then check token[1] or use token + 1
+
 static char	*handle_word(char *token, char *end, int status)
 {
 	e_token_type	flag;
@@ -57,18 +59,18 @@ static char	*handle_word(char *token, char *end, int status)
 	flag = word;
 	while (token < end)
 	{
-		if (*token == '\'' && flag == word && ft_strchr(token + 1, *token))
+		if (*token == '\'' && flag == word) // && ft_memchr(token + 1, '\'', end - token - 1))
 			flag = squote;
-		else if (*token == '\"' && flag == word && ft_strchr(token + 1, *token))
+		else if (*token == '\"' && flag == word) // && ft_memchr(token + 1, '\"', end - token - 1))
 			flag = dquote;
 		else if((*token == '\'' && flag == squote) || (*token == '\"' && flag == dquote))
 			flag = word;
-		else if (!(*token == '$' && flag != squote && (token[1] == '?' || token[1] == '_' || token[1] == '{' || token[1] == '\'' || token[1] == '\"' || ft_isalnum(token[1]))))
+		else if (!(*token == '$' && flag != squote && token + 1 < end && (token[1] == '\'' || token[1] == '\"' || ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1]))))
 			str.str[(str.i)++] = *token;
-		if (*token == '$' && flag != squote && (token[1] == '?' || token[1] == '_' || token[1] == '{' || ft_isalnum(token[1])))
+		if (*token == '$' && flag != squote && token + 1 < end && (ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1])))
 		{
 			if (!handle_dollar(&token, end, &str, status))
-				return (NULL);
+				return (free(str.str), NULL);
 		}
 		else
 			token++;
@@ -132,9 +134,10 @@ static int	handle_dollar(char **token, char *end, t_string *str, int status)
 	else
 		var = expand_var(token, end);
 	if (var == (char *)-1)
-		return (free(str->str), str->str = NULL, 0);
-	if (var)
-		var_len = ft_strlen(var);
+		return (0);	
+	if (!var)
+		return (1);
+	var_len = ft_strlen(var);
 	if (str->cap < str->i + var_len + (end - *token))
 	{
 		str->cap = str->i + var_len + (end - *token);
@@ -142,32 +145,7 @@ static int	handle_dollar(char **token, char *end, t_string *str, int status)
 		if (!str->str)
 			return (perror(MINI), 0);
 	}
-	if (var)
-		ft_memcpy(str->str + (str->i), var, var_len);
+	ft_memcpy(str->str + (str->i), var, var_len);
 	str->i += var_len;
 	return (1);
-}
-
-static char	*expand_var(char **token, char *end)
-{
-	char	*env_var;
-	char	*start;
-	char	*temp;
-
-	start = *token;
-	while (*token < end && (**token == '_' || ft_isalnum(**token)))
-		(*token)++;
-	if (*token == start && **token == '{' && ((*token)[1] == '_' || ft_isalnum((*token)[1])) &&(temp = ft_strchr(*token, '}')))
-	{
-		start = *token + 1;
-		*token = temp;
-	}
-	else if (**token == '{')
-		return (printf("%s: %s: %s\n",MINI, *token, E_ENV), (char *)-1);
-	temp = ft_strndup(start, *token - start);
-	env_var = getenv(temp);
-	free(temp);
-	if (**token == '}')
-		(*token)++;
-	return (env_var);
 }

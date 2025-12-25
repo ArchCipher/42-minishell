@@ -26,8 +26,8 @@ t_cmd *build_ast(t_token *tokens)
         if (current && current->type == pipe_char)
         {
             current = current->next;
-            if (current->type != word)
-                return (perror("MINI"), error_free(cmd.head, tokens));   // print parse error 
+            // if (current->type != word)
+            //     return (perror("MINI"), error_free(cmd.head, tokens));
         }
 	}
     free_tokens(tokens, false, NULL);
@@ -35,10 +35,7 @@ t_cmd *build_ast(t_token *tokens)
 }
 
 /*
-token->next && token->next->type == word:
-when token is an operator and next token is a word, skips counting operator and word after it
-else if
-when token is an operator and next token is not word, prints parse error
+counts words until it reaches end of cmd / pipe character.
 */
 
 ssize_t count_args(t_token *token)
@@ -50,12 +47,22 @@ ssize_t count_args(t_token *token)
     {
         if (token->type == word)
             word_count++;
-        else if (token->next && token->next->type == word) // can be else
+        else if (token->next && token->next->type == word) // can be else ?
             token = token->next;
+        // else
+        //     return (printf("unknown error in ast\n"), -1);
         token = token->next;
     }
     return (word_count);
 }
+
+/*
+builds an entire command struct with arguments and redirections.
+word tokens following redir is added as redir file or delimeter.
+other word tokens are added to args
+
+makes old word tokens null, so not to accidently free them twice. 
+*/
 
 static t_cmd   *build_cmd(t_token **current)
 {
@@ -89,6 +96,10 @@ static t_cmd   *build_cmd(t_token **current)
     return (new);
 }
 
+/*
+mallocs the cmd struct and char **args to fit given word_count words.
+*/
+
 static t_cmd   *create_cmd(size_t word_count)
 {
     t_cmd *new;
@@ -106,6 +117,13 @@ static t_cmd   *create_cmd(size_t word_count)
     return (new);
 }
 
+/*
+builds redirect struct redirection token and following word token.
+word token following redirection token is treated as delimeter for heredoc, and file for others.
+
+makes old word tokens null, so not to accidently free them twice.
+*/
+
 static int build_redir(t_token **current, t_redir **head, t_redir **last)
 {
     t_redir *new;
@@ -116,6 +134,7 @@ static int build_redir(t_token **current, t_redir **head, t_redir **last)
         if (!new)
             return (perror(MINI), 0);
         new->file = (*current)->next->token;
+        (*current)->next->token = NULL;
         new->flag = (*current)->type;
         new->fd = -1;
         new->next = NULL;

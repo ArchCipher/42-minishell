@@ -46,7 +46,7 @@ int	main(int ac, char **av, char **envp)
 	{
 		input = readline(PROMPT);
 		if (g_signal == SIGINT)
-			handle_shell_signal(&shell.status);// free(input); continue;
+			handle_shell_signal(&shell.status);
 		if (!input)
 			break ;
 		add_history(input);

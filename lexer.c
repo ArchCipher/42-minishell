@@ -100,6 +100,7 @@ static size_t	parse_word_token(char *s)
 {
 	e_token_type	flag;
 	char			*p;
+	char			*tmp;
 
 	flag = word;
 	p = s;
@@ -113,6 +114,8 @@ static size_t	parse_word_token(char *s)
 			flag = dquote;
 		else if ((*p == '\'' && flag == squote) || (*p == '\"' && flag == dquote))
 			flag = word;
+		else if (*p == '$' && p[1] != '\0' && p[1] == '{' && (tmp = ft_strchr(p + 1, '}')))
+			p = tmp;
 		p++;
 	}
 	return (p - s);

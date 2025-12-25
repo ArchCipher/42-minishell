@@ -35,6 +35,7 @@
 
 # define WORD_DELIMITERS " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
+# define EXPANDABLE "?_{"
 
 # define EXIT_CANNOT_EXEC 126
 # define EXIT_CMD_NOT_FOUND 127
@@ -190,6 +191,7 @@ void	exec_exit(char *s);
 // utils.c
 int						ft_isspace(int c);
 int						ft_isalnum(int c);
+void					*ft_memchr(const void *s, int c, size_t n);
 char					*ft_strchr(const char *s, int c);
 size_t					ft_strspn(const char *s, const char *accept);
 size_t					ft_strcspn(const char *s, const char *reject);
