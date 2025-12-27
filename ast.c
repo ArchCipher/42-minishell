@@ -75,7 +75,7 @@ static t_cmd   *build_cmd(t_token **current)
         return (NULL);
     new = create_cmd(word_count);
     if (!new)
-        return (perror(MINI), NULL);
+        return (NULL);
     i = 0;
     while (*current && (*current)->type != pipe_char)
     {
@@ -106,10 +106,10 @@ static t_cmd   *create_cmd(size_t word_count)
 
     new = malloc(sizeof(t_cmd));
     if (!new)
-        return (NULL);
+        return (perror(MINI), NULL);
     new->args = (char **) malloc((word_count + 1) * sizeof(char *));
     if (!new->args)
-        return (free(new), NULL);
+        return (perror(MINI), free(new), NULL);
     new->redirs = NULL;
     new->next = NULL;
     new->exec.builtin = -1;
@@ -137,6 +137,7 @@ static int build_redir(t_token **current, t_redir **head, t_redir **last)
         (*current)->next->token = NULL;
         new->flag = (*current)->type;
         new->fd = -1;
+        new->quoted = false;
         new->next = NULL;
         lstadd_back((void **)head, (void *)new, (void *)*last, TYPE_REDIR);
         *last = new;

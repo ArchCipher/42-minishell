@@ -6,11 +6,11 @@ execve wrapper
 make sure errors are not printed twice
 */
 static int is_builtin(char *s);
-static int exec_in_parent(t_cmd *cmd);
-static int fork_with_pipe(t_cmd *cmd, char **envp, int *prev_fd);
+static int exec_in_parent(t_cmd *cmd, t_shell *shell);
+static int fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell);
 static int cmds_waitpid(t_cmd *cmds);
 
-int exec_cmds(t_cmd *cmds, char **envp)
+int exec_cmds(t_cmd *cmds, t_shell *shell)
 {
     t_cmd   *cmd;
     int     prev_fd;
@@ -19,11 +19,11 @@ int exec_cmds(t_cmd *cmds, char **envp)
     prev_fd = -1;
     cmd->exec.builtin = is_builtin(cmd->args[0]);
     if (cmd->exec.builtin != -1 && !cmd->next)
-        return (exec_in_parent(cmd));
+        return (exec_in_parent(cmd, shell));
     while(cmd)
     {
         cmd->exec.builtin = is_builtin(cmd->args[0]);
-        if (fork_with_pipe(cmd, envp, &prev_fd))
+        if (fork_with_pipe(cmd, &prev_fd, shell))
             break ;
         cmd = cmd->next;
     }
@@ -58,7 +58,7 @@ DESCRIPTION:
     stores actual stdin and stdout and executes builtin in parent and restores stdin and stdout after execution.
 */
 
-int exec_in_parent(t_cmd *cmd)
+int exec_in_parent(t_cmd *cmd, t_shell *shell)
 {
     int actual_stdout;
     int actual_stdin;
@@ -70,9 +70,11 @@ int exec_in_parent(t_cmd *cmd)
         return (close(actual_stdout), perror(MINI), 1);
     if (setup_redirs(cmd->redirs) == -1)
         return (close(actual_stdout), close(actual_stdin), 1);
-    if (cmd->exec.builtin == BUILTIN_EXIT)
-        write(actual_stdout, "exit\n", 5);
-    ret = exec_builtin(cmd);
+    if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1] && !cmd->args[2])))
+        write(actual_stdout, "exit\n", 5); 
+    ret = exec_builtin(cmd, shell);
+    if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1] && !cmd->args[2])))
+        exit_shell(ret, cmd, shell);
     if (dup2(actual_stdout, STDOUT_FILENO) == -1)
         return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
     if (dup2(actual_stdin, STDIN_FILENO) == -1)
@@ -96,7 +98,7 @@ DESCRIPTION:
     On error, both pipe and fork return -1.
 */
 
-int fork_with_pipe(t_cmd *cmd, char **envp, int *prev_fd)
+int fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell)
 {
     int fd[2];
     int *pipe_fd;
@@ -113,7 +115,7 @@ int fork_with_pipe(t_cmd *cmd, char **envp, int *prev_fd)
         return (perror(MINI), 1);
     }
     if (cmd->exec.pid == 0)
-        exec_child(cmd, pipe_fd, *prev_fd, envp);
+        exec_child(cmd, pipe_fd, *prev_fd, shell);
     if (*prev_fd != -1)
         close(*prev_fd);
     if (pipe_fd)

@@ -1,7 +1,7 @@
 #include "minishell.h"
 
-static char    *get_valid_path(char *filename);
-static char    *build_path(char *filename);
+static char    *get_valid_path(char *filename, t_env *env);
+static char    *build_path(char *filename, t_env *env);
 static void    child_dup_error(int *fd, int prev_fd);
 static void    child_path_error(char *filename, char *msg, int exit_code, char *path);
 
@@ -21,9 +21,10 @@ DESCRIPTION:
     the return value will be -1 and the global variable errno is set to indicate the error.
 */
 
-void    exec_child(t_cmd *cmd, int *fd, int prev_fd, char **envp)
+void    exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell)
 {
     char *path;
+    char **envp;
 
     if (setup_handler(SIGINT, SIG_DFL) == -1 || setup_handler(SIGQUIT, SIG_DFL) == -1)
         exit(1);
@@ -36,11 +37,15 @@ void    exec_child(t_cmd *cmd, int *fd, int prev_fd, char **envp)
         exit(1);
     path = cmd->args[0];
     if (cmd->exec.builtin != -1)
-        exit(exec_builtin(cmd));
-    path = get_valid_path(cmd->args[0]);
+        exit(exec_builtin(cmd, shell));
+    path = get_valid_path(cmd->args[0], shell->env);
+    envp = env_to_envp(shell->env);
+    if (!envp)
+        exit(1);
     execve(path, cmd->args, envp);
     if (!ft_strchr(cmd->args[0], '/'))
         free(path);
+    free(envp);
     perror(MINI);
     exit(1);
 }
@@ -59,9 +64,12 @@ non numeric argument for exit also return 255
 If buils_path returns NULL path, or if stat(path) fails, it exits with code 127(command not found)
 It checks S_ISREG(sb.st_mode) to check if it is a directory.
 It checks access(path, X_OK) for execute permissions.
+
+An exit status of 126 indicates that utility was found, but could not be executed.
+An exit status of 127 indicates that utility could not be found.
 */
 
-static char    *get_valid_path(char *filename)
+static char    *get_valid_path(char *filename, t_env *env)
 {
     struct stat sb;
     char        *path;
@@ -69,7 +77,7 @@ static char    *get_valid_path(char *filename)
     if (ft_strchr(filename, '/'))
         path = filename;
     else
-        path = build_path(filename);
+        path = build_path(filename, env);
     if (!path)
         child_path_error(filename, E_PATH, EXIT_CMD_NOT_FOUND, path);
     if (stat(path, &sb) == -1)
@@ -81,7 +89,7 @@ static char    *get_valid_path(char *filename)
 
 /*
 DESCRIPTION
-    Retrieves $PATH using getenv, splits by : using ft_strtok_r.
+    Retrieves $PATH using ft_getenv() (similar to getenv()), splits by : using ft_strtok_r.
     For each directory in $PATH, builds dir + "/" + cmd.
 
     When path is empty "", it means current directory-> create full string with ""./" such as " "./cmd"
@@ -89,12 +97,12 @@ DESCRIPTION
     This is child only logic and doesn't return invalid path. It exits on error.
     Caution: !!!cannot be used in parent process!!!
 */
-static char    *build_path(char *filename)
+static char    *build_path(char *filename, t_env *env)
 {
     t_path_vars vars;
     struct stat sb;
 
-    if (!(vars.path = getenv("PATH")) || !(vars.full_path = ft_strdup(vars.path)))
+    if (!(vars.path = ft_getenv(env, "PATH")) || !(vars.full_path = ft_strdup(vars.path)))
     {
         perror(MINI);
         exit(1);

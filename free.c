@@ -8,7 +8,7 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 	{
 		current = tokens;
 		tokens = tokens->next;
-		if (free_content && current->type == word && current->token)
+		if (current->token && free_content && current->type == word)
 			free(current->token);
 		free(current);
 	}
@@ -48,4 +48,32 @@ t_cmd    *error_free(t_cmd *cmds, t_token *tokens)
     free_cmds(cmds);
     free_tokens(tokens, true, NULL);
     return (NULL);
+}
+
+void free_env(t_env *env)
+{
+    t_env *tmp;
+    tmp = env;
+
+    while(env)
+    {
+        free(env->key);
+        if (env->value)
+            free(env->value);
+        tmp = env;
+        env = env->next;
+        free(tmp);
+    }
+}
+
+void    free_envp(char **envp)
+{
+    size_t i;
+
+    if (!envp)
+        return ;
+    i = 0;
+    while(envp[i])
+        free(envp[i++]);
+    free (envp);
 }

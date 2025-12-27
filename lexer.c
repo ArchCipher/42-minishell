@@ -46,7 +46,7 @@ static t_token	*create_token(void *token)
 
 	new = malloc(sizeof(t_token));
 	if (!new)
-		return (NULL);
+		return (perror(MINI), NULL);
 	new->token = token;
 	new->next = NULL;
 	return (new);
@@ -58,8 +58,13 @@ must update tail in the caller function
 
 void	lstadd_back(void **head, void *new, void *last, e_node_type type)
 {
-	if (!head || !new || (*head && !last))
+	if (!head || !new)
 		return ;
+	if (*head && !last)
+	{
+		printf("lstadd_back: last is NULL\n");
+		return ;
+	}
 	if (!*head)
 		*head = new;
 	else
@@ -70,6 +75,8 @@ void	lstadd_back(void **head, void *new, void *last, e_node_type type)
 			((t_cmd *)last)->next = (t_cmd *)new;
 		else if (type == TYPE_REDIR)
 			((t_redir *)last)->next = (t_redir *)new;
+		else if (type == TYPE_ENV)
+			((t_env *)last)->next = (t_env *)new;
 	}
 }
 

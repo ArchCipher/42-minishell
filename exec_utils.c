@@ -3,7 +3,7 @@
 /*
     if no infile, prints errror.
     for heredoc, redirs->file stores the delimiter and redirs->fd is read end of the a pipe created by:
-        int process_heredoc(t_cmd *cmds, int *status)
+        int process_heredoc(t_cmd *cmds, t_shell *shell);
 */
 
 int setup_redirs(t_redir *redirs)

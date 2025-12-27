@@ -17,9 +17,14 @@ int	ft_isspace(int c)
 	return (c == ' ' || (c >= '\t' && c <= '\r'));
 }
 
+int	ft_isalpha(int c)
+{
+	return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
+}
+
 int	ft_isalnum(int c)
 {
-	return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'));
+	return (ft_isalpha(c) || (c >= '0' && c <= '9'));
 }
 
 void	*ft_memset(void *b, int c, size_t len)
@@ -61,6 +66,22 @@ char	*ft_strchr(const char *s, int c)
 		return ((char *)s);
 	return (NULL);
 }
+
+char	*ft_strrchr(const char *s, int c)
+{
+	size_t	len;
+
+	len = ft_strlen(s) + 1;
+	s += len;
+	while (len-- > 0)
+	{
+		s--;
+		if (*s == (unsigned char)c)
+			return ((char *)s);
+	}
+	return (NULL);
+}
+
 
 char	*ft_strtok_r(char *s, const char *sep, char **p)
 {

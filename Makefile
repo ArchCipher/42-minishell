@@ -11,7 +11,14 @@ READLINE_INC	= $(if $(READLINE_DIR),-I$(READLINE_DIR)/include,)
 READLINE_LIB	= $(if $(READLINE_DIR),-L$(READLINE_DIR)/lib,)
 
 #				Sources & Objects
-MSRCS			= minishell lexer parser ast free heredoc execute exec_child exec_utils builtin signal utils
+MSRCS			= minishell signal \
+				lexer \
+				parser dollar \
+				ast heredoc \
+				execute exec_child exec_utils \
+				builtin export export_no_args qsort env unset exit \
+				utils \
+				free
 
 SRCS			= $(addsuffix .c, $(MSRCS))
 OBJS			= $(SRCS:.c=.o)

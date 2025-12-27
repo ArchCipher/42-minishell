@@ -1,9 +1,8 @@
 #include "minishell.h"
 
-static int  handle_heredoc(t_redir *redir);
+static int  handle_heredoc(t_redir *redir); //, int status);
 static int  exec_heredoc(char *limiter, int fd);
 static int  heredoc_waitpid(pid_t pid);
-static void exit_shell(t_cmd *cmds, t_shell *shell);
 
 /*
 DESCRIPTION:
@@ -20,7 +19,6 @@ int process_heredoc(t_cmd *cmds, t_shell *shell)
 {
     t_redir *current;
     t_cmd   *cmd;
-    int     ret;
 
     cmd = cmds;
     while(cmd)
@@ -30,11 +28,11 @@ int process_heredoc(t_cmd *cmds, t_shell *shell)
         {
             if (current->flag == heredoc)
             {
-                ret = handle_heredoc(current);
-                if (ret == 1)
-                    return (shell->status = 1);
-                else if (ret == -1)
-                    exit_shell(cmds, shell);
+                shell->status = handle_heredoc(current); //, *status);
+                if (shell->status == 1)
+                    return (1);
+                if (shell->status == -1)
+                    exit_shell(1, cmds, shell);
             }
             current = current->next;
         }
@@ -53,7 +51,7 @@ DESCRIPTION:
     Signal error should terminate the shell.
 */
 
-static int  handle_heredoc(t_redir *redir)
+static int  handle_heredoc(t_redir *redir) //, int status) // should expand var
 {
     int     fd[2];
     pid_t   pid;
@@ -82,12 +80,51 @@ static int  handle_heredoc(t_redir *redir)
 }
 
 /*
-!!! should expland variables !!!
+!!! should expand variables !!!
+search for dollar. print until dollar. expand and then print again.
 
 DESCRIPTION:
     Executes the heredoc and returns the status.
     It reads from terminal and writes to write end of a pipe and later read by command via stdin.
+
+    !line means that it was interrupted by signal, so it returns 1 (error).
 */
+
+
+// static int	expand_string(char *line, int status)
+// {
+// 	char	*var;
+// 	char	exit_code[4];
+// 	size_t	var_len;
+//     char    *p;
+
+//     if (!(p = ft_strchr(line, '$')))
+//         return (line);
+//     p++;
+// 	var_len = 0;
+// 	if (*p == '?')
+// 	{
+// 		p++;
+// 		var = itoa_status(status, exit_code);
+// 	}
+// 	else
+// 		var = expand_var(p, strlen(line) - (p - line));
+// 	if (var == ERR)
+// 		return (0);	
+// 	if (!var)
+// 		return (1);
+// 	var_len = ft_strlen(var);
+// 	if (str->cap < str->i + var_len + (end - *token))
+// 	{
+// 		str->cap = str->i + var_len + (end - *token);
+// 		str->str = ft_realloc(str->str, str->i, (str->cap) + 1);
+// 		if (!str->str)
+// 			return (perror(MINI), 0);
+// 	}
+// 	ft_memcpy(str->str + (str->i), var, var_len);
+// 	str->i += var_len;
+// 	return (1);
+// }
 
 static int  exec_heredoc(char *limiter, int fd)
 {
@@ -102,8 +139,9 @@ static int  exec_heredoc(char *limiter, int fd)
             return (free(line), 1);
         free(line);
     }
-    if (line)
-        free(line);
+    if (!line)
+        return (1);
+    free(line);
     return (0);
 }
 
@@ -133,16 +171,4 @@ static int heredoc_waitpid(pid_t pid)
         return (1);
     }
     return (0);
-}
-
-// exits in heredoc should cleanup...
-// garge collector + exit
-
-
-static void exit_shell(t_cmd *cmds, t_shell *shell)
-{
-    free_cmds(cmds);
-    tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
-    rl_clear_history();
-    exit(EXIT_FAILURE);
 }
