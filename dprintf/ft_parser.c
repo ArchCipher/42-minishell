@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 12:38:21 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/11/19 17:35:44 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/28 20:40:35 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,7 @@ DESCRIPTION
 
 int	handle_spec(va_list ap, t_fmt *flag)
 {
-	void *ptr;
+	void	*ptr;
 
 	if (flag->spec == 'c')
 		return (ft_print_char(va_arg(ap, int), *flag));

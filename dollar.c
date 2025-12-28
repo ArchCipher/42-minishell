@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   dollar.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 19:44:36 by kmurugan          #+#    #+#             */
+/*   Updated: 2025/12/28 20:25:13 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 static char			*itoa_status(int n, char *num);
@@ -13,8 +25,8 @@ Must not be dereferenced, but only compared to detect error.
 int	handle_dollar(char **token, char *end, t_string *str, t_shell *shell)
 {
 	const char	*var;
-	char	exit_code[4];
-	size_t	var_len;
+	char		exit_code[4];
+	size_t		var_len;
 
 	(*token)++;
 	var_len = 0;
@@ -26,7 +38,7 @@ int	handle_dollar(char **token, char *end, t_string *str, t_shell *shell)
 	else
 		var = expand_var(token, end, shell->env);
 	if (var == ERR_PTR)
-		return (0);	
+		return (0);
 	if (!var)
 		return (1);
 	var_len = ft_strlen(var);
@@ -75,7 +87,8 @@ static const char	*expand_var(char **token, char *end, t_env *env)
 	start = *token;
 	while (*token < end && (**token == '_' || ft_isalnum(**token)))
 		(*token)++;
-	if (*token == start && **token == '{' &&  valid_substitution(*token, end - *token))
+	if (*token == start && **token == '{' && valid_substitution(*token, end
+			- *token))
 	{
 		start = *token + 1;
 		*token = ft_memchr(*token, '}', end - *token);
@@ -95,20 +108,21 @@ static const char	*expand_var(char **token, char *end, t_env *env)
 static int	valid_substitution(char *token, size_t len)
 {
 	char	*tmp_str;
-	size_t i;
+	size_t	i;
 
 	if (token[len - 1] == '\'' || token[len - 1] == '\"')
 		len--;
 	if (len == 1)
-		return (ft_dprintf(STDERR_FILENO, "%s: %s\n",MINI, E_ENV), 0);
+		return (ft_dprintf(STDERR_FILENO, "%s: %s\n", MINI, E_ENV), 0);
 	tmp_str = ft_strndup(token, len);
 	if (!tmp_str)
-		return (perror(MINI), 0);	
+		return (perror(MINI), 0);
 	i = 1;
-	while(i < len && (token[i] == '_' || ft_isalnum(token[i])))
+	while (i < len && (token[i] == '_' || ft_isalnum(token[i])))
 		i++;
 	if (token[i] != '}')
-		return (ft_dprintf(STDERR_FILENO, "%s: $%s: %s\n",MINI, tmp_str, E_ENV), free(tmp_str), 0);
+		return (ft_dprintf(STDERR_FILENO, "%s: $%s: %s\n", MINI, tmp_str,
+				E_ENV), free(tmp_str), 0);
 	free(tmp_str);
 	return (1);
 }

@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:27:11 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/10 18:49:41 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/28 20:34:04 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ static size_t	parse_word_token(char *s);
 
 t_token	*tokenise_input(char *s)
 {
-	t_list tokens;
+	t_list	tokens;
 
 	if (!s)
 		return (NULL);
@@ -26,14 +26,15 @@ t_token	*tokenise_input(char *s)
 	while (*s)
 	{
 		while (*s && ft_isspace(*s))
-			s++;	
+			s++;
 		if (!*s)
 			break ;
 		tokens.new = create_token(s);
 		if (!tokens.new)
 			return (free_tokens(tokens.head, false, NULL), NULL);
 		set_token_type(s, tokens.new);
-		lstadd_back((void **)&tokens, (void *)tokens.new, (void *)tokens.tail, TYPE_TOKEN);
+		lstadd_back((void **)&tokens, (void *)tokens.new, (void *)tokens.tail,
+			TYPE_TOKEN);
 		tokens.tail = tokens.new;
 		s += ((t_token *)tokens.tail)->len;
 	}
@@ -119,10 +120,15 @@ static size_t	parse_word_token(char *s)
 			flag = squote;
 		else if (*p == '\"' && flag == word && ft_strchr(p + 1, *p))
 			flag = dquote;
-		else if ((*p == '\'' && flag == squote) || (*p == '\"' && flag == dquote))
+		else if ((*p == '\'' && flag == squote) || (*p == '\"'
+				&& flag == dquote))
 			flag = word;
-		else if (*p == '$' && p[1] != '\0' && p[1] == '{' && (tmp = ft_strchr(p + 1, '}')))
-			p = tmp;
+		else if (*p == '$' && p[1] != '\0' && p[1] == '{')
+		{
+			tmp = ft_strchr(p + 1, '}');
+			if (tmp)
+				p = tmp;
+		}
 		p++;
 	}
 	return (p - s);

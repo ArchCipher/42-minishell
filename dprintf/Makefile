@@ -6,19 +6,19 @@ NAME		= libftdprintf.a
 #			Compiler and Flags
 CC			= cc
 FLAGS		= -Wall -Werror -Wextra
-SFLAGS		= -fsanitize=address
 
-#			Headers
-ALL_HEADERS	= -I.
+#			Includes
+HEADER		= ft_dprintf.h
+INC			= -I.
 
 #			Sources & Objects
-MSRCS = \
-	   dprintf parser print_types print_int printf_utils
-SRCS = $(addprefix ft_, $(addsuffix .c, $(MSRCS)))
-OBJS	= $(SRCS:.c=.o)
+MSRCS 		= \
+	   		dprintf parser print_types print_int printf_utils
+SRCS		= $(addprefix ft_, $(addsuffix .c, $(MSRCS)))
+OBJS		= $(SRCS:.c=.o)
 
-%.o: %.c
-	$(CC) $(FLAGS) $(ALL_HEADERS) -c $< -o $@
+%.o: %.c $(HEADER)
+	$(CC) $(FLAGS) $(INC) -c $< -o $@
 
 all: $(NAME)
 
@@ -33,4 +33,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean test
+.PHONY: all clean fclean

@@ -1,18 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_printf.h                                        :+:      :+:    :+:   */
+/*   ft_dprintf.h                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/22 12:27:51 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/11/19 17:40:25 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/28 19:43:23 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef FT_DPRINTF_H
 # define FT_DPRINTF_H
 
+# include "../libft/libft.h"
 # include <limits.h> // INT_MAX
 # include <stdarg.h> // va_start, va_arg, va_end
 # include <unistd.h> // write

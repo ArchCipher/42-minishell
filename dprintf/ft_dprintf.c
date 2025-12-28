@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ft_dprintf.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/28 19:43:16 by kmurugan          #+#    #+#             */
+/*   Updated: 2025/12/28 20:40:17 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "ft_dprintf.h"
 
 static ssize_t	print_literal(int fd, const char **fmt);
@@ -20,7 +32,7 @@ static size_t	ft_strcspn_char(const char *s, int c);
 		write, va_start, va_arg, va_end
 */
 
-int ft_dprintf(int fd, const char *fmt, ...)
+int	ft_dprintf(int fd, const char *fmt, ...)
 {
 	int		ret;
 	va_list	ap;
@@ -28,7 +40,7 @@ int ft_dprintf(int fd, const char *fmt, ...)
 	va_start(ap, fmt);
 	ret = ft_vdprintf(fd, fmt, ap);
 	va_end(ap);
-	return (ret); 
+	return (ret);
 }
 
 int	ft_vdprintf(int fd, const char *fmt, va_list ap)
@@ -49,7 +61,7 @@ int	ft_vdprintf(int fd, const char *fmt, va_list ap)
 			written = handle_spec(ap, &flag);
 		}
 		else
-			written = print_literal(fd,&fmt);
+			written = print_literal(fd, &fmt);
 		if (written < 0 || written > INT_MAX || (int)written > (INT_MAX - ret))
 			return (-1);
 		ret += written;

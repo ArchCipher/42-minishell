@@ -5,8 +5,9 @@ NAME		= libft.a
 CC			= cc
 FLAGS		= -Wall -Werror -Wextra
 
-#			Headers
+#			Includes
 HEADER		= libft.h
+INC			= -I.
 
 #			Sources
 MSRCS		= \
@@ -24,8 +25,8 @@ MAN_SRCS	= $(addprefix ft_, $(addsuffix .c, $(SRCS)))
 MAN_OBJS	= $(MAN_SRCS:.c=.o)
 
 #			Rules
-%.o: %.c
-			$(CC) $(FLAGS) -c $< -o $@
+%.o: %.c $(HEADER)
+			$(CC) $(FLAGS) $(INC) -c $< -o $@
 
 all:		$(NAME)
 
@@ -33,10 +34,10 @@ $(NAME):	$(MAN_OBJS)
 			ar rcs $@ $^
 
 clean:
-			rm -f $(MAN_OBJS)
+	rm -f $(MAN_OBJS)
 
-fclean:		clean
-			rm -f $(NAME) 
+fclean:	clean
+	rm -f $(NAME) 
 
 re:			fclean all
 

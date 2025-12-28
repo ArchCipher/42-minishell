@@ -6,13 +6,13 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:27:07 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/10 14:19:50 by kmurugan         ###   ########.fr       */
+/*   Updated: 2025/12/28 19:52:17 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static void    init_shell(char **envp, t_shell *shell);
+static void	init_shell(char **envp, t_shell *shell);
 
 /*
 	NAME
@@ -70,7 +70,7 @@ static void	update_pwd(t_shell *shell)
 	{
 		if (update_env(shell, "OLDPWD", NULL))
 			return ;
-		old_pwd = env_lookup(shell->env, "OLDPWD");	
+		old_pwd = env_lookup(shell->env, "OLDPWD");
 	}
 	old_pwd->exported = false;
 	if (old_pwd->value)
@@ -88,17 +88,17 @@ static void	update_pwd(t_shell *shell)
 	pwd->value = getcwd(NULL, 0);
 }
 
-static void    init_shell(char **envp, t_shell *shell)
+static void	init_shell(char **envp, t_shell *shell)
 {
-    init_signals(&shell->original_term);
-    shell->status = 0;
-    shell->env = NULL;
-    while(*envp)
-    {
-        if (update_env(shell, *envp, NULL))
-            exit_shell(1, NULL, shell);
-        envp++;
-    }
+	init_signals(&shell->original_term);
+	shell->status = 0;
+	shell->env = NULL;
+	while (*envp)
+	{
+		if (update_env(shell, *envp, NULL))
+			exit_shell(1, NULL, shell);
+		envp++;
+	}
 	update_pwd(shell);
 }
 
@@ -107,12 +107,12 @@ exits from shell should cleanup...
 garbage collector + exit
 */
 
-void exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
+void	exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
 {
 	free_cmds(cmds);
-    free_env(shell->env);
+	free_env(shell->env);
 	if (isatty(STDIN_FILENO))
-        tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
-    rl_clear_history();
-    exit(exit_code);
+		tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
+	rl_clear_history();
+	exit(exit_code);
 }

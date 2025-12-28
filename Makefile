@@ -1,16 +1,33 @@
+#				Readline lib
+UNAME_S			= $(shell uname -s)
+
+ifeq ($(UNAME_S),Linux)
+	READLINE_INC = -I/usr/include/readline
+	READLINE_LIB = -lreadline
+endif
+
+ifeq ($(UNAME_S),Darwin)
+	READLINE_DIR	= $(shell brew --prefix readline 2>/dev/null || echo "")
+	READLINE_INC	= $(if $(READLINE_DIR),-I$(READLINE_DIR)/include,)
+	READLINE_LIB	= $(if $(READLINE_DIR),-L$(READLINE_DIR)/lib,) -lreadline
+endif
+
 #				Library and Project names
 NAME			= minishell
-LIBFT_LIB		= libft
-DPRINTF_LIB		= dprintf
+#				Library
+DIR_LIBFT		= libft
+DIR_DPRINTF		= dprintf
+LIBFT_A			= $(DIR_LIBFT)/libft.a
+DPRINTF_A		= $(DIR_DPRINTF)/libftdprintf.a
+FT_LIBFT		= -L$(DIR_LIBFT) -lft
+FT_DPRINTF		= -L$(DIR_DPRINTF) -lftdprintf
 
-#				Headers
-INC				= -I.
-
-#				Detect OS and set readline paths
-UNAME_S			= $(shell uname -s)
-READLINE_DIR	= $(shell brew --prefix readline 2>/dev/null || echo "")
-READLINE_INC	= $(if $(READLINE_DIR),-I$(READLINE_DIR)/include,)
-READLINE_LIB	= $(if $(READLINE_DIR),-L$(READLINE_DIR)/lib,)
+#				Includes
+HEADER			= minishell.h
+INC				= -I. \
+				-I$(DIR_LIBFT) \
+				-I$(DIR_DPRINTF) \
+				$(READLINE_INC)
 
 #				Sources & Objects
 MSRCS			= minishell signal \
@@ -31,34 +48,33 @@ CC				= cc
 FLAGS			= -Wall -Werror -Wextra
 SFLAGS			= -fsanitize=address
 
-CFLAGS			= $(FLAGS) $(SFLAGS) $(READLINE_INC) $(READLINE_LIB) -lreadline
+CFLAGS			= $(FLAGS) $(SFLAGS) -g
+LDFLAGS			= $(READLINE_LIB) $(FT_DPRINTF) $(FT_LIBFT) 
 
-#			Library
-FT_LIBFT	= -L$(LIBFT_LIB) -lft
-FT_DPRINTF	= -L$(DPRINTF_LIB) -lftdprintf
+%.o: %.c $(HEADER)
+	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
-%.o: %.c
-	$(CC) $(FLAGS) $(INC) $(READLINE_INC) -g -c $< -o $@
+all: $(NAME)
 
-all: lib $(NAME)
+$(LIBFT_A):
+	$(MAKE) -C $(DIR_LIBFT)
 
-lib:
-	@make -C $(LIBFT_LIB)
-	@make -C $(DPRINTF_LIB)
+$(DPRINTF_A):
+	$(MAKE) -C $(DIR_DPRINTF)
 
-$(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -g $(OBJS) $(FT_LIBFT) $(FT_DPRINTF) -o $@
+$(NAME): $(OBJS) $(DPRINTF_A) $(LIBFT_A) 
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
 clean:
-	make -C $(LIBFT_LIB) clean
-	make -C $(DPRINTF_LIB) clean
+	make -C $(DIR_LIBFT) clean
+	make -C $(DIR_DPRINTF) clean
 	rm -f $(OBJS)
 
 fclean: clean
-	make -C $(LIBFT_LIB) fclean
-	make -C $(DPRINTF_LIB) fclean
+	make -C $(DIR_LIBFT) fclean
+	make -C $(DIR_DPRINTF) fclean
 	rm -f $(NAME)
 
 re: fclean all
 
-.PHONY: all clean fclean re lib
+.PHONY: all clean fclean re
