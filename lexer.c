@@ -62,7 +62,7 @@ void	lstadd_back(void **head, void *new, void *last, e_node_type type)
 		return ;
 	if (*head && !last)
 	{
-		printf("lstadd_back: last is NULL\n");
+		ft_dprintf(STDERR_FILENO, "lstadd_back: last is NULL\n");
 		return ;
 	}
 	if (!*head)

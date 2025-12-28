@@ -33,9 +33,9 @@ t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 				return (free_tokens(tokens, true, current), NULL);
 		}
 		else if (!current->next)
-			return (printf("%s: %s`newline'\n", MINI, E_PARSE), free_tokens(tokens, true, current), NULL);
+			return (ft_dprintf(STDERR_FILENO, "%s: %s`newline'\n", MINI, E_PARSE), free_tokens(tokens, true, current), NULL);
 		else if (current->next && current->next->type != word)
-			return (printf("%s: %s`%c'\n", MINI, E_PARSE, current->next->token[0]), free_tokens(tokens, true, current), NULL);
+			return (ft_dprintf(STDERR_FILENO, "%s: %s`%c'\n", MINI, E_PARSE, current->next->token[0]), free_tokens(tokens, true, current), NULL);
 		current = current->next;
 	}
 	return (tokens);

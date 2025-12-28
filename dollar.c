@@ -100,7 +100,7 @@ static int	valid_substitution(char *token, size_t len)
 	if (token[len - 1] == '\'' || token[len - 1] == '\"')
 		len--;
 	if (len == 1)
-		return (printf("%s: %s\n",MINI, E_ENV), 0);
+		return (ft_dprintf(STDERR_FILENO, "%s: %s\n",MINI, E_ENV), 0);
 	tmp_str = ft_strndup(token, len);
 	if (!tmp_str)
 		return (perror(MINI), 0);	
@@ -108,7 +108,7 @@ static int	valid_substitution(char *token, size_t len)
 	while(i < len && (token[i] == '_' || ft_isalnum(token[i])))
 		i++;
 	if (token[i] != '}')
-		return (printf("%s: $%s: %s\n",MINI, tmp_str, E_ENV), free(tmp_str), 0);
+		return (ft_dprintf(STDERR_FILENO, "%s: $%s: %s\n",MINI, tmp_str, E_ENV), free(tmp_str), 0);
 	free(tmp_str);
 	return (1);
 }

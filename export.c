@@ -25,7 +25,7 @@ int exec_export(t_shell *shell, char **args)
     while(*args)
     {
         if (!is_valid_identifier(*args))
-            return (printf("%s: export: `%s': %s\n",MINI, *args, E_EXPORT), 1);
+            return (ft_dprintf(STDERR_FILENO, "%s: export: `%s': %s\n",MINI, *args, E_EXPORT), 1);
         if (update_env(shell, *args, env_lookup(shell->env, *args)))
             return (1);
         args++;

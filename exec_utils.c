@@ -19,7 +19,7 @@ int setup_redirs(t_redir *redirs)
         else if (redirs->flag == append)
             redirs->fd = open(redirs->file, O_WRONLY | O_CREAT | O_APPEND, 0660);
         if (redirs->fd == -1)
-            return (printf("%s: %s: %s\n", MINI, redirs->file, strerror(errno)), -1);
+            return (ft_dprintf(STDERR_FILENO, "%s: %s: %s\n", MINI, redirs->file, strerror(errno)), -1);
         if (((redirs->flag == redir_in || redirs->flag == heredoc) && dup2(redirs->fd, STDIN_FILENO) == -1) || ((redirs->flag == redir_out || redirs->flag == append) && dup2(redirs->fd, STDOUT_FILENO) == -1))
         {
             close(redirs->fd);

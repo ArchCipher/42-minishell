@@ -11,9 +11,9 @@ HEADER		= libft.h
 #			Sources
 MSRCS		= \
 			isalnum isalpha isdigit isspace memchr\
-			memcpy realloc strchr strcmp strdup\
-			strlen strncmp strndup strrchr strspn \
-			strtok_r
+			memcpy memset realloc strchr strcmp \
+			strdup strlen strncmp strndup strrchr \
+			strspn strtok_r
 ASRCS		= \
 			strjoin strjoin3
 

@@ -39,7 +39,7 @@ int	main(int ac, char **av, char **envp)
 
 	(void)av;
 	if (ac != 1)
-		return (printf("%s: %s\n", MINI, E_MANY_ARGS), 1);
+		return (ft_dprintf(STDERR_FILENO, "%s: %s\n", MINI, E_MANY_ARGS), 1);
 	init_shell(envp, &shell);
 	while (1)
 	{

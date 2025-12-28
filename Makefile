@@ -1,6 +1,7 @@
 #				Library and Project names
 NAME			= minishell
 LIBFT_LIB		= libft
+DPRINTF_LIB		= dprintf
 
 #				Headers
 INC				= -I.
@@ -34,6 +35,7 @@ CFLAGS			= $(FLAGS) $(SFLAGS) $(READLINE_INC) $(READLINE_LIB) -lreadline
 
 #			Library
 FT_LIBFT	= -L$(LIBFT_LIB) -lft
+FT_DPRINTF	= -L$(DPRINTF_LIB) -lftdprintf
 
 %.o: %.c
 	$(CC) $(FLAGS) $(INC) $(READLINE_INC) -g -c $< -o $@
@@ -42,16 +44,19 @@ all: lib $(NAME)
 
 lib:
 	@make -C $(LIBFT_LIB)
+	@make -C $(DPRINTF_LIB)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -g $(OBJS) $(FT_LIBFT) -o $@
+	$(CC) $(CFLAGS) -g $(OBJS) $(FT_LIBFT) $(FT_DPRINTF) -o $@
 
 clean:
 	make -C $(LIBFT_LIB) clean
+	make -C $(DPRINTF_LIB) clean
 	rm -f $(OBJS)
 
 fclean: clean
 	make -C $(LIBFT_LIB) fclean
+	make -C $(DPRINTF_LIB) fclean
 	rm -f $(NAME)
 
 re: fclean all

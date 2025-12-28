@@ -14,7 +14,7 @@ int exec_unset(t_shell *shell, char **args)
     while(*args)
     {
         if (!is_valid_identifier(*args))
-            return (printf("%s: unset: `%s': %s\n",MINI, *args, E_EXPORT), 1);
+            return (ft_dprintf(STDERR_FILENO, "%s: unset: `%s': %s\n",MINI, *args, E_EXPORT), 1);
         env = env_lookup_prev(shell->env, &prev, *args);
         if (env)
         {

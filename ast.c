@@ -49,8 +49,8 @@ ssize_t count_args(t_token *token)
             word_count++;
         else if (token->next && token->next->type == word) // can be else ?
             token = token->next;
-        // else
-        //     return (printf("unknown error in ast\n"), -1);
+        else
+            return (ft_dprintf(STDERR_FILENO, "!!! unknown error in ast !!!\n"), -1);
         token = token->next;
     }
     return (word_count);

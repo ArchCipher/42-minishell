@@ -14,6 +14,7 @@
 # define MINISHELL_H
 
 # include "libft/libft.h"
+# include "dprintf/ft_dprintf.h"
 # include <fcntl.h>				// open
 # include <errno.h>             // errno
 # include <limits.h>			// LONG_MAX (ft_atoi)

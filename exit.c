@@ -14,10 +14,10 @@ int exec_exit(char **s)
         return (0);
     n = status_atoi(*s) % EXIT_STATUS_MOD;
     if (errno == EINVAL)
-        printf("%s: exit: %s: %s\n", MINI, *s, E_EXIT_CODE);
+        ft_dprintf(STDERR_FILENO, "%s: exit: %s: %s\n", MINI, *s, E_EXIT_CODE);
     else if (s[1])
     {
-        printf("%s: exit: %s\n", MINI, E_MANY_ARGS);
+        ft_dprintf(STDERR_FILENO, "%s: exit: %s\n", MINI, E_MANY_ARGS);
         n = 1;
     }
     return (n);

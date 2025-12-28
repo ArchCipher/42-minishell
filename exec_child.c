@@ -144,7 +144,7 @@ static void    child_dup_error(int *fd, int prev_fd)
 
 static void    child_path_error(char *filename, char *msg, int exit_code, char *path)
 {
-    printf("%s: %s: %s\n", MINI, filename, msg);
+    ft_dprintf(STDERR_FILENO, "%s: %s: %s\n", MINI, filename, msg);
     if (!ft_strchr(filename, '/') && path)
         free(path);
     exit(exit_code); 
