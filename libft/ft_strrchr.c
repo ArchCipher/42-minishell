@@ -1,29 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   utils.c                                            :+:      :+:    :+:   */
+/*   ft_strrchr.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/04 17:28:00 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/10 21:03:13 by kmurugan         ###   ########.fr       */
+/*   Created: 2025/10/16 18:29:06 by kmurugan          #+#    #+#             */
+/*   Updated: 2025/10/16 18:30:30 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "minishell.h"
-/*
-void	*ft_memset(void *b, int c, size_t len)
-{
-	size_t	i;
-
-	i = 0;
-	while (i < len)
-	{
-		((unsigned char *)b)[i] = (unsigned char)c;
-		i++;
-	}
-	return (b);
-}
+#include "libft.h"
 
 char	*ft_strrchr(const char *s, int c)
 {
@@ -39,24 +26,3 @@ char	*ft_strrchr(const char *s, int c)
 	}
 	return (NULL);
 }
-*/
-
-
-
-/*
-size_t	strnlen(const char *s, size_t n)
-{
-	const char *p;
-
-	p = memchr(s, 0, n);
-	if (p)
-		return (p - s);
-	return (n);
-}
-*/
-
-/*
-libc realloc doesn't free ptr when malloc fails,
-but this version frees ptr when malloc fails.
-*/
-

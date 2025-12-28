@@ -13,6 +13,7 @@
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
+# include "libft/libft.h"
 # include <fcntl.h>				// open
 # include <errno.h>             // errno
 # include <limits.h>			// LONG_MAX (ft_atoi)
@@ -30,7 +31,7 @@
 
 # define PROMPT "$> "
 # define MINI "minishell"
-# define ERR ((char *)-1)
+# define ERR_PTR ((char *)-1)
 
 # define WORD_DELIMITERS " \f\n\r\t\v<>|"
 # define OPERATORS "<>|"
@@ -119,10 +120,10 @@ typedef struct s_shell
 
 typedef struct s_path_vars
 {
-	char    *path;
-    char    *full_path;
-    char    *p;
-    char    *new_path;
+	const char	*path;
+    char		*full_path;
+    char		*p;
+    char		*new_path;
 }			t_path_vars;
 
 typedef struct s_string
@@ -230,7 +231,7 @@ int						export_no_args(t_env *env);
 
 // env.c
 int						exec_env(t_env *env);
-char					*ft_getenv(t_env *env, const char *key);
+const char				*ft_getenv(t_env *env, const char *key);
 char    				**env_to_envp(t_env *env);
 
 // unset.c
@@ -241,24 +242,6 @@ t_env					*env_lookup_prev(t_env *env, t_env **prev, const char *arg);
 void    				ft_qsort(void *base, size_t nel, size_t width, int (*f)(const void *, const void *));
 
 // utils.c
-int						ft_isspace(int c);
-int						ft_isalpha(int c);
-int						ft_isalnum(int c);
-void					*ft_memchr(const void *s, int c, size_t n);
-char					*ft_strchr(const char *s, int c);
-char					*ft_strrchr(const char *s, int c);
-size_t					ft_strspn(const char *s, const char *accept);
-size_t					ft_strcspn(const char *s, const char *reject);
-int						ft_strcmp(const char *s1, const char *s2);
-int						ft_strncmp(const char *s1, const char *s2, size_t n);
-char					*ft_strdup(const char *s1);
-char					*ft_strndup(const char *s1, size_t len);
-void					*ft_memcpy(void *dst, const void *src, size_t n);
-size_t					ft_strlen(const char *s);
-char					*ft_strjoin(const char *s1, const char *s2);
-void					*ft_realloc(void *ptr, size_t old_size, size_t size);
-char					*ft_strtok_r(char *s, const char *sep, char **p);
-char					*ft_strjoin(const char *s1, const char *s2);
-char					*ft_strjoin3(const char *s1, const char *s2, const char *s3);
+// remove strrchr?
 
 #endif

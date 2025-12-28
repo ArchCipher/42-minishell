@@ -23,7 +23,7 @@ int exec_env(t_env *env)
     return (0);
 }
 
-char *ft_getenv(t_env *env, const char *key)
+const char *ft_getenv(t_env *env, const char *key)
 {
     while (env)
     {

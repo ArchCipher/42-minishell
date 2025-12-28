@@ -111,7 +111,8 @@ void exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
 {
 	free_cmds(cmds);
     free_env(shell->env);
-    tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
+	if (isatty(STDIN_FILENO))
+        tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
     rl_clear_history();
     exit(exit_code);
 }

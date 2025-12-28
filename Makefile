@@ -1,5 +1,6 @@
 #				Library and Project names
 NAME			= minishell
+LIBFT_LIB		= libft
 
 #				Headers
 INC				= -I.
@@ -17,7 +18,6 @@ MSRCS			= minishell signal \
 				ast heredoc \
 				execute exec_child exec_utils \
 				builtin export export_no_args qsort env unset exit \
-				utils \
 				free
 
 SRCS			= $(addsuffix .c, $(MSRCS))
@@ -32,20 +32,28 @@ SFLAGS			= -fsanitize=address
 
 CFLAGS			= $(FLAGS) $(SFLAGS) $(READLINE_INC) $(READLINE_LIB) -lreadline
 
+#			Library
+FT_LIBFT	= -L$(LIBFT_LIB) -lft
+
 %.o: %.c
 	$(CC) $(FLAGS) $(INC) $(READLINE_INC) -g -c $< -o $@
 
-all: $(NAME)
+all: lib $(NAME)
+
+lib:
+	@make -C $(LIBFT_LIB)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -g $(OBJS) -o $@
+	$(CC) $(CFLAGS) -g $(OBJS) $(FT_LIBFT) -o $@
 
 clean:
+	make -C $(LIBFT_LIB) clean
 	rm -f $(OBJS)
 
 fclean: clean
+	make -C $(LIBFT_LIB) fclean
 	rm -f $(NAME)
 
 re: fclean all
 
-.PHONY: all clean fclean re check_readline
+.PHONY: all clean fclean re lib

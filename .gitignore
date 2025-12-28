@@ -6,3 +6,7 @@ en.subject.pdf
 minishell_concepts.md
 text.md
 test.txt
+test_minishell.sh
+test_quick.sh
+TEST_README.md
+minishell_tester/

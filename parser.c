@@ -65,7 +65,7 @@ static char	*handle_word(char *token, char *end, t_shell *shell)
 			flag = dquote;
 		else if((*token == '\'' && flag == squote) || (*token == '\"' && flag == dquote))
 			flag = word;
-		else if (!(*token == '$' && flag != squote && token + 1 < end && (token[1] == '\'' || token[1] == '\"' || ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1]))))
+		else if ( !(*token == '$' && flag != squote && token + 1 < end && (ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1]))))
 			str.str[(str.i)++] = *token;
 		if (*token == '$' && flag != squote && token + 1 < end && (ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1])))
 		{

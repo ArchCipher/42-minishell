@@ -42,6 +42,11 @@ void    init_signals(struct termios *original_term)
 
     if (setup_handler(SIGINT, shell_handler) == -1 || setup_handler(SIGQUIT, SIG_IGN) == -1)
         exit(1);
+    if (!isatty(STDIN_FILENO))
+    {
+        // memset(original_term, 0, sizeof(struct termios));
+        return ;
+    }
     if (tcgetattr(STDIN_FILENO, original_term) == -1)
         exit(1);
     term = *original_term;

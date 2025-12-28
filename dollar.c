@@ -1,9 +1,9 @@
 #include "minishell.h"
 
-static char     *itoa_status(int n, char *num);
-static char     *expand_var(char **token, char *end, t_env *env);
-static int      valid_substitution(char *token, size_t len);
-static size_t	ft_numlen(int n, int base);
+static char			*itoa_status(int n, char *num);
+static const char	*expand_var(char **token, char *end, t_env *env);
+static int			valid_substitution(char *token, size_t len);
+static size_t		ft_numlen(int n, int base);
 
 /*
 ERR is (char *)-1, just used as a sentinal value for error.
@@ -12,7 +12,7 @@ Must not be dereferenced, but only compared to detect error.
 
 int	handle_dollar(char **token, char *end, t_string *str, t_shell *shell)
 {
-	char	*var;
+	const char	*var;
 	char	exit_code[4];
 	size_t	var_len;
 
@@ -25,7 +25,7 @@ int	handle_dollar(char **token, char *end, t_string *str, t_shell *shell)
 	}
 	else
 		var = expand_var(token, end, shell->env);
-	if (var == ERR)
+	if (var == ERR_PTR)
 		return (0);	
 	if (!var)
 		return (1);
@@ -66,11 +66,11 @@ static char	*itoa_status(int n, char *num)
 	return (num);
 }
 
-static char	*expand_var(char **token, char *end, t_env *env)
+static const char	*expand_var(char **token, char *end, t_env *env)
 {
-	char	*env_var;
-	char	*start;
-	char	*tmp;
+	const char	*env_var;
+	char		*start;
+	char		*tmp;
 
 	start = *token;
 	while (*token < end && (**token == '_' || ft_isalnum(**token)))
@@ -81,10 +81,10 @@ static char	*expand_var(char **token, char *end, t_env *env)
 		*token = ft_memchr(*token, '}', end - *token);
 	}
 	else if (**token == '{')
-		return (ERR);
+		return (ERR_PTR);
 	tmp = ft_strndup(start, *token - start);
 	if (!tmp)
-		return (perror(MINI), ERR);
+		return (perror(MINI), ERR_PTR);
 	env_var = ft_getenv(env, tmp);
 	free(tmp);
 	if (**token == '}')
