@@ -37,11 +37,7 @@ t_cmd	*build_ast(t_token *tokens)
 			cmd.tail = cmd.new;
 		}
 		if (current && current->type == pipe_char)
-		{
 			current = current->next;
-			// if (current->type != word)
-			//     return (perror("MINI"), error_free(cmd.head, tokens));
-		}
 	}
 	free_tokens(tokens, false, NULL);
 	return (cmd.head);
@@ -101,11 +97,7 @@ static t_cmd	*build_cmd(t_token **current)
 			*current = (*current)->next;
 		}
 		else if (!build_redir(current, &new->redirs, &last))
-		{
-			new->args[i] = NULL;
-			free_cmds(new);
-			return (NULL);
-		}
+			return (new->args[i] = NULL, free_cmds(new), NULL);
 	}
 	new->args[i] = NULL;
 	return (new);

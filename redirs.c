@@ -12,6 +12,8 @@
 
 #include "minishell.h"
 
+static int	open_redir_file(e_token_type flag, char *file);
+
 /*
 	if no infile, prints errror.
 	for heredoc,
@@ -26,13 +28,8 @@ int	setup_redirs(t_redir *redirs)
 		return (0);
 	while (redirs)
 	{
-		if (redirs->flag == redir_in)
-			redirs->fd = open(redirs->file, O_RDONLY);
-		else if (redirs->flag == redir_out)
-			redirs->fd = open(redirs->file, O_WRONLY | O_CREAT | O_TRUNC, 0660);
-		else if (redirs->flag == append)
-			redirs->fd = open(redirs->file, O_WRONLY | O_CREAT | O_APPEND,
-					0660);
+		if (redirs->flag != heredoc)
+			redirs->fd = open_redir_file(redirs->flag, redirs->file);
 		if (redirs->fd == -1)
 			return (ft_dprintf(STDERR_FILENO, "%s: %s: %s\n", MINI,
 					redirs->file, strerror(errno)), -1);
@@ -51,6 +48,23 @@ int	setup_redirs(t_redir *redirs)
 	return (0);
 }
 
+static int	open_redir_file(e_token_type flag, char *file)
+{
+	int fd;
+
+	fd = -1;
+	if (flag == redir_in)
+		fd = open(file, O_RDONLY);
+	else if (flag == redir_out)
+		fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0660);
+	else if (flag == append)
+		fd = open(file, O_WRONLY | O_CREAT | O_APPEND, 0660);
+	return (fd);
+}
+
+/*
+part of fork_with_pipe()
+*/
 void	close_pipe_fds(int *fd, int prev_fd)
 {
 	if (fd)

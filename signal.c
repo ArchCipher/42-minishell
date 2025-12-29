@@ -83,7 +83,7 @@ DESCRIPTION:
 		union __sigaction_u = void (*__sa_handler)(int);
 */
 
-// should exit(EXIT_FAILURE); when setup_handler returns 1.
+// should exit(EXIT_FAILURE); when setup_handler returns -1.
 int	setup_handler(int sig, void (*handler)(int))
 {
 	struct sigaction	sa;
@@ -134,4 +134,11 @@ void	handle_shell_signal(int *status)
 {
 	*status = 1;
 	g_signal = 0;
+}
+
+void	setup_child_handler()
+{
+	if (setup_handler(SIGINT, SIG_DFL) == -1 || setup_handler(SIGQUIT,
+			SIG_DFL) == -1)
+		exit(1);
 }

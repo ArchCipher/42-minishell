@@ -12,36 +12,23 @@
 
 #include "minishell.h"
 
-static void		ft_qsort_helper(t_sort sort, size_t low, size_t high);
-static size_t	partition(t_sort sort, size_t low, size_t high);
-static void		memswap(void *a, void *b, size_t size);
+static size_t	partition(t_env **arr, size_t low, size_t high);
+static void	swap_env(t_env **a, t_env **b);
 
 /*
 nel = number of elements
 width = size of each element
 */
-void	ft_qsort(void *base, size_t nel, size_t width, int (*f)(const void *,
-			const void *))
-{
-	t_sort	sort;
-
-	sort.base = base;
-	sort.width = width;
-	sort.comp = f;
-	if (nel > 1)
-		ft_qsort_helper(sort, 0, nel - 1);
-}
-
-static void	ft_qsort_helper(t_sort sort, size_t low, size_t high)
+void	ft_qsort_env(t_env **arr, size_t low, size_t high)
 {
 	size_t	pi;
 
 	if (low < high)
 	{
-		pi = partition(sort, low, high);
+		pi = partition(arr, low, high);
 		if (pi > 0)
-			ft_qsort_helper(sort, low, pi - 1);
-		ft_qsort_helper(sort, pi + 1, high);
+			ft_qsort_env(arr, low, pi - 1);
+		ft_qsort_env(arr, pi + 1, high);
 	}
 }
 
@@ -49,40 +36,31 @@ static void	ft_qsort_helper(t_sort sort, size_t low, size_t high)
 [ <= pivot (i) | > pivot (j) | unknown | pivot ]
 */
 
-static size_t	partition(t_sort sort, size_t low, size_t high)
+static size_t	partition(t_env **arr, size_t low, size_t high)
 {
 	size_t	i;
 	size_t	j;
-	char	*arr;
 
-	arr = (char *)sort.base;
 	i = low;
 	j = low;
 	while (j < high)
 	{
-		if (sort.comp(arr + j * sort.width, arr + high * sort.width) <= 0)
+		if (ft_strcmp(arr[j]->key, arr[high]->key) <= 0)
 		{
-			memswap(arr + i * sort.width, arr + j * sort.width, sort.width);
+			swap_env(&arr[i], &arr[j]);
 			i++;
 		}
 		j++;
 	}
-	memswap(arr + i * sort.width, arr + high * sort.width, sort.width);
+	swap_env(&arr[i], &arr[high]);
 	return (i);
 }
 
-/*
-malloc is used as VLA (tmp[size]) is not valid in 42
-*/
-static void	memswap(void *a, void *b, size_t size)
+static void	swap_env(t_env **a, t_env **b)
 {
-	unsigned char	*tmp;
+	t_env	*tmp;
 
-	tmp = malloc(size);
-	if (!tmp)
-		return ; // handle error (cleanup and exit)
-	ft_memcpy(tmp, a, size);
-	ft_memcpy(a, b, size);
-	ft_memcpy(b, tmp, size);
-	free(tmp);
+	tmp = *a;
+	*a = *b;
+	*b = tmp;
 }

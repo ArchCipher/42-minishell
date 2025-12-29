@@ -12,7 +12,6 @@
 
 #include "minishell.h"
 
-static int		comp(const void *a, const void *b);
 static t_env	**env_to_array(t_env *env, size_t len);
 static size_t	env_size(t_env *env);
 
@@ -28,7 +27,7 @@ int	export_no_args(t_env *env)
 	arr = env_to_array(env, len);
 	if (!arr)
 		return (1);
-	ft_qsort(arr, len, sizeof(t_env *), &comp);
+	ft_qsort_env(arr, 0, len - 1);
 	i = 0;
 	while (i < len)
 	{
@@ -40,14 +39,6 @@ int	export_no_args(t_env *env)
 	}
 	free(arr);
 	return (0);
-}
-
-/*
-comparator recieves a pointer to the element, not the element itself.
-*/
-static int	comp(const void *a, const void *b)
-{
-	return (ft_strcmp((*(const t_env **)a)->key, (*(const t_env **)b)->key));
 }
 
 static t_env	**env_to_array(t_env *env, size_t len)

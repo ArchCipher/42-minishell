@@ -19,7 +19,7 @@ make sure errors are not printed twice
 */
 static int	is_builtin(char *s);
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell);
-static int	fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell);
+static int	restore_fds(int actual_stdin, int actual_stdout, int ret);
 static int	cmds_waitpid(t_cmd *cmds);
 
 int	exec_cmds(t_cmd *cmds, t_shell *shell)
@@ -46,7 +46,7 @@ int	exec_cmds(t_cmd *cmds, t_shell *shell)
 returns -1 if not a builtin
 */
 
-int	is_builtin(char *s)
+static int	is_builtin(char *s)
 {
 	if (ft_strcmp(s, "echo") == 0)
 		return (BUILTIN_ECHO);
@@ -71,10 +71,10 @@ DESCRIPTION:
     stdin and stdout after execution.
 */
 
-int	exec_in_parent(t_cmd *cmd, t_shell *shell)
+static int	exec_in_parent(t_cmd *cmd, t_shell *shell)
 {
-	int	actual_stdout;
 	int	actual_stdin;
+	int	actual_stdout;
 	int	ret;
 
 	actual_stdout = dup(STDOUT_FILENO);
@@ -84,66 +84,31 @@ int	exec_in_parent(t_cmd *cmd, t_shell *shell)
 	if (actual_stdin == -1)
 		return (close(actual_stdout), perror(MINI), 1);
 	if (setup_redirs(cmd->redirs) == -1)
-		return (close(actual_stdout), close(actual_stdin), 1);
-	if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
+		return (restore_fds(actual_stdin, actual_stdout, 1));
+	if (isatty(actual_stdout) && cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
 				&& !cmd->args[2])))
 		write(actual_stdout, "exit\n", 5);
-	ret = exec_builtin(cmd, shell);
+	ret = exec_builtin(cmd, shell);	
 	if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
 				&& !cmd->args[2])))
+	{
+		close(actual_stdin);
+		close(actual_stdout);
 		exit_shell(ret, cmd, shell);
-	if (dup2(actual_stdout, STDOUT_FILENO) == -1)
-		return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
-	if (dup2(actual_stdin, STDIN_FILENO) == -1)
-		return (close(actual_stdout), close(actual_stdin), perror(MINI), 1);
-	close(actual_stdout);
-	close(actual_stdin);
-	return (ret);
+	}
+	return (restore_fds(actual_stdin, actual_stdout, ret));
 }
 
-/*
-DESCRIPTION:
-	If forks a child preocess, and if there is a next command,
-		it creates a pipe and then forks.
-	If fork succeeds, it executes the child,
-		closes fds appropriately and stores the
-	read_end of pipe for next command if there is a next command.
-	Returns 0 on success and 1 on pipe or fork error.
-
-	PIPE: a pipe with 2 fds with read and write ends are created.
-		fd[0] connects to read end, fd[1] to write end.
-	FORK: On success,
-		a child process is created. It returns 0 to the child process and
-		the process ID of the child to the parent process.
-	On error, both pipe and fork return -1.
-*/
-
-int	fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell)
+static int	restore_fds(int actual_stdin, int actual_stdout, int ret)
 {
-	int	fd[2];
-	int	*pipe_fd;
-
-	pipe_fd = NULL;
-	if (cmd->next && pipe(fd) == -1)
-		return (perror(MINI), 1);
-	if (cmd->next)
-		pipe_fd = fd;
-	cmd->exec.pid = fork();
-	if (cmd->exec.pid == -1)
+	if ((dup2(actual_stdout, STDOUT_FILENO) == -1) || (dup2(actual_stdin, STDIN_FILENO) == -1))
 	{
-		close_pipe_fds(pipe_fd, *prev_fd);
-		return (perror(MINI), 1);
+		perror(MINI);
+		ret = 1;
 	}
-	if (cmd->exec.pid == 0)
-		exec_child(cmd, pipe_fd, *prev_fd, shell);
-	if (*prev_fd != -1)
-		close(*prev_fd);
-	if (pipe_fd)
-	{
-		close(pipe_fd[1]);
-		*prev_fd = pipe_fd[0];
-	}
-	return (0);
+	close(actual_stdin);
+	close(actual_stdout);
+	return (ret);
 }
 
 /*
@@ -154,7 +119,7 @@ WAITPID:
 		return (-1); // handle error
 */
 
-int	cmds_waitpid(t_cmd *cmds)
+static int	cmds_waitpid(t_cmd *cmds)
 {
 	int	status;
 	int	last_status;

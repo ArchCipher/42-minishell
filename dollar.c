@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static char			*itoa_status(int n, char *num);
+static char			*status_itoa(int n, char *num);
 static const char	*expand_var(char **token, char *end, t_env *env);
 static int			valid_substitution(char *token, size_t len);
 static size_t		ft_numlen(int n, int base);
@@ -33,7 +33,7 @@ int	handle_dollar(char **token, char *end, t_string *str, t_shell *shell)
 	if (**token == '?')
 	{
 		(*token)++;
-		var = itoa_status(shell->status, exit_code);
+		var = status_itoa(shell->status, exit_code);
 	}
 	else
 		var = expand_var(token, end, shell->env);
@@ -54,25 +54,18 @@ int	handle_dollar(char **token, char *end, t_string *str, t_shell *shell)
 	return (1);
 }
 
-static char	*itoa_status(int n, char *num)
+static char	*status_itoa(int n, char *num)
 {
-	int		sign;
 	size_t	len;
 
-	sign = 1;
 	n = n % EXIT_STATUS_MOD;
 	len = ft_numlen(n, 10);
 	num[len] = '\0';
 	if (n == 0)
 		num[0] = '0';
-	else if (n < 0)
-	{
-		num[0] = '-';
-		sign = -1;
-	}
 	while (len-- > 0 && n)
 	{
-		num[len] = ((n % 10) * sign) + '0';
+		num[len] = (n % 10) + '0';
 		n /= 10;
 	}
 	return (num);

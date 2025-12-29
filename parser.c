@@ -13,15 +13,18 @@
 #include "minishell.h"
 
 static char	*handle_word(char *token, char *end, t_shell *shell);
+static int	token_is_expandable(char *s, e_token_type *flag, char *end, t_string *str);
+static int del_one_token(t_token **tokens, t_token **cur, t_token *prev);
+static void	error_free_tokens(t_token *tokens, t_token *current);
 
 /*
 strndup only word tokens, others are pointers input with just the token->type.
+!!! now returns error for logical OR (||)
 */
 t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 {
 	t_token	*current;
 	t_token	*prev;
-	t_token	*tmp;
 
 	if (!tokens)
 		return (NULL);
@@ -35,23 +38,11 @@ t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 					+ current->len, shell);
 			if (!current->token)
 				return (free_tokens(tokens, true, current), NULL);
-			if (!*current->token && !prev)
-			{
-				free(current->token);
-				tokens = current->next;
-				tmp = current;
-				current = current->next;
-				free(tmp);
+			if (del_one_token(&tokens, &current, prev))
 				continue ;
-			}
 		}
-		else if (!current->next)
-			return (ft_dprintf(STDERR_FILENO, "%s: %s`newline'\n", MINI,
-					E_PARSE), free_tokens(tokens, true, current), NULL);
-		else if (current->next && current->next->type != word)
-			return (ft_dprintf(STDERR_FILENO, "%s: %s`%c'\n", MINI, E_PARSE,
-					current->next->token[0]), free_tokens(tokens, true,
-					current), NULL);
+		else if (!current->next || (current->type == pipe_char && current->next->type == pipe_char) || (current->type != pipe_char && current->next->type != word))
+			return (error_free_tokens(tokens, current), NULL);
 		prev = current;
 		current = current->next;
 	}
@@ -65,6 +56,7 @@ would be nice to check end quote, but subject doesn't require this
 	if (*token == '\'' && flag == word && ft_memchr(token + 1, '\'', end - token
 		- 1))
 */
+
 static char	*handle_word(char *token, char *end, t_shell *shell)
 {
 	e_token_type	flag;
@@ -78,18 +70,7 @@ static char	*handle_word(char *token, char *end, t_shell *shell)
 	flag = word;
 	while (token < end)
 	{
-		if (*token == '\'' && flag == word)
-			flag = squote;
-		else if (*token == '\"' && flag == word)
-			flag = dquote;
-		else if ((*token == '\'' && flag == squote) || (*token == '\"'
-				&& flag == dquote))
-			flag = word;
-		else if (!(*token == '$' && flag != squote && token + 1 < end
-				&& (ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1]))))
-			str.str[(str.i)++] = *token;
-		if (*token == '$' && flag != squote && token + 1 < end
-			&& (ft_strchr(EXPANDABLE, token[1]) || ft_isalnum(token[1])))
+		if (token_is_expandable(token, &flag, end, &str))
 		{
 			if (!handle_dollar(&token, end, &str, shell))
 				return (free(str.str), NULL);
@@ -99,4 +80,47 @@ static char	*handle_word(char *token, char *end, t_shell *shell)
 	}
 	str.str[str.i] = 0;
 	return (str.str);
+}
+
+static int	token_is_expandable(char *s, e_token_type *flag, char *end, t_string *str)
+{
+	if (*s == '\'' && *flag == word)
+		*flag = squote;
+	else if (*s == '\"' && *flag == word)
+		*flag = dquote;
+	else if ((*s == '\'' && *flag == squote) || (*s == '\"' && *flag == dquote))
+		*flag = word;
+	else if (!(*s == '$' && *flag != squote && s + 1 < end
+				&& (ft_strchr(EXPANDABLE, s[1]) || ft_isalnum(s[1]))))
+		str->str[(str->i)++] = *s;
+	if ((*s == '$' && *flag != squote && s + 1 < end
+			&& (ft_strchr(EXPANDABLE, s[1]) || ft_isalnum(s[1]))))
+		return (1);
+	return (0);
+}
+
+static int del_one_token(t_token **tokens, t_token **cur, t_token *prev)
+{
+	t_token *tmp;
+
+	tmp = *cur;
+	if (!(!*tmp->token && !prev))
+		return (0);
+	*cur = tmp->next;
+	free(tmp->token);
+	if (!prev)
+		*tokens = tmp->next;
+	else
+		prev->next = tmp->next;
+	free(tmp);
+	return (1);
+}
+
+static void	error_free_tokens(t_token *tokens, t_token *current)
+{
+	if (!current->next)
+		ft_dprintf(STDERR_FILENO, "%s: %s`newline'\n", MINI, E_PARSE);
+	else
+		ft_dprintf(STDERR_FILENO, "%s: %s`%c'\n", MINI, E_PARSE, current->next->token[0]);	
+	free_tokens(tokens, true, current);
 }

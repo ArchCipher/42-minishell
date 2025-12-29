@@ -14,7 +14,6 @@
 
 static t_env	*create_env(char *envp);
 int				is_valid_identifier(char *s);
-
 /*
 export FORMAT:
 	declare -x KEY="value"

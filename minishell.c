@@ -12,7 +12,9 @@
 
 #include "minishell.h"
 
+static t_cmd *parse_input(char *input, t_shell *shell);
 static void	init_shell(char **envp, t_shell *shell);
+static void	update_pwd(t_shell *shell);
 
 /*
 	NAME
@@ -34,7 +36,6 @@ int	main(int ac, char **av, char **envp)
 {
 	t_shell	shell;
 	char	*input;
-	t_token	*tokens;
 	t_cmd	*cmds;
 
 	(void)av;
@@ -49,15 +50,38 @@ int	main(int ac, char **av, char **envp)
 		if (!input)
 			break ;
 		add_history(input);
-		tokens = tokenise_input(input);
-		tokens = parse_tokens(tokens, &shell);
-		cmds = build_ast(tokens);
+		cmds = parse_input(input, &shell);
 		free(input);
 		if (cmds && !process_heredoc(cmds, &shell))
 			shell.status = exec_cmds(cmds, &shell);
 		free_cmds(cmds);
 	}
-	exit_shell(0, NULL, &shell);
+	exit_shell(shell.status, NULL, &shell);
+}
+
+static t_cmd *parse_input(char *input, t_shell *shell)
+{
+    t_token *tokens;
+    t_cmd *cmds;
+
+    tokens = tokenise_input(input);
+    tokens = parse_tokens(tokens, shell);
+    cmds = build_ast(tokens);
+    return (cmds);
+}
+
+static void	init_shell(char **envp, t_shell *shell)
+{
+	init_signals(&shell->original_term);
+	shell->status = 0;
+	shell->env = NULL;
+	while (*envp)
+	{
+		if (update_env(shell, *envp, NULL))
+			exit_shell(1, NULL, shell);
+		envp++;
+	}
+	update_pwd(shell);
 }
 
 static void	update_pwd(t_shell *shell)
@@ -86,20 +110,6 @@ static void	update_pwd(t_shell *shell)
 	if (pwd->value)
 		free(pwd->value);
 	pwd->value = getcwd(NULL, 0);
-}
-
-static void	init_shell(char **envp, t_shell *shell)
-{
-	init_signals(&shell->original_term);
-	shell->status = 0;
-	shell->env = NULL;
-	while (*envp)
-	{
-		if (update_env(shell, *envp, NULL))
-			exit_shell(1, NULL, shell);
-		envp++;
-	}
-	update_pwd(shell);
 }
 
 /*

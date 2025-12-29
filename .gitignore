@@ -10,3 +10,4 @@ test_minishell.sh
 test_quick.sh
 TEST_README.md
 minishell_tester/
+42_minishell_tester/

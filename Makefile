@@ -27,21 +27,20 @@ HEADER			= minishell.h
 INC				= -I. \
 				-I$(DIR_LIBFT) \
 				-I$(DIR_DPRINTF) \
-				$(READLINE_INC)
+				$(READLINE_INC) \
+				-I gnl
 
 #				Sources & Objects
 MSRCS			= minishell signal \
 				lexer \
 				parser dollar \
 				ast heredoc \
-				execute exec_child exec_utils \
+				exec exec_child path redirs \
 				builtin export export_no_args qsort env unset exit \
 				free
 
 SRCS			= $(addsuffix .c, $(MSRCS))
 OBJS			= $(SRCS:.c=.o)
-
-# .DEFAULT_GOAL := all
 
 #				Compiler and Flags
 CC				= cc
@@ -57,22 +56,24 @@ LDFLAGS			= $(READLINE_LIB) $(FT_DPRINTF) $(FT_LIBFT)
 all: $(NAME)
 
 $(LIBFT_A):
-	$(MAKE) -C $(DIR_LIBFT)
+	@echo "--Building libft.a--"
+	@$(MAKE) -s -C $(DIR_LIBFT)
 
 $(DPRINTF_A):
-	$(MAKE) -C $(DIR_DPRINTF)
+	@echo "--Building libftdprintf.a--"
+	@$(MAKE) -s -C $(DIR_DPRINTF)
 
-$(NAME): $(OBJS) $(DPRINTF_A) $(LIBFT_A) 
+$(NAME): $(DPRINTF_A) $(LIBFT_A) $(OBJS) 
 	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 
 clean:
-	make -C $(DIR_LIBFT) clean
-	make -C $(DIR_DPRINTF) clean
+	@$(MAKE) -s -C $(DIR_LIBFT) clean
+	@$(MAKE) -s -C $(DIR_DPRINTF) clean
 	rm -f $(OBJS)
 
 fclean: clean
-	make -C $(DIR_LIBFT) fclean
-	make -C $(DIR_DPRINTF) fclean
+	@$(MAKE) -s -C $(DIR_LIBFT) fclean
+	@$(MAKE) -s -C $(DIR_DPRINTF) fclean
 	rm -f $(NAME)
 
 re: fclean all

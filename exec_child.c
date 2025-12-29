@@ -12,13 +12,55 @@
 
 #include "minishell.h"
 
-static char	*get_valid_path(char *filename, t_env *env);
-static char	*build_path(char *filename, t_env *env);
-static void	child_dup_error(int *fd, int prev_fd);
-static void	child_path_error(char *filename, char *msg, int exit_code,
-				char *path);
+static void		exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell);
+static char		**env_to_envp(t_env *env);
+static size_t	envp_size(t_env *env);
+static void		child_dup_error(int *fd, int prev_fd);
 
-// separate execve wrapper for built-in and executables
+/*
+DESCRIPTION:
+	If forks a child preocess, and if there is a next command,
+		it creates a pipe and then forks.
+	If fork succeeds, it executes the child,
+		closes fds appropriately and stores the
+	read_end of pipe for next command if there is a next command.
+	Returns 0 on success and 1 on pipe or fork error.
+
+	PIPE: a pipe with 2 fds with read and write ends are created.
+		fd[0] connects to read end, fd[1] to write end.
+	FORK: On success,
+		a child process is created. It returns 0 to the child process and
+		the process ID of the child to the parent process.
+	On error, both pipe and fork return -1.
+*/
+
+int	fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell)
+{
+	int	fd[2];
+	int	*pipe_fd;
+
+	pipe_fd = NULL;
+	if (cmd->next && pipe(fd) == -1)
+		return (perror(MINI), 1);
+	if (cmd->next)
+		pipe_fd = fd;
+	cmd->exec.pid = fork();
+	if (cmd->exec.pid == -1)
+	{
+		close_pipe_fds(pipe_fd, *prev_fd);
+		return (perror(MINI), 1);
+	}
+	if (cmd->exec.pid == 0)
+		exec_child(cmd, pipe_fd, *prev_fd, shell);
+	if (*prev_fd != -1)
+		close(*prev_fd);
+	if (pipe_fd)
+	{
+		close(pipe_fd[1]);
+		*prev_fd = pipe_fd[0];
+	}
+	return (0);
+}
 
 /*
 DESCRIPTION:
@@ -37,14 +79,12 @@ DESCRIPTION:
 		-1 and the global variable errno is set to indicate the error.
 */
 
-void	exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell)
+static void	exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell)
 {
-	char	*path;
-	char	**envp;
+	char		*path;
+	char		**envp;
 
-	if (setup_handler(SIGINT, SIG_DFL) == -1 || setup_handler(SIGQUIT,
-			SIG_DFL) == -1)
-		exit(1);
+	setup_child_handler();
 	if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
 		child_dup_error(fd, prev_fd);
 	if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
@@ -68,94 +108,46 @@ void	exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell)
 }
 
 /*
-0:  success
-1:  general error
-126:    found but not executable (insufficient permissions)
-127:    command not found
-
-normal exit codes: 0-127
-128 + N:    fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
-255:    exit status out of range (exit takes only integer args in the range 0
-	- 255)
-non numeric argument for exit also return 255
-
-If buils_path returns NULL path, or if stat(path) fails,
-	it exits with code 127(command not found)
-It checks S_ISREG(sb.st_mode) to check if it is a directory.
-It checks access(path, X_OK) for execute permissions.
-
-An exit status of 126 indicates that utility was found,
-	but could not be executed.
-An exit status of 127 indicates that utility could not be found.
+need to free all exported ones.
 */
-
-static char	*get_valid_path(char *filename, t_env *env)
+static char	**env_to_envp(t_env *env)
 {
-	struct stat	sb;
-	char		*path;
+	char	**envp;
+	size_t	size;
+	size_t	i;
 
-	if (ft_strchr(filename, '/'))
-		path = filename;
-	else
-		path = build_path(filename, env);
-	if (!path)
-		child_path_error(filename, E_PATH, EXIT_CMD_NOT_FOUND, path);
-	if (stat(path, &sb) == -1)
-		child_path_error(filename, strerror(errno), EXIT_CMD_NOT_FOUND, path);
-	if (!S_ISREG(sb.st_mode))
-		child_path_error(filename, E_DIR, EXIT_CANNOT_EXEC, path);
-	if (!(access(path, X_OK) == 0))
-		child_path_error(filename, strerror(errno), EXIT_CANNOT_EXEC, path);
-	return (path);
+	size = envp_size(env);
+	envp = malloc(sizeof(char *) * (size + 1));
+	if (!envp)
+		return (perror(MINI), NULL);
+	i = 0;
+	while (env)
+	{
+		if (env->exported && env->value)
+		{
+			envp[i] = ft_strjoin3(env->key, "=", env->value);
+			if (!envp[i])
+				return (perror(MINI), envp[i] = NULL, free_envp(envp), NULL);
+			i++;
+		}
+		env = env->next;
+	}
+	envp[i] = NULL;
+	return (envp);
 }
 
-/*
-DESCRIPTION
-	Retrieves $PATH using ft_getenv() (similar to getenv()),
-		splits by : using ft_strtok_r.
-	For each directory in $PATH, builds dir + "/" + cmd.
-
-	When path is empty "", it means current directory->
-        create full string with "./" such as "./cmd"
-
-	This is child only logic and doesn't return invalid path. It exits on error.
-	Caution: !!!cannot be used in parent process!!!
-*/
-static char	*build_path(char *filename, t_env *env)
+static size_t	envp_size(t_env *env)
 {
-	t_path_vars	vars;
-	struct stat	sb;
+	size_t	i;
 
-	vars.path = ft_getenv(env, "PATH");
-	if (!vars.path)
-		exit(1);
-	vars.full_path = ft_strdup(vars.path);
-	if (!vars.full_path)
+	i = 0;
+	while (env)
 	{
-		perror(MINI);
-		exit(1);
+		if (env->exported && env->value)
+			i++;
+		env = env->next;
 	}
-	vars.path = ft_strtok_r(vars.full_path, ":", &vars.p);
-	while (vars.path)
-	{
-		if (!*(vars.path))
-			vars.new_path = ft_strjoin("./", filename);
-		else
-			vars.new_path = ft_strjoin3(vars.path, "/", filename);
-		if (!vars.new_path)
-		{
-			free(vars.full_path);
-			perror(MINI);
-			exit(1);
-		}
-		if (stat(vars.new_path, &sb) == 0)
-			break ;
-		free(vars.new_path);
-		vars.new_path = NULL;
-		vars.path = ft_strtok_r(NULL, ":", &vars.p);
-	}
-	free(vars.full_path);
-	return (vars.new_path);
+	return (i);
 }
 
 /*
@@ -168,13 +160,4 @@ static void	child_dup_error(int *fd, int prev_fd)
 	close_pipe_fds(fd, prev_fd);
 	perror(MINI);
 	exit(1);
-}
-
-static void	child_path_error(char *filename, char *msg, int exit_code,
-		char *path)
-{
-	ft_dprintf(STDERR_FILENO, "%s: %s: %s\n", MINI, filename, msg);
-	if (!ft_strchr(filename, '/') && path)
-		free(path);
-	exit(exit_code);
 }
