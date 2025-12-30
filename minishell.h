@@ -64,13 +64,6 @@ extern volatile sig_atomic_t	g_signal;
 // 	struct s_node				*next;
 // }								t_node;
 
-// Signal (signal)
-int								setup_handler(int sig, void (*handler)(int));
-void							shell_handler(int sig);
-void							handle_shell_signal(int *status);
-void							init_signals(struct termios *original_term);
-void							setup_child_handler();
-
 // Parsing (lexer, list, parser, var, dollar, ast)
 t_token							*tokenise_input(char *s);
 
@@ -86,7 +79,7 @@ bool							dollar_expandable(char *s, char *end);
 
 t_cmd							*build_ast(t_token *tokens);
 
-// Execution (heredoc, execute, redirs, exec_child, path, free)
+// Execution (heredoc, execute, redirs, exec_child, path)
 int								process_heredoc(t_cmd *cmds, t_shell *shell);
 void							exit_shell(int exit_code, t_cmd *cmds,
 									t_shell *shell);
@@ -99,13 +92,6 @@ void							close_pipe_fds(int *fd, int prev_fd);
 int								fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell);
 
 char							*get_valid_path(const char *filename, t_env *env);
-
-void							free_tokens(t_token *tokens, bool free_content,
-									t_token *end);
-void							free_cmds(t_cmd *cmds);
-t_cmd							*error_free(t_cmd *cmds, t_token *tokens);
-void							free_env(t_env *env);
-void							free_envp(char **envp);
 
 // Builtin (builtin, export, export_no_args, env, unset, qsort)
 int								exec_builtin(t_cmd *cmd, t_shell *shell);
@@ -130,5 +116,19 @@ t_env							*env_lookup_prev(t_env *env, t_env **prev,
 									const char *arg);
 
 void							ft_qsort_env(t_env **arr, size_t low, size_t high);
+
+// Utils (signal, free)
+int								setup_handler(int sig, void (*handler)(int));
+void							shell_handler(int sig);
+void							handle_shell_signal(int *status);
+void							init_signals(struct termios *original_term);
+void							setup_child_handler();
+
+void							free_tokens(t_token *tokens, bool free_content,
+									t_token *end);
+void							free_cmds(t_cmd *cmds);
+t_cmd							*error_free(t_cmd *cmds, t_token *tokens);
+void							free_env(t_env *env);
+void							free_envp(char **envp);
 
 #endif

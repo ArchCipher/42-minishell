@@ -31,15 +31,13 @@ INC				= -I. \
 				-I gnl
 
 #				Sources & Objects
-MSRCS			= minishell signal \
-				lexer list \
-				parser var dollar \
-				ast heredoc \
-				exec exec_child path redirs \
+MSRCS			= minishell \
+				lexer list parser var dollar ast \
+				exec exec_child path redirs heredoc \
 				builtin export export_no_args qsort env unset exit \
-				free
+				signal free
 
-SRCS			= $(addsuffix .c, $(MSRCS))
+SRCS			= $(addprefix src/, $(addsuffix .c, $(MSRCS)))
 OBJS			= $(SRCS:.c=.o)
 
 #				Compiler and Flags
