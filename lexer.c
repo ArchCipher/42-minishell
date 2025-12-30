@@ -12,8 +12,8 @@
 
 #include "minishell.h"
 
-static t_token	*create_token(void *token);
-static void		set_token_type(char *s, t_token *new);
+static t_token	*get_token(char *s);
+static t_token	*create_token(void *token, e_token_type type, size_t len);
 static size_t	parse_word_token(char *s);
 
 t_token	*tokenise_input(char *s)
@@ -29,10 +29,9 @@ t_token	*tokenise_input(char *s)
 			s++;
 		if (!*s)
 			break ;
-		tokens.new = create_token(s);
+		tokens.new = get_token(s);
 		if (!tokens.new)
-			return (free_tokens(tokens.head, false, NULL), NULL);
-		set_token_type(s, tokens.new);
+			return (free_tokens(tokens.head, false, NULL), NULL); 
 		lstadd_back((void **)&tokens, (void *)tokens.new, (void *)tokens.tail,
 			TYPE_TOKEN);
 		tokens.tail = tokens.new;
@@ -41,67 +40,29 @@ t_token	*tokenise_input(char *s)
 	return (tokens.head);
 }
 
-static t_token	*create_token(void *token)
+static t_token	*get_token(char *s)
 {
-	t_token	*new;
+	e_token_type	type;
+	size_t			len;
 
-	new = malloc(sizeof(t_token));
-	if (!new)
-		return (perror(MINI), NULL);
-	new->token = token;
-	new->next = NULL;
-	return (new);
-}
-
-/*
-must update tail in the caller function
-*/
-
-void	lstadd_back(void **head, void *new, void *last, e_node_type type)
-{
-	if (!head || !new)
-		return ;
-	if (*head && !last)
-	{
-		ft_dprintf(STDERR_FILENO, "lstadd_back: last is NULL\n");
-		return ;
-	}
-	if (!*head)
-		*head = new;
-	else
-	{
-		if (type == TYPE_TOKEN)
-			((t_token *)last)->next = (t_token *)new;
-		else if (type == TYPE_CMD)
-			((t_cmd *)last)->next = (t_cmd *)new;
-		else if (type == TYPE_REDIR)
-			((t_redir *)last)->next = (t_redir *)new;
-		else if (type == TYPE_ENV)
-			((t_env *)last)->next = (t_env *)new;
-	}
-}
-
-static void	set_token_type(char *s, t_token *new)
-{
 	if (!ft_strchr(OPERATORS, *s))
-	{
-		new->len = parse_word_token(s);
-		new->type = word;
-		return ;
-	}
-	new->len = 1;
-	if (*s == '|')
-		new->type = pipe_char;
-	else if (*s == '>' && s[1] == '>')
-		new->type = append;
+		return (create_token(s, word, parse_word_token(s)));
+	len = 1;
+	if (*s == '>' && s[1] == '>')
+		type = append;
 	else if (*s == '<' && s[1] == '<')
-		new->type = heredoc;
+		type = heredoc;
 	else if (*s == '<')
-		new->type = redir_in;
+		type = redir_in;
 	else if (*s == '>')
-		new->type = redir_out;
-	if (new->type == append || new->type == heredoc)
-		new->len = 2;
+		type = redir_out;
+	else if (*s == '|')
+		type = pipe_char;
+	else
+		return (NULL);
+	if (type == append || type == heredoc)
+		len = 2;
+	return (create_token(s, type, len));
 }
 
 static size_t	parse_word_token(char *s)
@@ -112,10 +73,8 @@ static size_t	parse_word_token(char *s)
 
 	flag = word;
 	p = s;
-	while (*p)
+	while (*p && !(flag == word && (ft_strchr(WORD_DELIMITERS, *p))))
 	{
-		if (flag == word && (ft_strchr(WORD_DELIMITERS, *p)))
-			break ;
 		if (*p == '\'' && flag == word && ft_strchr(p + 1, *p))
 			flag = squote;
 		else if (*p == '\"' && flag == word && ft_strchr(p + 1, *p))
@@ -132,4 +91,19 @@ static size_t	parse_word_token(char *s)
 		p++;
 	}
 	return (p - s);
+}
+
+static t_token	*create_token(void *token, e_token_type type, size_t len)
+{
+	t_token	*new;
+
+	new = malloc(sizeof(t_token));
+	if (!new)
+		return (perror(MINI), NULL);
+	new->token = token;
+	new->type = type;
+	new->len = len;
+	new->quoted = false;
+	new->next = NULL;
+	return (new);
 }

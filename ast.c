@@ -15,6 +15,7 @@
 static t_cmd	*build_cmd(t_token **current);
 static int		build_redir(t_token **current, t_redir **head, t_redir **last);
 static t_cmd	*create_cmd(size_t word_count);
+static ssize_t	count_args(t_token *token);
 
 t_cmd	*build_ast(t_token *tokens)
 {
@@ -41,29 +42,6 @@ t_cmd	*build_ast(t_token *tokens)
 	}
 	free_tokens(tokens, false, NULL);
 	return (cmd.head);
-}
-
-/*
-counts words until it reaches end of cmd / pipe character.
-*/
-
-ssize_t	count_args(t_token *token)
-{
-	ssize_t	word_count;
-
-	word_count = 0;
-	while (token && token->type != pipe_char)
-	{
-		if (token->type == word)
-			word_count++;
-		else if (token->next && token->next->type == word) // can be else ?
-			token = token->next;
-		else
-			return (ft_dprintf(STDERR_FILENO, "!!! unknown error in ast !!!\n"),
-				-1);
-		token = token->next;
-	}
-	return (word_count);
 }
 
 /*
@@ -136,8 +114,9 @@ static int	build_redir(t_token **current, t_redir **head, t_redir **last)
 {
 	t_redir	*new;
 
-	while (*current && (*current)->type != pipe_char
-		&& (*current)->type != word)
+	if (*current && !(*current)->next)
+		return (dprintf(STDERR_FILENO, "!!! Not parsed correctly\n"), 0);
+	while (*current && (*current)->next && (*current)->type != pipe_char && (*current)->type != word)
 	{
 		new = malloc(sizeof(t_redir));
 		if (!new)
@@ -146,11 +125,34 @@ static int	build_redir(t_token **current, t_redir **head, t_redir **last)
 		(*current)->next->token = NULL;
 		new->flag = (*current)->type;
 		new->fd = -1;
-		new->quoted = false;
+		new->quoted = (*current)->next->quoted;
 		new->next = NULL;
 		lstadd_back((void **)head, (void *)new, (void *)*last, TYPE_REDIR);
 		*last = new;
 		*current = (*current)->next->next;
 	}
 	return (1);
+}
+
+/*
+counts words until it reaches end of cmd / pipe character.
+*/
+
+static ssize_t	count_args(t_token *token)
+{
+	ssize_t	word_count;
+
+	word_count = 0;
+	while (token && token->type != pipe_char)
+	{
+		if (token->type == word)
+			word_count++;
+		else if (token->next && token->next->type == word) // can be else ?
+			token = token->next;
+		else
+			return (ft_dprintf(STDERR_FILENO, "!!! unknown error in ast !!!\n"),
+				-1);
+		token = token->next;
+	}
+	return (word_count);
 }

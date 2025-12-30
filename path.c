@@ -82,30 +82,30 @@ DESCRIPTION
 */
 static char	*build_path(const char *filename, char *full_path)
 {
-	t_path_vars	vars;
+	t_strtok	path;
 	struct stat	sb;
 
-	vars.path = ft_strtok_r(full_path, ":", &vars.p);
-	while (vars.path)
+	path.token = ft_strtok_r(full_path, ":", &path.p);
+	while (path.token)
 	{
-		if (!*(vars.path))
-			vars.new_path = ft_strjoin("./", filename);
+		if (!*(path.token))
+			path.str = ft_strjoin("./", filename);
 		else
-			vars.new_path = ft_strjoin3(vars.path, "/", filename);
-		if (!vars.new_path)
+			path.str = ft_strjoin3(path.token, "/", filename);
+		if (!path.str)
 		{
 			free(full_path);
 			perror(MINI);
 			exit(1);
 		}
-		if (stat(vars.new_path, &sb) == 0)
+		if (stat(path.str, &sb) == 0)
 			break ;
-		free(vars.new_path);
-		vars.new_path = NULL;
-		vars.path = ft_strtok_r(NULL, ":", &vars.p);
+		free(path.str);
+		path.str = NULL;
+		path.token = ft_strtok_r(NULL, ":", &path.p);
 	}
 	free(full_path);
-	return (vars.new_path);
+	return (path.str);
 }
 
 static void	child_path_error(const char *filename, char *msg, int exit_code,

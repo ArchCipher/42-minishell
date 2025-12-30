@@ -42,20 +42,21 @@ int	main(int ac, char **av, char **envp)
 	if (ac != 1)
 		return (ft_dprintf(STDERR_FILENO, "%s: %s\n", MINI, E_MANY_ARGS), 1);
 	init_shell(envp, &shell);
-	while (1)
+	input = readline(PROMPT);
+	while (input)
 	{
-		input = readline(PROMPT);
 		if (g_signal == SIGINT)
 			handle_shell_signal(&shell.status);
-		if (!input)
-			break ;
 		add_history(input);
 		cmds = parse_input(input, &shell);
 		free(input);
 		if (cmds && !process_heredoc(cmds, &shell))
 			shell.status = exec_cmds(cmds, &shell);
 		free_cmds(cmds);
+		input = readline(PROMPT);	
 	}
+	if (isatty(STDIN_FILENO))
+		write(STDOUT_FILENO, "exit\n", 5);
 	exit_shell(shell.status, NULL, &shell);
 }
 

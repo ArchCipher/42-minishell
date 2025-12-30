@@ -68,8 +68,8 @@ typedef struct s_token
 
 typedef struct s_string
 {
-	char						*str;
-	size_t						i;
+	char						*s;
+	size_t						len;
 	size_t						cap;
 }								t_string;
 
@@ -104,11 +104,11 @@ typedef struct s_cmd
 }								t_cmd;
 
 
-typedef struct s_path_vars
+typedef struct s_strtok
 {
-	const char					*path;
+	const char					*token;
 	char						*p;
-	char						*new_path;
-}								t_path_vars;
+	char						*str;
+}								t_strtok;
 
 #endif

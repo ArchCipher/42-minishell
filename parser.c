@@ -12,8 +12,8 @@
 
 #include "minishell.h"
 
-static char	*handle_word(char *token, char *end, t_shell *shell);
-static int	token_is_expandable(char *s, e_token_type *flag, char *end, t_string *str);
+static bool	handle_word(t_token *token, char *end, t_shell *shell);
+static void	handle_char(char *s, e_token_type *flag, char *end, t_string *str);
 static int del_one_token(t_token **tokens, t_token **cur, t_token *prev);
 static void	error_free_tokens(t_token *tokens, t_token *current);
 
@@ -21,6 +21,7 @@ static void	error_free_tokens(t_token *tokens, t_token *current);
 strndup only word tokens, others are pointers input with just the token->type.
 !!! now returns error for logical OR (||)
 */
+
 t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 {
 	t_token	*current;
@@ -34,14 +35,15 @@ t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 	{
 		if (current->type == word)
 		{
-			current->token = handle_word(current->token, current->token
-					+ current->len, shell);
-			if (!current->token)
+			current->quoted = (ft_memchr(current->token, '\'', current->len) 
+				|| ft_memchr(current->token, '\"', current->len));
+			if (!handle_word(current, current->token + current->len, shell))
 				return (free_tokens(tokens, true, current), NULL);
-			if (del_one_token(&tokens, &current, prev))
+			if ((!prev && !*current->token) && del_one_token(&tokens, &current, prev))
 				continue ;
 		}
-		else if (!current->next || (current->type == pipe_char && current->next->type == pipe_char) || (current->type != pipe_char && current->next->type != word))
+		else if (!current->next || (current->type == pipe_char && current->next->type == pipe_char) 
+					|| (current->type != pipe_char && current->next->type != word))
 			return (error_free_tokens(tokens, current), NULL);
 		prev = current;
 		current = current->next;
@@ -57,32 +59,35 @@ would be nice to check end quote, but subject doesn't require this
 		- 1))
 */
 
-static char	*handle_word(char *token, char *end, t_shell *shell)
+static bool handle_word(t_token *tok, char *end, t_shell *shell)
 {
 	e_token_type	flag;
 	t_string		str;
 
-	str.str = malloc((end - token) + 1);
-	if (!str.str)
-		return (perror(MINI), NULL);
-	str.cap = end - token;
-	str.i = 0;
+	str.s = malloc(tok->len + 1);
+	if (!str.s)
+		return (perror(MINI), false);
+	str.cap = tok->len;
+	str.len = 0;
 	flag = word;
-	while (token < end)
+	while (tok->token < end)
 	{
-		if (token_is_expandable(token, &flag, end, &str))
+		handle_char(tok->token, &flag, end, &str);
+		if (dollar_expandable(tok->token, end) && flag != squote)
 		{
-			if (!handle_dollar(&token, end, &str, shell))
-				return (free(str.str), NULL);
+			tok->token++;
+			if (!copy_var(&str, get_var(&tok->token, end, shell), end - tok->token))
+				return (free(str.s), NULL);
 		}
 		else
-			token++;
+			tok->token++;
 	}
-	str.str[str.i] = 0;
-	return (str.str);
+	str.s[str.len] = 0;
+	tok->token = str.s;
+	return (true);
 }
 
-static int	token_is_expandable(char *s, e_token_type *flag, char *end, t_string *str)
+static void	handle_char(char *s, e_token_type *flag, char *end, t_string *str)
 {
 	if (*s == '\'' && *flag == word)
 		*flag = squote;
@@ -90,13 +95,8 @@ static int	token_is_expandable(char *s, e_token_type *flag, char *end, t_string 
 		*flag = dquote;
 	else if ((*s == '\'' && *flag == squote) || (*s == '\"' && *flag == dquote))
 		*flag = word;
-	else if (!(*s == '$' && *flag != squote && s + 1 < end
-				&& (ft_strchr(EXPANDABLE, s[1]) || ft_isalnum(s[1]))))
-		str->str[(str->i)++] = *s;
-	if ((*s == '$' && *flag != squote && s + 1 < end
-			&& (ft_strchr(EXPANDABLE, s[1]) || ft_isalnum(s[1]))))
-		return (1);
-	return (0);
+	else if (!(dollar_expandable(s, end) && *flag != squote))
+		str->s[(str->len)++] = *s;
 }
 
 static int del_one_token(t_token **tokens, t_token **cur, t_token *prev)
@@ -104,8 +104,6 @@ static int del_one_token(t_token **tokens, t_token **cur, t_token *prev)
 	t_token *tmp;
 
 	tmp = *cur;
-	if (!(!*tmp->token && !prev))
-		return (0);
 	*cur = tmp->next;
 	free(tmp->token);
 	if (!prev)

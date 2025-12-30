@@ -71,15 +71,18 @@ void							handle_shell_signal(int *status);
 void							init_signals(struct termios *original_term);
 void							setup_child_handler();
 
-// Parsing (lexer, parser, dollar, ast)
+// Parsing (lexer, list, parser, var, dollar, ast)
 t_token							*tokenise_input(char *s);
+
 void							lstadd_back(void **tokens, void *new,
 									void *last, e_node_type type);
 
 t_token							*parse_tokens(t_token *tokens, t_shell *shell);
 
-int								handle_dollar(char **token, char *end,
-									t_string *str, t_shell *shell);
+const char						*get_var(char **token, char *end, t_shell *shell);
+
+int								copy_var(t_string *str, const char *var, size_t last);
+bool							dollar_expandable(char *s, char *end);
 
 t_cmd							*build_ast(t_token *tokens);
 
