@@ -16,9 +16,10 @@ static size_t	partition(t_env **arr, size_t low, size_t high);
 static void	swap_env(t_env **a, t_env **b);
 
 /*
-nel = number of elements
-width = size of each element
+DESCRIPTION:
+	Quicksorts the environment variables in alphabetical order.
 */
+
 void	ft_qsort_env(t_env **arr, size_t low, size_t high)
 {
 	size_t	pi;
@@ -33,7 +34,14 @@ void	ft_qsort_env(t_env **arr, size_t low, size_t high)
 }
 
 /*
-[ <= pivot (i) | > pivot (j) | unknown | pivot ]
+DESCRIPTION:
+	Partitions the environment variables into two groups:
+		- less than or equal to the pivot
+		- greater than the pivot
+	Pivot used is the last element in the array (high).
+	Returns the index of the pivot element.
+
+[ <= pivot (i) | > pivot (j) | unknown | pivot (high)]
 */
 
 static size_t	partition(t_env **arr, size_t low, size_t high)
@@ -55,6 +63,11 @@ static size_t	partition(t_env **arr, size_t low, size_t high)
 	swap_env(&arr[i], &arr[high]);
 	return (i);
 }
+
+/*
+DESCRIPTION:
+	Swaps the environment variables at the given indices.
+*/
 
 static void	swap_env(t_env **a, t_env **b)
 {

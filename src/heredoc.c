@@ -19,11 +19,10 @@ static int	heredoc_waitpid(pid_t pid);
 
 /*
 DESCRIPTION:
-	Handles the heredoc and sets the file descriptor to the read end of the pipe.
+	Handles the heredoc using a pipe and stores the read end of the pipe in the
+	redir struct. Returns 0 on success, 1 on error. It exits the shell if the
+	signal couldn't be set for waitpid().
 
-	SIGINT is ignored (SIG_IGN) during waitpid(). This prevents the parent from
-	handling SIGINT during waitpid(). If the parent kept the handler,
-		it would run
 	while blocked in waitpid(), causing issues. With SIG_IGN, the signal still
 	reaches the child (which has SIG_DFL), so the child dies.
 	After waitpid() signal is handled,
@@ -58,11 +57,10 @@ int	process_heredoc(t_cmd *cmds, t_shell *shell)
 
 /*
 DESCRIPTION:
-	Handles the heredoc and sets the file descriptor to the read end of the pipe.
-	It creates a pipe and forks a child process.
-	The chils reads from readline() and writes to the write end of the pipe.
-	The parent waits for the child process to finish and returns the status.
-	Returns 0 on success, 1 on heredoc error, -1 on signal error.
+	It creates a pipe and forks a child process. The child process reads from
+	readline() and writes to the write end of the pipe. The parent process
+	waits for the child process to finish and returns the status.
+	Returns 0 on success, -1 on signal error and 1 on other errors.
 	Signal error should terminate the shell.
 */
 
@@ -70,25 +68,18 @@ static int	handle_heredoc(t_redir *redir, t_shell *shell)
 {
 	pid_t	pid;
 	int		fd[2];
-	int		ret;
 
 	if (pipe(fd) == -1)
 		return (perror(MINI), 1);
 	pid = fork();
 	if (pid == -1)
-		return (perror(MINI), close_pipe_fds(fd, -1), 1);
+		return (close_fds_error(fd, -1));
 	if (pid == 0)
 	{
-		if (setup_handler(SIGINT, SIG_DFL) == -1 || setup_handler(SIGQUIT,
-				SIG_IGN) == -1)
-		{
-			close_pipe_fds(fd, -1);
-			exit(1);
-		}
+		if (set_signal_handlers(SIG_DFL, SIG_IGN))
+			exit (close_fds_error(fd, -1));
 		close(fd[0]);
-		ret = exec_heredoc(redir->file, fd[1], redir->quoted, shell);
-		close(fd[1]);
-		exit(ret);
+		exit (exec_heredoc(redir->file, fd[1], redir->quoted, shell));
 	}
 	close(fd[1]);
 	redir->fd = fd[0];
@@ -97,10 +88,9 @@ static int	handle_heredoc(t_redir *redir, t_shell *shell)
 
 /*
 DESCRIPTION:
-	Executes the heredoc and returns the status.
-	It reads from terminal and writes to write end of a pipe,
-		which is later read
-	by command via stdin.
+	Reads from terminal and writes to write end of a pipe, until the limiter is
+	entered. It expands variables if the limiter was not quoted.
+	It returns 0 on success, 1 on error.
 */
 
 static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
@@ -113,20 +103,23 @@ static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
 	{
 		len = ft_strlen(line);
 		if (!quoted && ft_memchr(line, '$', len) && !expand_dollar(&line, line + len, &len, shell))
-			return (free(line), 1);
+			return (free(line), close(fd), 1);
 		if (write(fd, line, len) == -1 || write(fd, "\n", 1) == -1)
-			return (free(line), 1);
+			return (perror(MINI), free(line), close(fd), 1);
 		free(line);
 		line = readline("> ");
 	}
 	free(line);
+	close(fd);
 	return (0);
 }
 
 /*
-expands variable if limiter was quoted
-search for dollar. print until dollar. expand and then print again.
+DESCRIPTION:
+	Creates a string from the line and expands variables if the line contains a
+	dollar sign. Returns 0 on success, 1 on error.
 */
+
 static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
 {
 	t_string	str;
@@ -134,7 +127,7 @@ static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
 
 	str.s = malloc(*len + 1);
 	if (!str.s)
-		return (0);
+		return (perror(MINI),0);
 	str.cap = end - *line;
 	str.len = 0;
 	current = *line;
@@ -143,7 +136,7 @@ static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
 		if (dollar_expandable(current, end))
 		{
 			current++;
-			if (!copy_var(&str, get_var(&current, end, shell), end - current))
+			if (append_var(&str, get_var(&current, end, shell), end - current))
 				return (free(str.s), 0);
 		}
 		else
@@ -157,11 +150,19 @@ static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
 }
 
 /*
-ctrl+D should not print newline.
-
-handle setup handler errors
-Returns 0 on success, 1 on heredoc error, -1 on signal error.
+DESCRIPTION:
+	Waits for the child process to finish and returns the status.
+	It sets the signal handler for SIGINT to ignored (SIG_IGN) during waitpid().
+	This prevents the parent from handling SIGINT during waitpid(). If the parent
+	kept the handler, it would run the handler while blocked in waitpid(),
+	causing issues.
+	It returns 0 on success, 1 on heredoc error, -1 on signal error.
 	Signal error should terminate the shell.
+
+NOTE:
+	It is the readline() that prints newline on end of file (Ctrl+D), not
+	heredoc_waitpid(). If waitpid() returns -1, WIFSIGNALED or WEXITSTATUS is
+	not set.
 */
 
 static int	heredoc_waitpid(pid_t pid)
@@ -169,17 +170,16 @@ static int	heredoc_waitpid(pid_t pid)
 	int	status;
 	int	ret;
 
-	if (setup_handler(SIGINT, SIG_IGN) == -1)
-		return (-1);
+	if (set_signal_handler(SIGINT, SIG_IGN) == -1)
+		return (perror(MINI), -1);
 	ret = waitpid(pid, &status, 0);
-	if (setup_handler(SIGINT, shell_handler) == -1)
-		return (-1);
+	if (set_signal_handler(SIGINT, shell_handler) == -1)
+		return (perror(MINI), -1);
 	if (ret == -1)
 		return (perror(MINI), 1);
-	if (WIFSIGNALED(status) || WEXITSTATUS(status))
-	{
+	if (WIFSIGNALED(status))
 		write(1, "\n", 1);
+	if (WIFSIGNALED(status) || WEXITSTATUS(status))
 		return (1);
-	}
 	return (0);
 }

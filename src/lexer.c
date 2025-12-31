@@ -16,6 +16,12 @@ static t_token	*get_token(char *s);
 static t_token	*create_token(void *token, e_token_type type, size_t len);
 static size_t	parse_word_token(char *s);
 
+/*
+DESCRIPTION:
+	Tokenises the input string and returns a list of tokens.
+	Returns the list of tokens on success, NULL on failure.
+*/
+
 t_token	*tokenise_input(char *s)
 {
 	t_list	tokens;
@@ -39,6 +45,12 @@ t_token	*tokenise_input(char *s)
 	}
 	return (tokens.head);
 }
+
+/*
+DESCRIPTION:
+	Creates a token from the input string and returns it.
+	Returns the token on success, NULL on failure.
+*/
 
 static t_token	*get_token(char *s)
 {
@@ -64,6 +76,11 @@ static t_token	*get_token(char *s)
 		len = 2;
 	return (create_token(s, type, len));
 }
+
+/*
+DESCRIPTION:
+	Parses the word token and returns the length of the word.
+*/
 
 static size_t	parse_word_token(char *s)
 {
@@ -92,6 +109,12 @@ static size_t	parse_word_token(char *s)
 	}
 	return (p - s);
 }
+
+/*
+DESCRIPTION:
+	Mallocates a token and returns it.
+	Returns the token on success, NULL on failure.
+*/
 
 static t_token	*create_token(void *token, e_token_type type, size_t len)
 {

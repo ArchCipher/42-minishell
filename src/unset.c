@@ -15,7 +15,9 @@
 static void	del_one_env(t_shell *shell, t_env *env, t_env *prev);
 
 /*
-unset	0
+DESCRIPTION:
+	Unsets the environment variables.
+	Returns 0 on success, 1 if the variable is not a valid identifier.
 */
 
 int	exec_unset(t_shell *shell, char **args)
@@ -38,6 +40,12 @@ int	exec_unset(t_shell *shell, char **args)
 	return (0);
 }
 
+/*
+DESCRIPTION:
+	Deletes one environment variable from the list.
+	Updates the head and tail pointers of the list if necessary.
+*/
+
 static void	del_one_env(t_shell *shell, t_env *env, t_env *prev)
 {
 	if (prev)
@@ -49,25 +57,4 @@ static void	del_one_env(t_shell *shell, t_env *env, t_env *prev)
 	free(env->key);
 	free(env->value);
 	free(env);
-}
-
-t_env	*env_lookup_prev(t_env *env, t_env **prev, const char *arg)
-{
-	char	*equal;
-	size_t	key_len;
-
-	*prev = NULL;
-	key_len = ft_strlen(arg);
-	equal = ft_memchr(arg, '=', key_len);
-	if (equal)
-		key_len = equal - arg;
-	while (env)
-	{
-		if (ft_strlen(env->key) == key_len && !ft_strncmp(env->key, arg,
-				key_len))
-			return (env);
-		*prev = env;
-		env = env->next;
-	}
-	return (NULL);
 }

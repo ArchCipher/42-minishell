@@ -14,22 +14,64 @@
 
 static t_cmd *parse_input(char *input, t_shell *shell);
 static void	init_shell(char **envp, t_shell *shell);
+static void	init_shell_terminal(struct termios *original_term);
 static void	update_pwd(t_shell *shell);
 
 /*
 	NAME
 		minishell
+
 	DESCRIPTION:
-		mini shell with following built-in commands:
-		◦ echo with option -n
-		◦ cd with only a relative or absolute path
-		◦ pwd with no options
-		◦ export with no options
-		◦ unset with no options
-		◦ env with no options or arguments
-		◦ exit with no options
+		MINISHELL is a minimalistic shell that can be used to execute commands.
+		
+		FEATURES:
+		• Displays a prompt when waiting for a new command.
+		• Has a working history.
+		• Searches and launches executables based on PATH variable or using
+		  relative/absolute paths.
+		• Handles single quotes (') which prevent interpretation of meta-characters.
+		• Handles double quotes (") which prevent interpretation of meta-characters
+		  except for $ (dollar sign).
+		• Handles environment variables ($VAR) which expand to their values.
+		• Handles $? which expands to the exit status of the most recently executed
+		  foreground pipeline.
+		
+		REDIRECTIONS:
+		• < redirects input.
+		• > redirects output.
+		• << (heredoc) reads input until a line containing the delimiter is seen.
+		• >> redirects output in append mode.
+		
+		PIPES:
+		• | connects the output of each command to the input of the next command.
+		
+		Signal handling (interactive mode):
+		• ctrl-C displays a new prompt on a new line.
+		• ctrl-D exits the shell.
+		• ctrl-\ does nothing.
+		
+		BUILT-IN COMMANDS:
+		• echo with option -n
+		• cd with only a relative or absolute path
+		• pwd with no options
+		• export with no options
+		• unset with no options
+		• env with no options or arguments
+		• exit with no options
+
 	EXTERNAL FUNC(S)
-		open, close, read, write, malloc, free, perror, exit
+		readline, rl_clear_history, rl_on_new_line, rl_replace_line, rl_redisplay
+		add_history, malloc, free, write, access, open, close, fork, waitpid,
+		sigaction, sigemptyset, sigaddset, exit, getcwd, chdir, stat, execve,
+		dup, dup2, pipe, strerror, perror, isatty, tcsetattr, tcgetattr
+
+	EXIT STATUS:
+		0: success
+		1: general error
+		126: not executable (insufficient permissions or is a directory)
+		127: command not found
+		128 + N: fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
+		255: non numeric argument for exit
 */
 
 int	main(int ac, char **av, char **envp)
@@ -60,6 +102,12 @@ int	main(int ac, char **av, char **envp)
 	exit_shell(shell.status, NULL, &shell);
 }
 
+/*
+DESCRIPTION:
+	Parses the input string and returns a command tree.
+	Returns the command tree on success, NULL on failure.
+*/
+
 static t_cmd *parse_input(char *input, t_shell *shell)
 {
     t_token *tokens;
@@ -71,19 +119,66 @@ static t_cmd *parse_input(char *input, t_shell *shell)
     return (cmds);
 }
 
+/*
+DESCRIPTION:
+	Initializes the shell and sets the signal handlers and updates PWD and
+	OLDPWD environment variables. In interactive mode, it also sets the
+	terminal to not echo control characters.
+*/
+
 static void	init_shell(char **envp, t_shell *shell)
 {
-	init_signals(&shell->original_term);
+	if (set_signal_handlers(shell_handler, SIG_IGN))
+		{
+			perror(MINI);
+			exit(1);
+		}
+	if (isatty(STDIN_FILENO))
+		init_shell_terminal(&shell->original_term);
 	shell->status = 0;
 	shell->env = NULL;
 	while (*envp)
 	{
 		if (update_env(shell, *envp, NULL))
+		{
+			perror(MINI);
 			exit_shell(1, NULL, shell);
+		}
 		envp++;
 	}
 	update_pwd(shell);
 }
+
+/*
+DESCRIPTION:
+	Initializes the signals and sets the terminal to not echo control characters.
+	When ECHOCTL flag is set, it prevents tty from printing control characters
+	like ^C before handler runs.
+*/
+
+static void	init_shell_terminal(struct termios *original_term)
+{
+	struct termios	term;
+
+	if (tcgetattr(STDIN_FILENO, original_term) == -1)
+	{
+		perror(MINI);
+		exit(1);
+	}
+	term = *original_term;
+	term.c_lflag &= ~ECHOCTL;
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &term) == -1)
+	{
+		perror(MINI);
+		tcsetattr(STDIN_FILENO, TCSANOW, original_term);
+		exit(1);
+	}
+}
+
+/*
+DESCRIPTION:
+	Updates the PWD and OLDPWD environment variables at startup.
+*/
 
 static void	update_pwd(t_shell *shell)
 {
@@ -111,19 +206,4 @@ static void	update_pwd(t_shell *shell)
 	if (pwd->value)
 		free(pwd->value);
 	pwd->value = getcwd(NULL, 0);
-}
-
-/*
-exits from shell should cleanup...
-garbage collector + exit
-*/
-
-void	exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
-{
-	free_cmds(cmds);
-	free_env(shell->env);
-	if (isatty(STDIN_FILENO))
-		tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
-	rl_clear_history();
-	exit(exit_code);
 }

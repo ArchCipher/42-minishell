@@ -12,6 +12,11 @@
 
 #include "minishell.h"
 
+/*
+DESCRIPTION:
+	Executes the builtin command and returns the exit status of the builtin.
+*/
+
 int	exec_builtin(t_cmd *cmd, t_shell *shell)
 {
 	if (cmd->exec.builtin == BUILTIN_ECHO)
@@ -32,28 +37,50 @@ int	exec_builtin(t_cmd *cmd, t_shell *shell)
 }
 
 /*
-Returns 0 on success and 1 on error
+DESCRIPTION:
+	Writes the arguments to stdout.
+	Returns 0 on success, 1 if write() fails.
+
+NOTE:
+	For echo -n to infile, write() should be used instead of printf().
+	printf() needs to be fflush(force flushed) to make it work.
+	printf() is part of C standard I/O (stdio), which uses buffers:
+		stdout is line-buffered when connected to a terminal
+		stdout is fully-buffered when connected to a file or pipe
+	Buffered data is only flushed on newline (\n) if line-buffered or when buffer
+	is full or when you explicitly call fflush(stdout)
 */
 
-int	exec_pwd(void)
+int	exec_echo(char **args)
 {
-	char	*buf;
+	bool	nl;
 
-	buf = NULL;
-	buf = getcwd(buf, 0);
-	if (!buf)
-		return (perror(MINI), 1);
-	if (write(STDOUT_FILENO, buf, ft_strlen(buf)) == -1 || write(STDOUT_FILENO,
-			"\n", 1) == -1)
-		return (free(buf), 1);
-	free(buf);
+	nl = true;
+	if (!args || !*args)
+		return (write(1, "\n", 1));
+	if (ft_strcmp(*args, "-n") == 0)
+	{
+		nl = false;
+		args++;
+	}
+	while (*args)
+	{
+		if (ft_putstr(*args, STDOUT_FILENO))
+			return (1);
+		if (args[1] && write(STDOUT_FILENO, " ", 1) == -1)
+			return (1);
+		args++;
+	}
+	if (nl && write(STDOUT_FILENO, "\n", 1) == -1)
+		return (1);
 	return (0);
 }
 
 /*
-Returns 0 on success, 1 on failure
-
-
+DESCRIPTION:
+	Executes the cd builtin command using chdir().
+	Updates the PWD and OLDPWD environment variables if PWD and OLDPWD exist.
+	Returns 0 on success, 1 if chdir() or getcwd() fails.
 */
 
 int	exec_cd(const char *path, t_shell *shell)
@@ -80,45 +107,48 @@ int	exec_cd(const char *path, t_shell *shell)
 }
 
 /*
-This doesn't work with printf for echo -n to infile.
-It needs to be fflush(force flushed) in this case to make it work.
-
-printf() is part of C standard I/O (stdio), which uses buffers:
-stdout is line-buffered when connected to a terminal
-stdout is fully-buffered when connected to a file or pipe
-Buffered data is only flushed:
-On newline (\n) if line-buffered
-When buffer is full
-Or when you explicitly call fflush(stdout)
-
-So must use write
-
-returns 0 unless write error
+DESCRIPTION:
+	Retrieves pwd using getcwd() and writes it to stdout.
+	Returns 0 on success, 1 if getcwd() or write() fails.
 */
 
-int	exec_echo(char **args)
+int	exec_pwd(void)
 {
-	bool	nl;
+	char	*buf;
 
-	nl = true;
-	if (!args || !*args)
-		return (write(1, "\n", 1));
-	if (ft_strcmp(*args, "-n") == 0)
-	{
-		nl = false;
-		args++;
-	}
-	while (*args)
-	{
-		if (write(STDOUT_FILENO, *args, ft_strlen(*args)) == -1)
-			return (1);
-		if (!args[1])
-			break ;
-		if (write(STDOUT_FILENO, " ", 1) == -1)
-			return (1);
-		args++;
-	}
-	if (nl == true && write(STDOUT_FILENO, "\n", 1) == -1)
-		return (1);
+	buf = NULL;
+	buf = getcwd(buf, 0);
+	if (!buf)
+		return (perror(MINI), 1);
+	if (ft_putstr(buf, STDOUT_FILENO) < 0 || write(STDOUT_FILENO, "\n", 1) < 0)
+		return (perror(MINI), free(buf), 1);
+	free(buf);
 	return (0);
+}
+
+/*
+DESCRIPTION:
+	Prints the exported environment variables to stdout.
+	Returns 0 on success, 1 if ft_dprintf() fails.
+
+FORMAT:
+	KEY=value
+
+NOTE:
+	ft_dprintf() is used instead of printf() to avoid buffer flushing issues.
+*/
+
+int	exec_env(t_env *env)
+{
+	int ret;
+
+	ret = 0;
+	while (env)
+	{
+		if (env->exported && env->value && 
+				ft_dprintf(STDOUT_FILENO, "%s=%s\n", env->key, env->value) < 0)
+			ret = 1;
+		env = env->next;
+	}
+	return (ret);
 }

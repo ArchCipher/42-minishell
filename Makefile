@@ -34,7 +34,7 @@ INC				= -I. \
 MSRCS			= minishell \
 				lexer list parser var dollar ast \
 				exec exec_child path redirs heredoc \
-				builtin export export_no_args qsort env unset exit \
+				builtin export unset env_utils qsort exit \
 				signal free
 
 SRCS			= $(addprefix src/, $(addsuffix .c, $(MSRCS)))

@@ -5,6 +5,17 @@ static const char	*expand_var(char **token, char *end, t_env *env);
 static int			valid_substitution(char *token, size_t len);
 static size_t		ft_numlen(int n, int base);
 
+/*
+DESCRIPTION:
+	Wrapper function to expand the variable in the token.
+	Returns the status variable or the expanded variable on success,
+	ERR_PTR on invalid substitution.
+
+NOTE:
+	As NULL is a valid expansion, ERR_PTR is (char *)-1, used as a sentinal value for invalid substitution.
+	Must not be dereferenced, but only compared to detect invalid substitution.
+*/
+
 const char *get_var(char **token, char *end, t_shell *shell)
 {
 	char	exit_code[4];
@@ -14,6 +25,11 @@ const char *get_var(char **token, char *end, t_shell *shell)
 	(*token)++;
 	return (status_itoa(shell->status, exit_code));
 }
+
+/*
+DESCRIPTION:
+	Converts and returns the status variable as a string within the range of 0-255.
+*/
 
 static char	*status_itoa(int n, char *num)
 {
@@ -33,8 +49,14 @@ static char	*status_itoa(int n, char *num)
 }
 
 /*
-ERR is (char *)-1, just used as a sentinal value for error.
-Must not be dereferenced, but only compared to detect error.
+DESCRIPTION:
+	Expands the variable in the token.
+	Returns the expanded variable on success, ERR_PTR on invalid substitution.
+
+NOTE:
+	As NULL is a valid expansion, ERR_PTR is (char *)-1, used as a sentinal
+	value for invalid substitution and malloc failure.
+	Must not be dereferenced, but only compared to detect invalid substitution.
 */
 
 static const char	*expand_var(char **token, char *end, t_env *env)
@@ -64,27 +86,38 @@ static const char	*expand_var(char **token, char *end, t_env *env)
 	return (env_var);
 }
 
+/*
+DESCRIPTION:
+	Checks if the substitution is valid.
+	Returns 1 if valid, 0 if invalid.
+*/
+
 static int	valid_substitution(char *token, size_t len)
 {
-	char	*tmp_str;
 	size_t	i;
 
 	if (token[len - 1] == '\'' || token[len - 1] == '\"')
 		len--;
 	if (len == 1)
 		return (ft_dprintf(STDERR_FILENO, "%s: %s\n", MINI, E_ENV), 0);
-	tmp_str = ft_strndup(token, len);
-	if (!tmp_str)
-		return (perror(MINI), 0);
 	i = 1;
 	while (i < len && (token[i] == '_' || ft_isalnum(token[i])))
 		i++;
 	if (token[i] != '}')
-		return (ft_dprintf(STDERR_FILENO, "%s: $%s: %s\n", MINI, tmp_str,
-				E_ENV), free(tmp_str), 0);
-	free(tmp_str);
+	{
+		ft_dprintf(STDERR_FILENO, "%s: $", MINI);
+		write(STDERR_FILENO, token, len);
+		ft_dprintf(STDERR_FILENO, ": %s\n", E_ENV);
+		return (0);
+	}
 	return (1);
 }
+
+/*
+DESCRIPTION:
+	Calculates the length of the number in the given base.
+	Returns the length of the number.
+*/
 
 static size_t	ft_numlen(int n, int base)
 {

@@ -1,7 +1,11 @@
 #include "minishell.h"
 
 /*
-must update tail in the caller function
+DESCRIPTION:
+	Adds a new node to the end of the list.
+
+NOTE:
+	Must update tail in the caller function to maintain the list.
 */
 
 void	lstadd_back(void **head, void *new, void *last, e_node_type type)

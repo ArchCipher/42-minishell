@@ -17,6 +17,12 @@ static int		build_redir(t_token **current, t_redir **head, t_redir **last);
 static t_cmd	*create_cmd(size_t word_count);
 static ssize_t	count_args(t_token *token);
 
+/*
+DESCRIPTION:
+	Builds the abstract syntax tree (AST) from a list of tokens and returns the
+	head of the AST/ command list.
+*/
+
 t_cmd	*build_ast(t_token *tokens)
 {
 	t_list	cmd;
@@ -45,11 +51,12 @@ t_cmd	*build_ast(t_token *tokens)
 }
 
 /*
-builds an entire command struct with arguments and redirections.
-word tokens following redir is added as redir file or delimeter.
-other word tokens are added to args
-
-makes old word tokens null, so not to accidently free them twice.
+DESCRIPTION:
+	Builds an entire command struct with arguments and redirections.
+	Word tokens following redir are added as redir file or delimeter(heredoc).
+	Other word tokens are added to args.
+	Old word tokens are made null, so they are not accidently freed twice on error.
+	Returns the newly built command struct on success, NULL on error.
 */
 
 static t_cmd	*build_cmd(t_token **current)
@@ -82,7 +89,9 @@ static t_cmd	*build_cmd(t_token **current)
 }
 
 /*
-mallocs the cmd struct and char **args to fit given word_count words.
+DESCRIPTION:
+	Mallocates the cmd struct and char **args to fit given word_count words.
+	Returns the newly malloced cmd struct.
 */
 
 static t_cmd	*create_cmd(size_t word_count)
@@ -103,11 +112,11 @@ static t_cmd	*create_cmd(size_t word_count)
 }
 
 /*
-builds redirect struct redirection token and following word token.
-word token following redirection token is treated as delimeter for heredoc,
+DESCRIPTION:
+	Builds redirect struct redirection token and following word token.
+	Word token following redirection token is treated as delimeter for heredoc,
 	and file for others.
-
-makes old word tokens null, so not to accidently free them twice.
+	Old word tokens are made null, so they are not accidently freed twice on error.
 */
 
 static int	build_redir(t_token **current, t_redir **head, t_redir **last)
@@ -115,7 +124,7 @@ static int	build_redir(t_token **current, t_redir **head, t_redir **last)
 	t_redir	*new;
 
 	if (*current && !(*current)->next)
-		return (dprintf(STDERR_FILENO, "!!! Not parsed correctly\n"), 0);
+		return (dprintf(STDERR_FILENO, "Leak in parser\n"), 0);
 	while (*current && (*current)->next && (*current)->type != pipe_char && (*current)->type != word)
 	{
 		new = malloc(sizeof(t_redir));
@@ -135,7 +144,10 @@ static int	build_redir(t_token **current, t_redir **head, t_redir **last)
 }
 
 /*
-counts words until it reaches end of cmd / pipe character.
+DESCRIPTION:
+	Counts words until it reaches end of cmd / pipe character.
+	Returns the number of words found.
+	Although only defensive, returns -1 on leaks in the parser.
 */
 
 static ssize_t	count_args(t_token *token)
@@ -147,11 +159,10 @@ static ssize_t	count_args(t_token *token)
 	{
 		if (token->type == word)
 			word_count++;
-		else if (token->next && token->next->type == word) // can be else ?
+		else if (token->next && token->next->type == word)
 			token = token->next;
 		else
-			return (ft_dprintf(STDERR_FILENO, "!!! unknown error in ast !!!\n"),
-				-1);
+			return (ft_dprintf(STDERR_FILENO, "Leak in parser\n"), -1);
 		token = token->next;
 	}
 	return (word_count);

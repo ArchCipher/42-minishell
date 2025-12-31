@@ -12,96 +12,121 @@
 
 #include "minishell.h"
 
-static t_env	*create_env(char *envp);
-int				is_valid_identifier(char *s);
+static int		export_no_args(t_env *env, size_t len);
+static t_env	**env_to_array(t_env *env, size_t len);
+static size_t	env_size(t_env *env);
+
 /*
-export FORMAT:
-	declare -x KEY="value"
-
-print in alpabetical order
-
-//check for invalid entries
-starting with number, '-', no key etc.
-
-export	0 / 1 depending on validity
+DESCRIPTION:
+	Export with no args prints the exported environment variables in
+	alphabetical order. Export with args updates or creates the specific
+	environment variable. It prints error if the key is not a valid identifier.
+	Returns 0 on success, 1 on error.
 */
 
 int	exec_export(t_shell *shell, char **args)
 {
 	if (!*args)
-		return (export_no_args(shell->env));
+		return (export_no_args(shell->env, env_size(shell->env)));
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
 			return (ft_dprintf(STDERR_FILENO, "%s: export: `%s': %s\n", MINI,
 					*args, E_EXPORT), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
-			return (1);
+			return (perror(MINI), 1);
 		args++;
 	}
 	return (0);
 }
 
-int	update_env(t_shell *shell, char *arg, t_env *env)
-{
-	char	*equal;
+/*
+DESCRIPTION:
+	Prints the exported environment variables in alphabetical order.
+	Returns 0 on success, 1 on error.
 
-	if (!env)
-	{
-		env = create_env(arg);
-		if (!env)
-			return (1);
-		lstadd_back((void **)&shell->env, env, shell->env_tail, TYPE_ENV);
-		shell->env_tail = env;
+FORMAT:
+	declare -x KEY="value"
+	declare -x KEY
+*/
+
+static int	export_no_args(t_env *env, size_t len)
+{
+	t_env	**arr;
+	size_t	i;
+	int		ret;
+	char	*val;
+
+	if (len == 0)
 		return (0);
-	}
-	equal = ft_memchr(arg, '=', ft_strlen(arg));
-	if (equal)
+	arr = env_to_array(env, len);
+	if (!arr)
+		return (1);
+	ft_qsort_env(arr, 0, len - 1);
+	ret = 0;
+	i = 0;
+	while (i < len)
 	{
-		if (env->value)
-			free(env->value);
-		env->value = ft_strndup(equal + 1, ft_strlen(equal + 1));
-		if (!env->value)
-			return (perror(MINI), 1);
+		val = arr[i]->value;
+		if (!arr[i]->value)
+			val = "";
+		if ((arr[i]->exported && ft_dprintf(STDOUT_FILENO, "declare -x %s=\"%s\"\n", arr[i]->key, val) < 0)
+				|| (!arr[i]->exported && ft_dprintf(STDOUT_FILENO, "declare -x %s\n", arr[i]->key) < 0))
+			ret = 1;
+		i++;
 	}
-	env->exported = true;
-	return (0);
+	return (free(arr), ret);
 }
 
-t_env	*env_lookup(t_env *env, const char *arg)
+/*
+DESCRIPTION:
+	Converts the environment list to an array of pointers to t_env.
+	Returns the array of pointers on success, NULL on failure.
+*/
+
+static t_env	**env_to_array(t_env *env, size_t len)
 {
-	t_env	*prev;
+	t_env	**arr;
+	size_t	i;
 
-	return (env_lookup_prev(env, &prev, arg));
-}
-
-static t_env	*create_env(char *envp)
-{
-	t_env	*new;
-	char	*equal;
-
-	new = malloc(sizeof(t_env));
-	if (!new)
+	arr = malloc(sizeof(t_env *) * len);
+	if (!arr)
 		return (perror(MINI), NULL);
-	new->value = NULL;
-	new->exported = false;
-	new->next = NULL;
-	equal = ft_memchr(envp, '=', ft_strlen(envp));
-	if (equal)
-		new->key = ft_strndup(envp, equal - envp);
-	else
-		new->key = ft_strndup(envp, ft_strlen(envp));
-	if (!new->key)
-		return (perror(MINI), free(new), NULL);
-	if (equal)
+	i = 0;
+	while (i < len)
 	{
-		new->value = ft_strndup(equal + 1, ft_strlen(equal + 1));
-		if (!new->value)
-			return (perror(MINI), free(new->key), free(new), NULL);
-		new->exported = true;
+		arr[i++] = env;
+		env = env->next;
 	}
-	return (new);
+	return (arr);
 }
+
+/*
+DESCRIPTION:
+	Calculates and returns the number of environment variables.
+*/
+static size_t	env_size(t_env *env)
+{
+	size_t	i;
+
+	i = 0;
+	while (env)
+	{
+		i++;
+		env = env->next;
+	}
+	return (i);
+}
+
+/*
+DESCRIPTION:
+	Checks if the key is a valid identifier.
+	Returns 0 if not a valid identifier, 1 otherwise.
+
+NOTE:
+	KEY must start with an alphabet or underscore and can only contain
+	alphabets, numbers and underscores.
+*/
 
 int	is_valid_identifier(char *s)
 {

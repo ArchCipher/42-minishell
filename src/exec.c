@@ -13,14 +13,21 @@
 #include "minishell.h"
 
 /*
-heredoc
-execve wrapper
 make sure errors are not printed twice
 */
 static int	is_builtin(char *s);
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell);
 static int	restore_fds(int actual_stdin, int actual_stdout, int ret);
 static int	cmds_waitpid(t_cmd *cmds);
+
+/*
+DESCRIPTION:
+	Executes the commands and returns the status.
+	It executes it in the parent process, if it is a single builtin command. .
+	In case of multiple commands, it forks a child process for each command
+	and waits for them to finish.
+	It returns the status of the last command.
+*/
 
 int	exec_cmds(t_cmd *cmds, t_shell *shell)
 {
@@ -43,32 +50,37 @@ int	exec_cmds(t_cmd *cmds, t_shell *shell)
 }
 
 /*
-returns -1 if not a builtin
+DESCRIPTION:
+	Checks if the command is a builtin command.
+	Returns the builtin command if it is, -1 otherwise.
 */
 
 static int	is_builtin(char *s)
 {
 	if (ft_strcmp(s, "echo") == 0)
 		return (BUILTIN_ECHO);
-	else if (ft_strcmp(s, "cd") == 0)
+	if (ft_strcmp(s, "cd") == 0)
 		return (BUILTIN_CD);
-	else if (ft_strcmp(s, "pwd") == 0)
+	if (ft_strcmp(s, "pwd") == 0)
 		return (BUILTIN_PWD);
-	else if (ft_strcmp(s, "export") == 0)
+	if (ft_strcmp(s, "export") == 0)
 		return (BUILTIN_EXPORT);
-	else if (ft_strcmp(s, "unset") == 0)
+	if (ft_strcmp(s, "unset") == 0)
 		return (BUILTIN_UNSET);
-	else if (ft_strcmp(s, "env") == 0)
+	if (ft_strcmp(s, "env") == 0)
 		return (BUILTIN_ENV);
-	else if (ft_strcmp(s, "exit") == 0)
+	if (ft_strcmp(s, "exit") == 0)
 		return (BUILTIN_EXIT);
 	return (-1);
 }
 
 /*
 DESCRIPTION:
-	stores actual stdin and stdout and executes builtin in parent and restores
-    stdin and stdout after execution.
+	Executes builtin in parent and restores standard input and output
+	fds after execution.
+NOTE:
+	On exit from shell, "exit\n" should be written to stdout, before exec_exit
+	is called. exec_exit() error messages should be printed after "exit\n".
 */
 
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell)
@@ -83,25 +95,28 @@ static int	exec_in_parent(t_cmd *cmd, t_shell *shell)
 	actual_stdin = dup(STDIN_FILENO);
 	if (actual_stdin == -1)
 		return (close(actual_stdout), perror(MINI), 1);
-	if (setup_redirs(cmd->redirs) == -1)
+	if (setup_redirs(cmd->redirs))
 		return (restore_fds(actual_stdin, actual_stdout, 1));
 	if (isatty(actual_stdout) && cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
 				&& !cmd->args[2])))
 		write(actual_stdout, "exit\n", 5);
-	ret = exec_builtin(cmd, shell);	
+	ret = exec_builtin(cmd, shell);
+	ret = restore_fds(actual_stdin, actual_stdout, ret);
 	if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
 				&& !cmd->args[2])))
-	{
-		close(actual_stdin);
-		close(actual_stdout);
 		exit_shell(ret, cmd, shell);
-	}
-	return (restore_fds(actual_stdin, actual_stdout, ret));
+	return (ret);
 }
+
+/*
+DESCRIPTION:
+	Restores standard input and output fds after execution.
+	Returns the exit status of the builtin execution or 1 on error.
+*/
 
 static int	restore_fds(int actual_stdin, int actual_stdout, int ret)
 {
-	if ((dup2(actual_stdout, STDOUT_FILENO) == -1) || (dup2(actual_stdin, STDIN_FILENO) == -1))
+	if ((dup2(actual_stdin, STDIN_FILENO) == -1) || (dup2(actual_stdout, STDOUT_FILENO) == -1))
 	{
 		perror(MINI);
 		ret = 1;
@@ -112,11 +127,16 @@ static int	restore_fds(int actual_stdin, int actual_stdout, int ret)
 }
 
 /*
-WAITPID:
-	to prevent zombie processes, the below code was not used,
-	as this can return early if one of the child processes fail.
-	if (waitpid(cmd->pid, &status, 0) == -1)
-		return (-1); // handle error
+DESCRIPTION:
+	Waits for the child processes to finish and returns the exit status of the last command.
+	Returns 0 on success, 1 on error.
+
+	waitpid(): Waits for a child process to update its status.
+		WIFEXITED() returns true if the child process terminated normally.
+		WIFSIGNALED() returns true if the child process terminated due to a signal.
+		WEXITSTATUS() returns the exit status of the child process.
+		WTERMSIG() returns the signal that caused the child process to terminate.
+	If waitpid() returns -1, WIFSIGNALED or WEXITSTATUS is not set.
 */
 
 static int	cmds_waitpid(t_cmd *cmds)
@@ -125,10 +145,8 @@ static int	cmds_waitpid(t_cmd *cmds)
 	int	last_status;
 
 	last_status = 0;
-	while (cmds)
+	while (cmds && cmds->exec.pid != -1)
 	{
-		if (cmds->exec.pid == -1)
-			break ;
 		if (waitpid(cmds->exec.pid, &status, 0) != -1)
 		{
 			if (WIFEXITED(status))
@@ -137,7 +155,10 @@ static int	cmds_waitpid(t_cmd *cmds)
 				last_status = SIG_EXIT_BASE + WTERMSIG(status);
 		}
 		else
+		{
 			perror(MINI);
+			last_status = 1;
+		}
 		cmds = cmds->next;
 	}
 	return (last_status);

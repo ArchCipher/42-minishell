@@ -13,9 +13,27 @@
 #include "minishell.h"
 
 static int	status_atoi(const char *str);
+
 /*
-prints numeric argument required for any non numeric value
-(floats, letters, numbers mixed with letters etc)
+DESCRIPTION:
+	Cleans up the resources and exits the shell.
+	It also restores the original terminal settings and clears the history.
+*/
+
+void	exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
+{
+	free_cmds(cmds);
+	free_env(shell->env);
+	if (isatty(STDIN_FILENO))
+		tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
+	rl_clear_history();
+	exit(exit_code);
+}
+
+/*
+DESCRIPTION:
+	Executes the exit builtin and returns the exit status in range of 0-255.
+	Checks if the argument is a valid numeric value and prints error if not.
 */
 
 int	exec_exit(char **s)
@@ -34,6 +52,12 @@ int	exec_exit(char **s)
 	}
 	return (n);
 }
+
+/*
+DESCRIPTION:
+	Converts the string to an integer and returns the exit status.
+	Checks if the string is a valid numeric value and sets errno if not.
+*/
 
 static int	status_atoi(const char *str)
 {

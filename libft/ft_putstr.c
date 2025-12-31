@@ -1,44 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   env.c                                              :+:      :+:    :+:   */
+/*   ft_putstr_fd.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/28 19:44:39 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 19:52:52 by kmurugan         ###   ########.fr       */
+/*   Created: 2025/10/16 18:26:41 by kmurugan          #+#    #+#             */
+/*   Updated: 2025/10/16 18:55:54 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "minishell.h"
+#include "libft.h"
 
-/*
-env FORMAT:
-	KEY=value
-
-print only exported values
-
-Returns 0
-*/
-
-int	exec_env(t_env *env)
+int	ft_putstr(const char *s, int fd)
 {
-	while (env)
+	size_t	len;
+	size_t	t_written;
+	ssize_t	written;
+
+	if (!s)
+		return (1);
+	len = ft_strlen(s);
+	t_written = 0;
+	while(t_written < len)
 	{
-		if (env->exported && env->value)
-			printf("%s=%s\n", env->key, env->value);
-		env = env->next;
+		written = write(fd, s + t_written, len - t_written);
+		if (written < 1)
+			return (1);
+		t_written += written;
 	}
 	return (0);
-}
-
-const char	*ft_getenv(t_env *env, const char *key)
-{
-	while (env)
-	{
-		if (!ft_strcmp(env->key, key))
-			return (env->value);
-		env = env->next;
-	}
-	return (NULL);
 }

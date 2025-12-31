@@ -12,6 +12,11 @@
 
 #include "minishell.h"
 
+/*
+DESCRIPTION:
+	Frees the tokens and their content.
+*/
+
 void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 {
 	t_token	*current;
@@ -26,6 +31,10 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 	}
 }
 
+/*
+DESCRIPTION:
+	Frees the command list and their content. Closes any open fds.
+*/
 void	free_cmds(t_cmd *cmds)
 {
 	t_cmd	*tmp;
@@ -55,12 +64,22 @@ void	free_cmds(t_cmd *cmds)
 	}
 }
 
+/*
+DESCRIPTION:
+	Frees the command list and their content and tokens and returns NULL.
+*/
+
 t_cmd	*error_free(t_cmd *cmds, t_token *tokens)
 {
 	free_cmds(cmds);
 	free_tokens(tokens, true, NULL);
 	return (NULL);
 }
+
+/*
+DESCRIPTION:
+	Frees the environment list and their content.
+*/
 
 void	free_env(t_env *env)
 {
@@ -77,6 +96,11 @@ void	free_env(t_env *env)
 		free(tmp);
 	}
 }
+
+/*
+DESCRIPTION:
+	Frees the environment pointer array.
+*/
 
 void	free_envp(char **envp)
 {

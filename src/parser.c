@@ -12,14 +12,20 @@
 
 #include "minishell.h"
 
-static bool	handle_word(t_token *token, char *end, t_shell *shell);
+static int	handle_word(t_token *token, char *end, t_shell *shell);
 static void	handle_char(char *s, e_token_type *flag, char *end, t_string *str);
-static int del_one_token(t_token **tokens, t_token **cur, t_token *prev);
+static int	del_one_token(t_token **tokens, t_token **cur, t_token *prev);
 static void	error_free_tokens(t_token *tokens, t_token *current);
 
 /*
-strndup only word tokens, others are pointers input with just the token->type.
-!!! now returns error for logical OR (||)
+DESCRIPTION:
+	Parses the tokens and returns the parsed tokens.
+	Mallocates a new string for only word tokens, others are pointers to the
+	input strings with just the token->type set.
+	Returns the parsed tokens on success, NULL on error.
+
+NOTE:
+	Now returns error for logical OR (||).
 */
 
 t_token	*parse_tokens(t_token *tokens, t_shell *shell)
@@ -37,7 +43,7 @@ t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 		{
 			current->quoted = (ft_memchr(current->token, '\'', current->len) 
 				|| ft_memchr(current->token, '\"', current->len));
-			if (!handle_word(current, current->token + current->len, shell))
+			if (handle_word(current, current->token + current->len, shell))
 				return (free_tokens(tokens, true, current), NULL);
 			if ((!prev && !*current->token) && del_one_token(&tokens, &current, prev))
 				continue ;
@@ -52,21 +58,18 @@ t_token	*parse_tokens(t_token *tokens, t_shell *shell)
 }
 
 /*
-when accessing token + 1 or token[1],
-check if token + 1 < end and then check token[1] or use token + 1
-would be nice to check end quote, but subject doesn't require this
-	if (*token == '\'' && flag == word && ft_memchr(token + 1, '\'', end - token
-		- 1))
+DESCRIPTION:
+	Handles the word token and returns 1 if successful, 0 on error.
 */
 
-static bool handle_word(t_token *tok, char *end, t_shell *shell)
+static int handle_word(t_token *tok, char *end, t_shell *shell)
 {
 	e_token_type	flag;
 	t_string		str;
 
 	str.s = malloc(tok->len + 1);
 	if (!str.s)
-		return (perror(MINI), false);
+		return (perror(MINI), 1);
 	str.cap = tok->len;
 	str.len = 0;
 	flag = word;
@@ -76,16 +79,22 @@ static bool handle_word(t_token *tok, char *end, t_shell *shell)
 		if (dollar_expandable(tok->token, end) && flag != squote)
 		{
 			tok->token++;
-			if (!copy_var(&str, get_var(&tok->token, end, shell), end - tok->token))
-				return (free(str.s), NULL);
+			if (append_var(&str, get_var(&tok->token, end, shell), end - tok->token))
+				return (free(str.s), 1);
 		}
 		else
 			tok->token++;
 	}
 	str.s[str.len] = 0;
 	tok->token = str.s;
-	return (true);
+	return (0);
 }
+
+/*
+DESCRIPTION:
+	Appends a character to the string unless it is a quote or an expandable dollar sign.
+	In case of quotes, it updatesthe flag to the appropriate type.
+*/
 
 static void	handle_char(char *s, e_token_type *flag, char *end, t_string *str)
 {
@@ -98,6 +107,11 @@ static void	handle_char(char *s, e_token_type *flag, char *end, t_string *str)
 	else if (!(dollar_expandable(s, end) && *flag != squote))
 		str->s[(str->len)++] = *s;
 }
+
+/*
+DESCRIPTION:
+	Deletes the current token and returns 1.
+*/
 
 static int del_one_token(t_token **tokens, t_token **cur, t_token *prev)
 {
@@ -113,6 +127,11 @@ static int del_one_token(t_token **tokens, t_token **cur, t_token *prev)
 	free(tmp);
 	return (1);
 }
+
+/*
+DESCRIPTION:
+	Prints the error message and frees the tokens.
+*/
 
 static void	error_free_tokens(t_token *tokens, t_token *current)
 {
