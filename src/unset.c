@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:22 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:51:29 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 21:41:22 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,18 +20,17 @@ DESCRIPTION:
 	Returns 0 on success, 1 if the variable is not a valid identifier.
 */
 
-int	exec_unset(t_shell *shell, char **args)
+int	exec_unset(char *cmd, char **args, t_shell *shell)
 {
-	t_env	*prev;
-	t_env	*env;
+	t_env		*prev;
+	t_env		*env;
 
 	if (!*args)
 		return (0);
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
-			return (ft_dprintf(STDERR_FILENO, "%s: unset: `%s': %s\n", MINI,
-					*args, E_EXPORT), 1);
+			return (perr_msg(cmd, *args, E_EXPORT), 1);
 		env = env_lookup_prev(shell->env, &prev, *args);
 		if (env)
 			del_one_env(shell, env, prev);

@@ -1,18 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   exec_utils.c                                       :+:      :+:    :+:   */
+/*   redirs.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:43 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:12:46 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 21:10:16 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static int	open_redir_file(e_token_type flag, char *file);
+static int	open_redir_file(t_token_type flag, char *file);
 
 /*
 DESCRIPTION:
@@ -24,6 +24,7 @@ NOTE:
 	is read end of the a pipe created by process_heredoc().
 	For other redirections, redirs->file stores the file name and redirs->fd
 	is the file descriptor of the opened file.
+	redirs->fd is set to -1 after closing, to avoid double close.
 */
 
 int	setup_redirs(t_redir *redirs)
@@ -32,14 +33,13 @@ int	setup_redirs(t_redir *redirs)
 		return (0);
 	while (redirs)
 	{
-		if (redirs->flag != heredoc)
+		if (redirs->flag != HEREDOC)
 			redirs->fd = open_redir_file(redirs->flag, redirs->file);
 		if (redirs->fd == -1)
-			return (ft_dprintf(STDERR_FILENO, "%s: %s: %s\n", MINI,
-					redirs->file, strerror(errno)), 1);
-		if (((redirs->flag == redir_in || redirs->flag == heredoc)
+			return (perr_msg(redirs->file, strerror(errno), NULL), 1);
+		if (((redirs->flag == REDIR_IN || redirs->flag == HEREDOC)
 				&& dup2(redirs->fd, STDIN_FILENO) == -1)
-			|| ((redirs->flag == redir_out || redirs->flag == append)
+			|| ((redirs->flag == REDIR_OUT || redirs->flag == APPEND)
 				&& dup2(redirs->fd, STDOUT_FILENO) == -1))
 		{
 			close(redirs->fd);
@@ -61,13 +61,13 @@ DESCRIPTION:
 NOTE:
 	The last line, return (-1), should be unreachable.
 */
-static int	open_redir_file(e_token_type flag, char *file)
+static int	open_redir_file(t_token_type flag, char *file)
 {
-	if (flag == redir_in)
+	if (flag == REDIR_IN)
 		return (open(file, O_RDONLY));
-	else if (flag == redir_out)
+	else if (flag == REDIR_OUT)
 		return (open(file, O_WRONLY | O_CREAT | O_TRUNC, 0660));
-	else if (flag == append)
+	else if (flag == APPEND)
 		return (open(file, O_WRONLY | O_CREAT | O_APPEND, 0660));
 	return (-1);
 }

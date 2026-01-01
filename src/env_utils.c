@@ -1,18 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   env.c                                              :+:      :+:    :+:   */
+/*   env_utils.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:39 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 19:52:52 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 18:27:26 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static t_env	*create_env(char *envp);
+static t_env	*create_env(const char *envp);
 
 /*
 DESCRIPTION:
@@ -46,8 +46,8 @@ t_env	*env_lookup(t_env *env, const char *arg)
 
 /*
 DESCRIPTION:
-	Looks up the environment variable in the list and updates the previous pointer.
-	Returns the environment variable if found, NULL otherwise.
+	Looks up the environment variable in the list and updates the previous
+	pointer. Returns the environment variable if found, NULL otherwise.
 */
 
 t_env	*env_lookup_prev(t_env *env, t_env **prev, const char *arg)
@@ -78,7 +78,7 @@ DESCRIPTION:
 	Returns 0 on success, 1 on failure.
 */
 
-int	update_env(t_shell *shell, char *arg, t_env *env)
+int	update_env(t_shell *shell, const char *arg, t_env *env)
 {
 	char	*equal;
 
@@ -111,7 +111,7 @@ DESCRIPTION:
 	Returns the new environment variable if created, NULL otherwise.
 */
 
-static t_env	*create_env(char *envp)
+static t_env	*create_env(const char *envp)
 {
 	t_env	*new;
 	char	*equal;

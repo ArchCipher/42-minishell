@@ -6,15 +6,15 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:52 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:18:18 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 21:40:55 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static int		export_no_args(t_env *env, size_t len);
+static int		export_no_args(t_env *env);
 static t_env	**env_to_array(t_env *env, size_t len);
-static size_t	env_size(t_env *env);
+static size_t	exported_env_size(t_env *env);
 
 /*
 DESCRIPTION:
@@ -24,14 +24,14 @@ DESCRIPTION:
 	Returns 0 on success, 1 on error.
 */
 
-int	exec_export(t_shell *shell, char **args)
+int	exec_export(char *cmd, char **args, t_shell *shell)
 {
 	if (!*args)
-		return (export_no_args(shell->env, env_size(shell->env)));
+		return (export_no_args(shell->env));
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
-			return (ft_dprintf(STDERR_FILENO, "%s: export: `%s': %s\n", MINI,
+			return (ft_dprintf(STDERR_FILENO, "%s: %s: `%s': %s\n", MINI, cmd,
 					*args, E_EXPORT), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
 			return (perror(MINI), 1);
@@ -50,28 +50,29 @@ FORMAT:
 	declare -x KEY
 */
 
-static int	export_no_args(t_env *env, size_t len)
+static int	export_no_args(t_env *env)
 {
 	t_env	**arr;
+	size_t	len;
 	size_t	i;
 	int		ret;
-	char	*val;
 
-	if (len == 0)
+	len = exported_env_size(env);
+	if (!len)
 		return (0);
 	arr = env_to_array(env, len);
 	if (!arr)
-		return (1);
+		return (perror(MINI), 1);
 	ft_qsort_env(arr, 0, len - 1);
 	ret = 0;
 	i = 0;
 	while (i < len)
 	{
-		val = arr[i]->value;
-		if (!arr[i]->value)
-			val = "";
-		if ((arr[i]->exported && ft_dprintf(STDOUT_FILENO, "declare -x %s=\"%s\"\n", arr[i]->key, val) < 0)
-				|| (!arr[i]->exported && ft_dprintf(STDOUT_FILENO, "declare -x %s\n", arr[i]->key) < 0))
+		if (arr[i]->exported && arr[i]->value && ft_dprintf(STDOUT_FILENO,
+				"declare -x %s=\"%s\"\n", arr[i]->key, arr[i]->value) < 0)
+			ret = 1;
+		else if (arr[i]->exported && !arr[i]->value && ft_dprintf(STDOUT_FILENO,
+				"declare -x %s\n", arr[i]->key) < 0)
 			ret = 1;
 		i++;
 	}
@@ -91,11 +92,12 @@ static t_env	**env_to_array(t_env *env, size_t len)
 
 	arr = malloc(sizeof(t_env *) * len);
 	if (!arr)
-		return (perror(MINI), NULL);
+		return (NULL);
 	i = 0;
 	while (i < len)
 	{
-		arr[i++] = env;
+		if (env->exported)
+			arr[i++] = env;
 		env = env->next;
 	}
 	return (arr);
@@ -105,14 +107,15 @@ static t_env	**env_to_array(t_env *env, size_t len)
 DESCRIPTION:
 	Calculates and returns the number of environment variables.
 */
-static size_t	env_size(t_env *env)
+static size_t	exported_env_size(t_env *env)
 {
 	size_t	i;
 
 	i = 0;
 	while (env)
 	{
-		i++;
+		if (env->exported)
+			i++;
 		env = env->next;
 	}
 	return (i);
@@ -128,8 +131,10 @@ NOTE:
 	alphabets, numbers and underscores.
 */
 
-int	is_valid_identifier(char *s)
+int	is_valid_identifier(const char *s)
 {
+	if (!*s)
+		return (1);
 	if (*s != '_' && !ft_isalpha(*s))
 		return (0);
 	s++;

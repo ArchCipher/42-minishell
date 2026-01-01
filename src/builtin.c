@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 14:01:35 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 19:51:31 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 21:56:00 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,17 +22,18 @@ int	exec_builtin(t_cmd *cmd, t_shell *shell)
 	if (cmd->exec.builtin == BUILTIN_ECHO)
 		return (exec_echo(cmd->args + 1));
 	else if (cmd->exec.builtin == BUILTIN_CD)
-		return (exec_cd(cmd->args[1], shell));
+		return (exec_cd(cmd->args, shell, env_lookup(shell->env, "PWD"),
+				env_lookup(shell->env, "OLDPWD")));
 	else if (cmd->exec.builtin == BUILTIN_PWD)
 		return (exec_pwd());
 	else if (cmd->exec.builtin == BUILTIN_EXPORT)
-		return (exec_export(shell, cmd->args + 1));
+		return (exec_export(*cmd->args, cmd->args + 1, shell));
 	else if (cmd->exec.builtin == BUILTIN_ENV)
 		return (exec_env(shell->env));
 	else if (cmd->exec.builtin == BUILTIN_UNSET)
-		return (exec_unset(shell, cmd->args + 1));
+		return (exec_unset(*cmd->args, cmd->args + 1, shell));
 	else if (cmd->exec.builtin == BUILTIN_EXIT)
-		return (exec_exit(cmd->args + 1));
+		return (exec_exit(cmd->args));
 	return (0);
 }
 
@@ -57,7 +58,7 @@ int	exec_echo(char **args)
 
 	nl = true;
 	if (!args || !*args)
-		return (write(1, "\n", 1));
+		return (write(1, "\n", 1), 0);
 	if (ft_strcmp(*args, "-n") == 0)
 	{
 		nl = false;
@@ -83,17 +84,23 @@ DESCRIPTION:
 	Returns 0 on success, 1 if chdir() or getcwd() fails.
 */
 
-int	exec_cd(const char *path, t_shell *shell)
+int	exec_cd(char **args, t_shell *shell, t_env *pwd, t_env *old_pwd)
 {
-	t_env	*pwd;
-	t_env	*old_pwd;
+	const char	*dir;
 
-	if (chdir(path) == -1)
-		return (perror(MINI), 1);
-	pwd = env_lookup(shell->env, "PWD");
+	if (args[1] && args[2])
+		return (perr_msg(*args, E_MANY_ARGS, NULL), 1);
+	dir = args[1];
+	if (!dir || (*dir == '~' && !dir[1]))
+	{
+		dir = ft_getenv(shell->env, "HOME");
+		if (!dir)
+			return (perr_msg(*args, E_HOME, NULL), 1);
+	}
+	if (chdir(dir) == -1)
+		return (perr_msg(*args, args[1], strerror(errno)), 1);
 	if (!pwd || !pwd->value)
 		return (0);
-	old_pwd = env_lookup(shell->env, "OLDPWD");
 	if (old_pwd)
 	{
 		free(old_pwd->value);
@@ -140,13 +147,13 @@ NOTE:
 
 int	exec_env(t_env *env)
 {
-	int ret;
+	int	ret;
 
 	ret = 0;
 	while (env)
 	{
-		if (env->exported && env->value && 
-				ft_dprintf(STDOUT_FILENO, "%s=%s\n", env->key, env->value) < 0)
+		if (env->exported && env->value && ft_dprintf(STDOUT_FILENO, "%s=%s\n",
+				env->key, env->value) < 0)
 			ret = 1;
 		env = env->next;
 	}

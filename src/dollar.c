@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:36 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:25:13 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 16:41:06 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,16 @@ DESCRIPTION:
 	Returns 0 on success, 1 if malloc() fails or on invalid substitution.
 
 NOTE:
-	As NULL is a valid expansion, ERR_PTR is (char *)-1, used as a sentinal value for invalid substitution.
-	Must not be dereferenced, but only compared to detect invalid substitution.
+	As NULL is a valid expansion, (char *)-1 is used as a sentinal
+	value for invalid substitution. Must not be dereferenced, but only compared
+	to detect invalid substitution.
 */
 
 int	append_var(t_string *str, const char *var, size_t last)
 {
-	size_t		var_len;
+	size_t	var_len;
 
-	if (var == ERR_PTR)
+	if (var == ((char *)-1))
 		return (1);
 	if (!var)
 		return (0);
@@ -49,7 +50,8 @@ DESCRIPTION:
 	Returns true if the character is expandable, false otherwise.
 */
 
-bool dollar_expandable(char *s, char *end)
+bool	dollar_expandable(char *s, char *end)
 {
-	return (*s == '$' && s + 1 < end && (ft_strchr(EXPANDABLE, s[1]) || ft_isalnum(s[1])));
+	return (*s == '$' && s + 1 < end && (ft_strchr(EXPANDABLE, s[1])
+			|| ft_isalnum(s[1])));
 }

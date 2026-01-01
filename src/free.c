@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:03 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 19:52:08 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 21:43:19 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,8 +25,14 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 	{
 		current = tokens;
 		tokens = tokens->next;
-		if (current->token && free_content && current->type == word)
+		if (current->token && free_content && current->type == WORD)
 			free(current->token);
+		free(current);
+	}
+	while (tokens)
+	{
+		current = tokens;
+		tokens = tokens->next;
 		free(current);
 	}
 }

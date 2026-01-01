@@ -6,14 +6,14 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:27 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:45:37 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 19:44:48 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
 static t_cmd	*build_cmd(t_token **current);
-static int		build_redir(t_token **current, t_redir **head, t_redir **last);
+static int		build_redir(t_token **current, void **head, void **last);
 static t_cmd	*create_cmd(size_t word_count);
 static ssize_t	count_args(t_token *token);
 
@@ -34,16 +34,15 @@ t_cmd	*build_ast(t_token *tokens)
 	cmd.head = NULL;
 	while (current)
 	{
-		if (current->type != pipe_char)
+		if (current->type != PIPE_CHAR)
 		{
 			cmd.new = build_cmd(&current);
 			if (!cmd.new)
 				return (error_free(cmd.head, tokens));
-			lstadd_back((void **)&cmd.head, (void *)cmd.new, (void *)cmd.tail,
-				TYPE_CMD);
+			lstadd_back((void **)&cmd.head, cmd.new, cmd.tail, TYPE_CMD);
 			cmd.tail = cmd.new;
 		}
-		if (current && current->type == pipe_char)
+		if (current && current->type == PIPE_CHAR)
 			current = current->next;
 	}
 	free_tokens(tokens, false, NULL);
@@ -55,14 +54,14 @@ DESCRIPTION:
 	Builds an entire command struct with arguments and redirections.
 	Word tokens following redir are added as redir file or delimeter(heredoc).
 	Other word tokens are added to args.
-	Old word tokens are made null, so they are not accidently freed twice on error.
+	Old word tokens are made null, to avoid double free on error.
 	Returns the newly built command struct on success, NULL on error.
 */
 
 static t_cmd	*build_cmd(t_token **current)
 {
 	t_cmd	*new;
-	t_redir	*last;
+	void	*last;
 	ssize_t	word_count;
 	ssize_t	i;
 
@@ -73,15 +72,15 @@ static t_cmd	*build_cmd(t_token **current)
 	if (!new)
 		return (NULL);
 	i = 0;
-	while (*current && (*current)->type != pipe_char)
+	while (*current && (*current)->type != PIPE_CHAR)
 	{
-		if ((*current)->type == word)
+		if ((*current)->type == WORD)
 		{
 			new->args[i++] = (*current)->token;
 			(*current)->token = NULL;
 			*current = (*current)->next;
 		}
-		else if (!build_redir(current, &new->redirs, &last))
+		else if (!build_redir(current, (void **)&new->redirs, &last))
 			return (new->args[i] = NULL, free_cmds(new), NULL);
 	}
 	new->args[i] = NULL;
@@ -116,16 +115,17 @@ DESCRIPTION:
 	Builds redirect struct redirection token and following word token.
 	Word token following redirection token is treated as delimeter for heredoc,
 	and file for others.
-	Old word tokens are made null, so they are not accidently freed twice on error.
+	Old word tokens are made null, to avoid double free on error.
 */
 
-static int	build_redir(t_token **current, t_redir **head, t_redir **last)
+static int	build_redir(t_token **current, void **head, void **last)
 {
 	t_redir	*new;
 
 	if (*current && !(*current)->next)
-		return (dprintf(STDERR_FILENO, "Leak in parser\n"), 0);
-	while (*current && (*current)->next && (*current)->type != pipe_char && (*current)->type != word)
+		return (perr_msg("Leak in parser", NULL, NULL), 0);
+	while (*current && (*current)->next && (*current)->type != PIPE_CHAR
+		&& (*current)->type != WORD)
 	{
 		new = malloc(sizeof(t_redir));
 		if (!new)
@@ -136,7 +136,7 @@ static int	build_redir(t_token **current, t_redir **head, t_redir **last)
 		new->fd = -1;
 		new->quoted = (*current)->next->quoted;
 		new->next = NULL;
-		lstadd_back((void **)head, (void *)new, (void *)*last, TYPE_REDIR);
+		lstadd_back(head, (void *)new, *last, TYPE_REDIR);
 		*last = new;
 		*current = (*current)->next->next;
 	}
@@ -155,14 +155,14 @@ static ssize_t	count_args(t_token *token)
 	ssize_t	word_count;
 
 	word_count = 0;
-	while (token && token->type != pipe_char)
+	while (token && token->type != PIPE_CHAR)
 	{
-		if (token->type == word)
+		if (token->type == WORD)
 			word_count++;
-		else if (token->next && token->next->type == word)
+		else if (token->next && token->next->type == WORD)
 			token = token->next;
 		else
-			return (ft_dprintf(STDERR_FILENO, "Leak in parser\n"), -1);
+			return (perr_msg("Leak in parser", NULL, NULL), -1);
 		token = token->next;
 	}
 	return (word_count);

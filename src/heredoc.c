@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:05 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:28:25 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 17:10:17 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ int	process_heredoc(t_cmd *cmds, t_shell *shell)
 		current = cmd->redirs;
 		while (current)
 		{
-			if (current->flag == heredoc)
+			if (current->flag == HEREDOC)
 			{
 				shell->status = handle_heredoc(current, shell);
 				if (shell->status == 1)
@@ -77,9 +77,9 @@ static int	handle_heredoc(t_redir *redir, t_shell *shell)
 	if (pid == 0)
 	{
 		if (set_signal_handlers(SIG_DFL, SIG_IGN))
-			exit (close_fds_error(fd, -1));
+			exit(close_fds_error(fd, -1));
 		close(fd[0]);
-		exit (exec_heredoc(redir->file, fd[1], redir->quoted, shell));
+		exit(exec_heredoc(redir->file, fd[1], redir->quoted, shell));
 	}
 	close(fd[1]);
 	redir->fd = fd[0];
@@ -102,7 +102,8 @@ static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
 	while (line && ft_strcmp(line, limiter))
 	{
 		len = ft_strlen(line);
-		if (!quoted && ft_memchr(line, '$', len) && !expand_dollar(&line, line + len, &len, shell))
+		if (!quoted && ft_memchr(line, '$', len) && !expand_dollar(&line, line
+				+ len, &len, shell))
 			return (free(line), close(fd), 1);
 		if (write(fd, line, len) == -1 || write(fd, "\n", 1) == -1)
 			return (perror(MINI), free(line), close(fd), 1);
@@ -127,11 +128,11 @@ static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
 
 	str.s = malloc(*len + 1);
 	if (!str.s)
-		return (perror(MINI),0);
+		return (perror(MINI), 0);
 	str.cap = end - *line;
 	str.len = 0;
 	current = *line;
-	while(*current)
+	while (*current)
 	{
 		if (dollar_expandable(current, end))
 		{

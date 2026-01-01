@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   var.c                                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/01 14:10:54 by kmurugan          #+#    #+#             */
+/*   Updated: 2026/01/01 21:10:51 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 static char			*status_itoa(int n, char *num);
@@ -9,26 +21,28 @@ static size_t		ft_numlen(int n, int base);
 DESCRIPTION:
 	Wrapper function to expand the variable in the token.
 	Returns the status variable or the expanded variable on success,
-	ERR_PTR on invalid substitution.
+	((char *)-1) on invalid substitution.
 
 NOTE:
-	As NULL is a valid expansion, ERR_PTR is (char *)-1, used as a sentinal value for invalid substitution.
-	Must not be dereferenced, but only compared to detect invalid substitution.
+	As NULL is a valid expansion, (char *)-1 is used as a sentinal value for
+	invalid substitution. Must not be dereferenced, but only compared to detect
+	invalid substitution.
 */
 
-const char *get_var(char **token, char *end, t_shell *shell)
+const char	*get_var(char **token, char *end, t_shell *shell)
 {
 	char	exit_code[4];
 
 	if (**token != '?')
-		return(expand_var(token, end, shell->env));
+		return (expand_var(token, end, shell->env));
 	(*token)++;
 	return (status_itoa(shell->status, exit_code));
 }
 
 /*
 DESCRIPTION:
-	Converts and returns the status variable as a string within the range of 0-255.
+	Converts and returns the status variable as a string within the range of
+	0-255.
 */
 
 static char	*status_itoa(int n, char *num)
@@ -51,12 +65,13 @@ static char	*status_itoa(int n, char *num)
 /*
 DESCRIPTION:
 	Expands the variable in the token.
-	Returns the expanded variable on success, ERR_PTR on invalid substitution.
+	Returns the expanded variable on success, ((char *)-1) on invalid
+	substitution.
 
 NOTE:
-	As NULL is a valid expansion, ERR_PTR is (char *)-1, used as a sentinal
-	value for invalid substitution and malloc failure.
-	Must not be dereferenced, but only compared to detect invalid substitution.
+	As NULL is a valid expansion, (char *)-1 is used as a sentinal value for
+	invalid substitution and malloc failure. Must not be dereferenced, but only
+	compared to detect invalid substitution.
 */
 
 static const char	*expand_var(char **token, char *end, t_env *env)
@@ -75,10 +90,10 @@ static const char	*expand_var(char **token, char *end, t_env *env)
 		*token = ft_memchr(*token, '}', end - *token);
 	}
 	else if (**token == '{')
-		return (ERR_PTR);
+		return (((char *)-1));
 	tmp = ft_strndup(start, *token - start);
 	if (!tmp)
-		return (perror(MINI), ERR_PTR);
+		return (perror(MINI), ((char *)-1));
 	env_var = ft_getenv(env, tmp);
 	free(tmp);
 	if (**token == '}')
@@ -99,7 +114,7 @@ static int	valid_substitution(char *token, size_t len)
 	if (token[len - 1] == '\'' || token[len - 1] == '\"')
 		len--;
 	if (len == 1)
-		return (ft_dprintf(STDERR_FILENO, "%s: %s\n", MINI, E_ENV), 0);
+		return (perr_msg(E_ENV, NULL, NULL), 0);
 	i = 1;
 	while (i < len && (token[i] == '_' || ft_isalnum(token[i])))
 		i++;

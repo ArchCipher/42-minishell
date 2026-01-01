@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_putstr_fd.c                                     :+:      :+:    :+:   */
+/*   ft_putstr.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/16 18:26:41 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/10/16 18:55:54 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 14:07:57 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ int	ft_putstr(const char *s, int fd)
 		return (1);
 	len = ft_strlen(s);
 	t_written = 0;
-	while(t_written < len)
+	while (t_written < len)
 	{
 		written = write(fd, s + t_written, len - t_written);
 		if (written < 1)

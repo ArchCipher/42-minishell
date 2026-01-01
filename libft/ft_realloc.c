@@ -6,18 +6,17 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:43:52 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:38:58 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 14:07:19 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-
 /*
-libc realloc doesn't free ptr when malloc fails,
-but this version frees ptr when malloc fails.
+NOTE:
+	libc realloc() doesn't free ptr when malloc fails, but this function frees
+	ptr when malloc fails.
 */
-
 
 void	*ft_realloc(void *ptr, size_t old_size, size_t size)
 {

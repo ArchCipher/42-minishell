@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   execute.c                                          :+:      :+:    :+:   */
+/*   exec.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:45 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:53:32 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 14:16:01 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ static int	cmds_waitpid(t_cmd *cmds);
 /*
 DESCRIPTION:
 	Executes the commands and returns the status.
-	It executes it in the parent process, if it is a single builtin command. .
+	It executes it in the parent process, if it is a single builtin command.
 	In case of multiple commands, it forks a child process for each command
 	and waits for them to finish.
 	It returns the status of the last command.
@@ -97,8 +97,8 @@ static int	exec_in_parent(t_cmd *cmd, t_shell *shell)
 		return (close(actual_stdout), perror(MINI), 1);
 	if (setup_redirs(cmd->redirs))
 		return (restore_fds(actual_stdin, actual_stdout, 1));
-	if (isatty(actual_stdout) && cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
-				&& !cmd->args[2])))
+	if (isatty(actual_stdout) && cmd->exec.builtin == BUILTIN_EXIT
+		&& (!cmd->args[1] || (cmd->args[1] && !cmd->args[2])))
 		write(actual_stdout, "exit\n", 5);
 	ret = exec_builtin(cmd, shell);
 	ret = restore_fds(actual_stdin, actual_stdout, ret);
@@ -116,7 +116,8 @@ DESCRIPTION:
 
 static int	restore_fds(int actual_stdin, int actual_stdout, int ret)
 {
-	if ((dup2(actual_stdin, STDIN_FILENO) == -1) || (dup2(actual_stdout, STDOUT_FILENO) == -1))
+	if ((dup2(actual_stdin, STDIN_FILENO) == -1) || (dup2(actual_stdout,
+				STDOUT_FILENO) == -1))
 	{
 		perror(MINI);
 		ret = 1;
@@ -128,12 +129,13 @@ static int	restore_fds(int actual_stdin, int actual_stdout, int ret)
 
 /*
 DESCRIPTION:
-	Waits for the child processes to finish and returns the exit status of the last command.
+	Waits for the child processes to finish and returns the exit status of the
+	last command.
 	Returns 0 on success, 1 on error.
 
 	waitpid(): Waits for a child process to update its status.
 		WIFEXITED() returns true if the child process terminated normally.
-		WIFSIGNALED() returns true if the child process terminated due to a signal.
+		WIFSIGNALED() returns true if the child terminated due to a signal.
 		WEXITSTATUS() returns the exit status of the child process.
 		WTERMSIG() returns the signal that caused the child process to terminate.
 	If waitpid() returns -1, WIFSIGNALED or WEXITSTATUS is not set.

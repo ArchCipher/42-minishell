@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:20 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 19:58:26 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/01 14:10:48 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,8 +32,8 @@ DESCRIPTION:
 
 int	set_signal_handlers(void (*sigint)(int), void (*sigquit)(int))
 {
-	return ((set_signal_handler(SIGINT, sigint) == -1 || set_signal_handler(SIGQUIT,
-		sigquit) == -1));
+	return ((set_signal_handler(SIGINT, sigint) == -1
+			|| set_signal_handler(SIGQUIT, sigquit) == -1));
 }
 
 /*
