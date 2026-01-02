@@ -44,10 +44,10 @@ int	exec_exit(char **s)
 		return (0);
 	n = status_atoi(s[1]) % EXIT_STATUS_MOD;
 	if (errno == EINVAL)
-		perr_msg(*s, s[1], E_EXIT_CODE);
+		perr_msg(*s, s[1], E_EXIT_CODE, false);
 	else if (s[2])
 	{
-		perr_msg(*s, E_MANY_ARGS, NULL);
+		perr_msg(*s, E_MANY_ARGS, NULL, false);
 		n = 1;
 	}
 	return (n);

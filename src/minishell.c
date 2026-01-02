@@ -84,7 +84,7 @@ int	main(int ac, char **av, char **envp)
 
 	(void)av;
 	if (ac != 1)
-		return (perr_msg(E_MANY_ARGS, NULL, NULL), 1);
+		return (perr_msg(E_MANY_ARGS, NULL, NULL, false), 1);
 	init_shell(envp, &shell);
 	input = readline(PROMPT);
 	while (input)
@@ -184,27 +184,18 @@ DESCRIPTION:
 
 static void	init_env(t_shell *shell)
 {
-	t_env	*old_pwd;
-	t_env	*pwd;
 	t_env	*last_cmd;
 
+	shell->home = env_lookup(shell->env, "HOME");
+	shell->oldpwd = env_lookup(shell->env, "OLDPWD");
+	shell->pwd = env_lookup(shell->env, "PWD");
 	last_cmd = env_lookup(shell->env, "_");
 	if (last_cmd)
 		last_cmd->exported = false;
-	old_pwd = env_lookup(shell->env, "OLDPWD");
-	if (!old_pwd)
+	update_pwds(shell);
+	if (shell->oldpwd && shell->oldpwd->value)
 	{
-		if (update_env(shell, "OLDPWD", NULL))
-			return ;
+		free(shell->oldpwd->value);
+		shell->oldpwd->value = NULL;
 	}
-	pwd = env_lookup(shell->env, "PWD");
-	if (!pwd)
-	{
-		if (update_env(shell, "PWD", NULL))
-			return ;
-		pwd = env_lookup(shell->env, "PWD");
-	}
-	if (pwd->value)
-		free(pwd->value);
-	pwd->value = getcwd(NULL, 0);
 }

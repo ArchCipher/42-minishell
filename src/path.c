@@ -113,7 +113,7 @@ DESCRIPTION:
 static void	child_path_error(const char *filename, char *msg, int exit_code,
 		char *path)
 {
-	perr_msg(filename, msg, NULL);
+	perr_msg(filename, msg, NULL, false);
 	if (!ft_strchr(filename, '/') && path)
 		free(path);
 	exit(exit_code);

@@ -26,7 +26,7 @@ void	lstadd_back(void **head, void *new, void *last, t_node_type type)
 		return ;
 	if (*head && !last)
 	{
-		perr_msg("lstadd_back: last is NULL", NULL, NULL);
+		perr_msg("lstadd_back", "last is NULL", NULL, false);
 		return ;
 	}
 	if (!*head)
@@ -42,15 +42,4 @@ void	lstadd_back(void **head, void *new, void *last, t_node_type type)
 		else if (type == TYPE_ENV)
 			((t_env *)last)->next = (t_env *)new;
 	}
-}
-
-void	perr_msg(const char *s1, const char *s2, const char *s3)
-{
-	ft_dprintf(FD_ERR, "%s", MINI);
-	ft_dprintf(FD_ERR, ": %s", s1);
-	if (s2)
-		ft_dprintf(FD_ERR, ": %s", s2);
-	if (s3)
-		ft_dprintf(FD_ERR, ": %s", s3);
-	write(FD_ERR, "\n", 1);
 }

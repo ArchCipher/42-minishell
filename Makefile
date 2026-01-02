@@ -27,15 +27,14 @@ HEADER			= minishell.h
 INC				= -I. \
 				-I$(DIR_LIBFT) \
 				-I$(DIR_DPRINTF) \
-				$(READLINE_INC) \
-				-I gnl
+				$(READLINE_INC)
 
 #				Sources & Objects
 MSRCS			= minishell \
-				lexer list parser var dollar ast \
+				lexer list parser var dollar parser_utils ast ast_utils \
 				exec exec_child path redirs heredoc \
-				builtin export unset env_utils qsort exit \
-				signal free
+				builtin cd export unset env_utils qsort exit \
+				signal error free
 
 SRCS			= $(addprefix src/, $(addsuffix .c, $(MSRCS)))
 OBJS			= $(SRCS:.c=.o)

@@ -33,10 +33,11 @@ int	setup_redirs(t_redir *redirs)
 		return (0);
 	while (redirs)
 	{
-		if (redirs->flag != HEREDOC)
+		if (redirs->flag == REDIR_IN || redirs->flag == REDIR_OUT
+				|| redirs->flag == APPEND)
 			redirs->fd = open_redir_file(redirs->flag, redirs->file);
 		if (redirs->fd == -1)
-			return (perr_msg(redirs->file, strerror(errno), NULL), 1);
+			return (perr_msg(redirs->file, strerror(errno), NULL, false), 1);
 		if (((redirs->flag == REDIR_IN || redirs->flag == HEREDOC)
 				&& dup2(redirs->fd, STDIN_FILENO) == -1)
 			|| ((redirs->flag == REDIR_OUT || redirs->flag == APPEND)

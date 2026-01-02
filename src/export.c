@@ -24,17 +24,25 @@ DESCRIPTION:
 	Returns 0 on success, 1 on error.
 */
 
-int	exec_export(char *cmd, char **args, t_shell *shell)
+int	exec_export(char **args, t_shell *shell)
 {
+	char	*cmd;
+
+	cmd = *(args++);
 	if (!*args)
 		return (export_no_args(shell->env));
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
-			return (ft_dprintf(STDERR_FILENO, "%s: %s: `%s': %s\n", MINI, cmd,
-					*args, E_EXPORT), 1);
+			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
 			return (perror(MINI), 1);
+		if (!shell->pwd && !strcmp(*args, "PWD"))
+			shell->pwd = env_lookup(shell->env, *args);
+		else if (!shell->oldpwd && !strcmp(*args, "OLDPWD"))
+			shell->oldpwd = env_lookup(shell->env, *args);
+		else if (!shell->home && !strcmp(*args, "HOME"))
+			shell->home = env_lookup(shell->env, *args);
 		args++;
 	}
 	return (0);

@@ -13,9 +13,9 @@
 #include "minishell.h"
 
 static t_cmd	*build_cmd(t_token **current);
-static int		build_redir(t_token **current, void **head, void **last);
+static t_cmd	*build_cmd_from_tokens(t_token *token);
 static t_cmd	*create_cmd(size_t word_count);
-static ssize_t	count_args(t_token *token);
+static int		build_redir(t_token **current, void **head, void **last);
 
 /*
 DESCRIPTION:
@@ -34,16 +34,19 @@ t_cmd	*build_ast(t_token *tokens)
 	cmd.head = NULL;
 	while (current)
 	{
-		if (current->type != PIPE_CHAR)
+		if (current->type == WORD || type_redir(current->type))
 		{
 			cmd.new = build_cmd(&current);
 			if (!cmd.new)
-				return (error_free(cmd.head, tokens));
+				return (free_cmds_err(cmd.head, tokens));
 			lstadd_back((void **)&cmd.head, cmd.new, cmd.tail, TYPE_CMD);
 			cmd.tail = cmd.new;
 		}
-		if (current && current->type == PIPE_CHAR)
+		if (current && type_con(current->type))
+		{
+			((t_cmd *)cmd.new)->con = current->type;
 			current = current->next;
+		}
 	}
 	free_tokens(tokens, false, NULL);
 	return (cmd.head);
@@ -58,33 +61,54 @@ DESCRIPTION:
 	Returns the newly built command struct on success, NULL on error.
 */
 
-static t_cmd	*build_cmd(t_token **current)
+static t_cmd	*build_cmd(t_token **cur)
 {
 	t_cmd	*new;
 	void	*last;
-	ssize_t	word_count;
 	ssize_t	i;
 
-	word_count = count_args(*current);
-	if (word_count == -1)
-		return (NULL);
-	new = create_cmd(word_count);
+	new = build_cmd_from_tokens(*cur);
 	if (!new)
 		return (NULL);
 	i = 0;
-	while (*current && (*current)->type != PIPE_CHAR)
+	while (*cur && !type_con((*cur)->type))
 	{
-		if ((*current)->type == WORD)
+		if ((*cur)->type == WORD)
 		{
-			new->args[i++] = (*current)->token;
-			(*current)->token = NULL;
-			*current = (*current)->next;
+			new->args[i++] = (*cur)->token;
+			(*cur)->token = NULL;
+			*cur = (*cur)->next;
 		}
-		else if (!build_redir(current, (void **)&new->redirs, &last))
+		else if (type_redir((*cur)->type) && !build_redir(cur, (void **)&new->redirs, &last))
 			return (new->args[i] = NULL, free_cmds(new), NULL);
 	}
+	if (*cur)
+		new->con = (*cur)->type;
 	new->args[i] = NULL;
 	return (new);
+}
+
+/*
+DESCRIPTION:
+	Counts words until it reaches end of cmd / pipe character.
+	Returns the number of words found.
+	Although only defensive, returns -1 on leaks in the parser.
+*/
+
+static t_cmd	*build_cmd_from_tokens(t_token *token)
+{
+	ssize_t	word_count;
+
+	word_count = 0;
+	while (token && !type_con(token->type))
+	{
+		if (token->type == WORD)
+			word_count++;
+		else if (type_redir(token->type))
+			token = token->next;
+		token = token->next;
+	}
+	return (create_cmd(word_count));
 }
 
 /*
@@ -107,6 +131,8 @@ static t_cmd	*create_cmd(size_t word_count)
 	new->next = NULL;
 	new->exec.builtin = -1;
 	new->exec.pid = -1;
+	new->con = NONE;
+	new->subshell = NULL;
 	return (new);
 }
 
@@ -123,7 +149,7 @@ static int	build_redir(t_token **current, void **head, void **last)
 	t_redir	*new;
 
 	if (*current && !(*current)->next)
-		return (perr_msg("Leak in parser", NULL, NULL), 0);
+		return (perr_msg("build_redir", "parsing error", NULL, false), 0);
 	while (*current && (*current)->next && (*current)->type != PIPE_CHAR
 		&& (*current)->type != WORD)
 	{
@@ -141,29 +167,4 @@ static int	build_redir(t_token **current, void **head, void **last)
 		*current = (*current)->next->next;
 	}
 	return (1);
-}
-
-/*
-DESCRIPTION:
-	Counts words until it reaches end of cmd / pipe character.
-	Returns the number of words found.
-	Although only defensive, returns -1 on leaks in the parser.
-*/
-
-static ssize_t	count_args(t_token *token)
-{
-	ssize_t	word_count;
-
-	word_count = 0;
-	while (token && token->type != PIPE_CHAR)
-	{
-		if (token->type == WORD)
-			word_count++;
-		else if (token->next && token->next->type == WORD)
-			token = token->next;
-		else
-			return (perr_msg("Leak in parser", NULL, NULL), -1);
-		token = token->next;
-	}
-	return (word_count);
 }

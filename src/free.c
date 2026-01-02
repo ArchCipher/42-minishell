@@ -72,18 +72,6 @@ void	free_cmds(t_cmd *cmds)
 
 /*
 DESCRIPTION:
-	Frees the command list and their content and tokens and returns NULL.
-*/
-
-t_cmd	*error_free(t_cmd *cmds, t_token *tokens)
-{
-	free_cmds(cmds);
-	free_tokens(tokens, true, NULL);
-	return (NULL);
-}
-
-/*
-DESCRIPTION:
 	Frees the environment list and their content.
 */
 

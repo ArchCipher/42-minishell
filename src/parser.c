@@ -12,10 +12,12 @@
 
 #include "minishell.h"
 
+static int	process_token(t_token **head, t_token **cur, t_token *prev, t_shell *shell);
+static int	process_depth(t_token *cur, int *depth);
 static int	handle_word(t_token *token, char *end, t_shell *shell);
 static void	handle_char(char *s, t_token_type *flag, char *end, t_string *str);
 static int	del_one_token(t_token **tokens, t_token **cur, t_token *prev);
-static void	error_free_tokens(t_token *tokens, t_token *current);
+static int	valid_next_token(t_token_type t1, t_token_type t2);
 
 /*
 DESCRIPTION:
@@ -23,38 +25,62 @@ DESCRIPTION:
 	Mallocates a new string for only word tokens, others are pointers to the
 	input strings with just the token->type set.
 	Returns the parsed tokens on success, NULL on error.
-
-NOTE:
-	Now returns error for logical OR (||).
 */
 
-t_token	*parse_tokens(t_token *tokens, t_shell *shell)
+t_token	*parse_tokens(t_token *head, t_shell *shell)
 {
-	t_token	*current;
+	t_token	*cur;
 	t_token	*prev;
+	int		ret;
+	int		depth;
 
-	if (!tokens)
+	if (!head)
 		return (NULL);
-	current = tokens;
+	cur = head;
 	prev = NULL;
-	while (current)
+	depth = 0;
+	while (cur)
 	{
-		if (current->type == WORD)
-		{
-			if (handle_word(current, current->token + current->len, shell))
-				return (free_tokens(tokens, true, current), NULL);
-			if ((!prev && !*current->token) && del_one_token(&tokens, &current,
-					prev))
-				continue ;
-		}
-		else if (!current->next || (current->type == PIPE_CHAR
-				&& current->next->type == PIPE_CHAR)
-			|| (current->type != PIPE_CHAR && current->next->type != WORD))
-			return (error_free_tokens(tokens, current), NULL);
-		prev = current;
-		current = current->next;
+		ret = process_token(&head, &cur, prev, shell);
+		if (ret == 1)
+			return (NULL);
+		if (ret == 2)
+			continue ;
+		if (process_depth(cur, &depth))
+			return (free_tokens(head, true, cur), NULL);
+		prev = cur;
+		cur = cur->next;
 	}
-	return (tokens);
+	if (depth || (prev && !valid_next_token(prev->type, NONE)))
+		return (perr_token(NULL, 0), free_tokens(head, true, NULL), NULL);
+	return (head);
+}
+
+static int	process_token(t_token **head, t_token **cur, t_token *prev, t_shell *shell)
+{
+	if (!prev && !valid_next_token(NONE, (*cur)->type))
+		return (perr_token((*cur)->token, (*cur)->len), free_tokens(*head, false, NULL), 1);
+	if (prev && !valid_next_token(prev->type, (*cur)->type))
+		return (perr_token((*cur)->token, (*cur)->len), free_tokens(*head, true, *cur), 1);
+	if ((*cur)->type == WORD)
+	{
+		if (handle_word(*cur, (*cur)->token + (*cur)->len, shell))
+			return (free_tokens(*head, true, *cur), 1);
+		if (!prev && !*(*cur)->token)
+			return (del_one_token(head, cur, prev), 2);
+	}	
+	return (0);
+}
+
+static int	process_depth(t_token *cur, int *depth)
+{
+	if (cur->type == PAREN_O)
+		(*depth)++;
+	else if (cur->type == PAREN_C && *depth)
+		(*depth)--;
+	else if (cur->type == PAREN_C && !*depth)
+		return (perr_token(cur->token, cur->len), 1);
+	return (0);
 }
 
 /*
@@ -99,13 +125,11 @@ DESCRIPTION:
 
 static void	handle_char(char *s, t_token_type *flag, char *end, t_string *str)
 {
-	if (*s == '\'' && *flag == WORD)
-		*flag = SQUOTE;
-	else if (*s == '\"' && *flag == WORD)
-		*flag = DQUOTE;
-	else if ((*s == '\'' && *flag == SQUOTE) || (*s == '\"' && *flag == DQUOTE))
-		*flag = WORD;
-	else if (!(dollar_expandable(s, end) && *flag != SQUOTE))
+	t_token_type	old_flag;
+
+	old_flag = *flag;
+	*flag = get_flag(s, *flag);
+	if (*flag == old_flag && !(*flag != SQUOTE && dollar_expandable(s, end)))
 		str->s[(str->len)++] = *s;
 }
 
@@ -131,14 +155,28 @@ static int	del_one_token(t_token **tokens, t_token **cur, t_token *prev)
 
 /*
 DESCRIPTION:
-	Prints the error message and frees the tokens.
+	Returns 0 if t2 is an invalid token after t1.
+
+NOTE:
+	The caller must ensure t2 exists (current->next != NULL).
 */
 
-static void	error_free_tokens(t_token *tokens, t_token *current)
+static int	valid_next_token(t_token_type t1, t_token_type t2)
 {
-	if (!current->next)
-		print_type_error(0);
-	else
-		print_type_error(current->next->token[0]);
-	free_tokens(tokens, true, current);
+	if (t1 == NONE)
+		return (t2 == WORD || t2 == PAREN_O || type_redir(t2));
+	if (t2 == NONE)
+		return (t1 == WORD || t1 == PAREN_C);
+	if (type_redir(t1))
+		return (t2 == WORD);
+	if (t1 == PIPE_CHAR || t1 == AND || t1 == OR)
+		return (t2 == WORD || type_redir(t2) || t2 == PAREN_O);
+	if (t1 == PAREN_O)
+		return (t2 == PAREN_O || t2 == WORD || type_redir(t2));
+	if (t1 == PAREN_C)
+		return (t2 == PAREN_C || t2 == PIPE_CHAR || t2 == AND || t2 == OR);
+	if (t1 == WORD)
+		return (t2 == WORD || type_redir(t2) || t2 == PIPE_CHAR || t2 == AND
+			|| t2 == OR || t2 == PAREN_C);
+	return (0);
 }

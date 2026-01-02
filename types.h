@@ -19,17 +19,19 @@
 
 typedef enum t_token_type
 {
+	NONE,
 	WORD,
 	SQUOTE,
 	DQUOTE,
-	PIPE_CHAR,
 	REDIR_IN,
 	REDIR_OUT,
 	APPEND,
 	HEREDOC,
-	AND_OP,
-	OR_OP,
-	PARENTHESIS
+	PIPE_CHAR,
+	AND,
+	OR,
+	PAREN_O,
+	PAREN_C
 }					t_token_type;
 
 // for wildcard (*) check glob()
@@ -65,6 +67,9 @@ typedef struct s_shell
 {
 	t_env			*env;
 	t_env			*env_tail;
+	t_env			*home;
+	t_env			*oldpwd;
+	t_env			*pwd;
 	int				status;
 	struct termios	original_term;
 }					t_shell;
@@ -112,7 +117,9 @@ typedef struct s_cmd
 	char			**args;
 	t_redir			*redirs;
 	t_exec			exec;
+	t_token_type	con;
 	struct s_cmd	*next;
+	struct s_cmd	*subshell;
 }					t_cmd;
 
 typedef struct s_strtok

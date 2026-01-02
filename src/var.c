@@ -114,7 +114,7 @@ static int	valid_substitution(char *token, size_t len)
 	if (token[len - 1] == '\'' || token[len - 1] == '\"')
 		len--;
 	if (len == 1)
-		return (perr_msg(E_ENV, NULL, NULL), 0);
+		return (perr_msg(E_ENV, NULL, NULL, false), 0);
 	i = 1;
 	while (i < len && (token[i] == '_' || ft_isalnum(token[i])))
 		i++;

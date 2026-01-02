@@ -20,17 +20,25 @@ DESCRIPTION:
 	Returns 0 on success, 1 if the variable is not a valid identifier.
 */
 
-int	exec_unset(char *cmd, char **args, t_shell *shell)
+int	exec_unset(char **args, t_shell *shell)
 {
 	t_env		*prev;
 	t_env		*env;
+	char		*cmd;
 
+	cmd = *(args++);
 	if (!*args)
 		return (0);
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
-			return (perr_msg(cmd, *args, E_EXPORT), 1);
+			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
+		if (!strcmp(*args, "PWD"))
+			shell->pwd = NULL;
+		else if (!strcmp(*args, "OLDPWD"))
+			shell->oldpwd = NULL;
+		else if (!strcmp(*args, "HOME"))
+			shell->home = NULL;
 		env = env_lookup_prev(shell->env, &prev, *args);
 		if (env)
 			del_one_env(shell, env, prev);

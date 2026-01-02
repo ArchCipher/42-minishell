@@ -13,6 +13,7 @@
 #include "minishell.h"
 
 static t_token	*get_token(char *s);
+static size_t	get_tok_len(t_token_type type);
 static size_t	parse_word_token(char *s);
 static t_token	*create_token(void *token, t_token_type type, size_t len);
 
@@ -34,10 +35,10 @@ t_token	*tokenise_input(char *s)
 			s++;
 		if (!*s)
 			break ;
-		if (!ft_strchr(OPERATORS, *s))
-			tokens.new = create_token(s, WORD, parse_word_token(s));
-		else
+		if (is_redir(*s) || is_connector(s) || is_parenthesis(*s))
 			tokens.new = get_token(s);
+		else
+			tokens.new = create_token(s, WORD, parse_word_token(s));
 		if (!tokens.new)
 			return (free_tokens(tokens.head, false, NULL), NULL);
 		lstadd_back((void **)&tokens, tokens.new, tokens.tail, TYPE_TOKEN);
@@ -46,7 +47,7 @@ t_token	*tokenise_input(char *s)
 		if (tmp->type == WORD && (ft_memchr(tmp->token, '\'', tmp->len)
 				|| ft_memchr(tmp->token, '\"', tmp->len)))
 			tmp->quoted = true;
-		s += ((t_token *)tokens.tail)->len;
+		s += tmp->len;
 	}
 	return (tokens.head);
 }
@@ -60,17 +61,19 @@ DESCRIPTION:
 static t_token	*get_token(char *s)
 {
 	t_token_type	type;
-	size_t			len;
 
-	len = 1;
 	if (*s == '>' && s[1] == '>')
 		type = APPEND;
 	else if (*s == '<' && s[1] == '<')
 		type = HEREDOC;
 	else if (*s == '|' && s[1] == '|')
-		type = OR_OP;
+		type = OR;
 	else if (*s == '&' && s[1] == '&')
-		type = AND_OP;
+		type = AND;
+	else if (*s == '(')
+		type = PAREN_O;
+	else if (*s == ')')
+		type = PAREN_C;
 	else if (*s == '<')
 		type = REDIR_IN;
 	else if (*s == '>')
@@ -78,10 +81,17 @@ static t_token	*get_token(char *s)
 	else if (*s == '|')
 		type = PIPE_CHAR;
 	else
-		return (print_type_error(s[1]), NULL);
-	if (type == APPEND || type == HEREDOC || type == OR_OP || type == AND_OP)
-		len = 2;
-	return (create_token(s, type, len));
+		return (perr_token(s, 1), NULL);
+	return (create_token(s, type, get_tok_len(type)));
+}
+
+static size_t	get_tok_len(t_token_type type)
+{
+	if (type == APPEND || type == HEREDOC || type == OR || type == AND)
+		return (2);
+	if (type == REDIR_IN || type == REDIR_OUT || type == PIPE_CHAR || type == PAREN_O || type == PAREN_C)
+		return (1);
+	return (0);
 }
 
 /*
@@ -97,16 +107,10 @@ static size_t	parse_word_token(char *s)
 
 	flag = WORD;
 	p = s;
-	while (*p && !(flag == WORD && (ft_strchr(WORD_DELIMITERS, *p))))
+	while (*p && !(flag == WORD && is_word_delimiter(p)))
 	{
-		if (*p == '\'' && flag == WORD && ft_strchr(p + 1, *p))
-			flag = SQUOTE;
-		else if (*p == '\"' && flag == WORD && ft_strchr(p + 1, *p))
-			flag = DQUOTE;
-		else if ((*p == '\'' && flag == SQUOTE) || (*p == '\"'
-				&& flag == DQUOTE))
-			flag = WORD;
-		else if (*p == '$' && p[1] != '\0' && p[1] == '{')
+		flag = get_flag(p, flag);
+		if (*p == '$' && p[1] == '{')
 		{
 			tmp = ft_strchr(p + 1, '}');
 			if (tmp)
@@ -136,12 +140,4 @@ static t_token	*create_token(void *token, t_token_type type, size_t len)
 	new->quoted = false;
 	new->next = NULL;
 	return (new);
-}
-
-void	print_type_error(char c)
-{
-	if (!c)
-		ft_dprintf(STDERR_FILENO, "%s: %s `newline'\n", MINI, E_PARSE);
-	else
-		ft_dprintf(STDERR_FILENO, "%s: %s `%c'\n", MINI, E_PARSE, c);
 }
