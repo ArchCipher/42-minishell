@@ -14,12 +14,9 @@
 
 static int  parse_cmd(t_token **tok, t_cmd *cmd, void **last);
 static int  build_cmd(t_token **cur, t_cmd *cmd, void **last);
-static size_t   count_args(t_token *tok);
+static int	malloc_args(t_token *tok, t_cmd *cmd);
 static t_cmd	*create_cmd(void);
 static int	build_redir(t_token **current, void **head, void **last);
-
-// not needed?
-size_t  count_existing_args(char **args);
 
 t_cmd   *parse_cmd_list(t_token **tok)
 {
@@ -49,16 +46,13 @@ static int  parse_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 {
 	if (!*tok)
 		return (0);
-    if ((*tok)->type == L_PAREN)
-    {
-        *tok = (*tok)->next;
-        cmd->sub = parse_cmd_list(tok);
-        if (!cmd->sub || !*tok || (*tok)->type != R_PAREN)
-            return (0);
-        *tok = (*tok)->next;
-    }
-    else if (!build_cmd(tok, cmd, last_redir))
-            return (0);
+    if ((*tok)->type != L_PAREN)
+		return (build_cmd(tok, cmd, last_redir));
+	*tok = (*tok)->next;
+	cmd->sub = parse_cmd_list(tok);
+	if (!cmd->sub || !*tok || (*tok)->type != R_PAREN)
+		return (0);
+	*tok = (*tok)->next;
     return (1);
 }
 
@@ -71,30 +65,14 @@ DESCRIPTION:
 	Returns the newly built command struct on success, NULL on error.
 */
 
-char    **realloc_arr(char **src, size_t old, size_t new)
-{
-    char    **dst;
-
-    dst = malloc(new * sizeof(char *));
-    if (!dst)
-        return (free(src), NULL);
-    if (src)
-        ft_memcpy(dst, src, old * sizeof(char *));
-    free(src);
-    return (dst);
-}
-
 static int  build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 {
 	ssize_t	i;
 
     i = 0;
-    if (cmd->args)
-        i = count_existing_args(cmd->args);
-    cmd->args = realloc_arr(cmd->args, i, i + count_args(*tok) + 1);
-    if (!cmd->args)
-        return (perror(MINI), 0);
-	while (*tok && !type_con((*tok)->type) && (*tok)->type != R_PAREN)
+	if (!malloc_args(*tok, cmd))
+		return (0);
+	while (*tok && ((*tok)->type == WORD || type_redir((*tok)->type)))
 	{
 		if ((*tok)->type == WORD)
 		{
@@ -103,9 +81,12 @@ static int  build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 			*tok = (*tok)->next;
 		}
 		else if (type_redir((*tok)->type) && !build_redir(tok, (void **)&cmd->redirs, last_redir))
-			return (cmd->args[i] = NULL, 0);
+		{
+			if (cmd->args)
+				cmd->args[i] = NULL;
+			return (0);
+		}
 	}
-	cmd->args[i] = NULL;
 	return (1);
 }
 
@@ -116,12 +97,12 @@ DESCRIPTION:
 	Although only defensive, returns -1 on leaks in the parser.
 */
 
-static size_t   count_args(t_token *tok)
+static int	malloc_args(t_token *tok, t_cmd *cmd)
 {
 	ssize_t	word_count;
 
 	word_count = 0;
-	while (tok && !type_con(tok->type) && tok->type != R_PAREN)
+	while (tok && (tok->type == WORD || type_redir(tok->type)))
 	{
 		if (tok->type == WORD)
 			word_count++;
@@ -129,7 +110,13 @@ static size_t   count_args(t_token *tok)
 			tok = tok->next;
 		tok = tok->next;
 	}
-	return (word_count);
+	if (!word_count)
+		return (1);
+	cmd->args = malloc(sizeof(char *) * (word_count + 1));
+	if (!cmd->args)
+		return (perror(MINI), 0);
+	cmd->args[word_count] = NULL;
+	return (1);
 }
 
 /*
@@ -138,7 +125,7 @@ DESCRIPTION:
 	Returns the newly malloced cmd struct.
 */
 
-static t_cmd	*create_cmd(void)
+static t_cmd	*create_cmd()
 {
 	t_cmd	*new;
 
