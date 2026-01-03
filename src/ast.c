@@ -38,13 +38,14 @@ t_cmd	*build_ast(t_token *tokens)
 		{
 			cmd.new = build_cmd(&current);
 			if (!cmd.new)
-				return (free_cmds_err(cmd.head, tokens));
+				return (free_cmds(cmd.head), free_tokens(tokens, true, NULL), NULL);
 			lstadd_back((void **)&cmd.head, cmd.new, cmd.tail, TYPE_CMD);
 			cmd.tail = cmd.new;
 		}
 		if (current && type_con(current->type))
 			current = current->next;
 	}
+	free_tokens(tokens, false, NULL);
 	return (cmd.head);
 }
 
@@ -72,7 +73,6 @@ static t_cmd	*build_cmd(t_token **cur)
 		if ((*cur)->type == WORD)
 		{
 			new->args[i++] = (*cur)->token;
-			(*cur)->token = NULL;
 			*cur = (*cur)->next;
 		}
 		else if (type_redir((*cur)->type) && !build_redir(cur, (void **)&new->redirs, &last))
@@ -158,7 +158,6 @@ static int	build_redir(t_token **current, void **head, void **last)
 		if (!new)
 			return (perror(MINI), 0);
 		new->file = (*current)->next->token;
-		(*current)->next->token = NULL;
 		new->flag = (*current)->type;
 		new->fd = -1;
 		new->quoted = (*current)->next->quoted;

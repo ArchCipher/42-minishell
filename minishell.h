@@ -83,7 +83,8 @@ int								append_var(t_string *str, const char *var,
 									size_t last);
 bool							dollar_expandable(char *s, char *end);
 
-t_cmd							*build_ast(t_token *tokens);
+// t_cmd							*build_ast(t_token *tokens);
+t_cmd							*parse_cmd_list(t_token **tok);
 
 // Execution (exec, exec_child, path, redirs, heredoc)
 int								exec_cmds(t_cmd *cmds, t_shell *shell);

@@ -17,9 +17,9 @@ DESCRIPTION:
 	Frees the command list and their content and tokens and returns NULL.
 */
 
-t_cmd	*free_cmds_err(t_cmd *cmds, t_token *tokens)
-{
-	free_cmds(cmds);
-	free_tokens(tokens, true, NULL);
-	return (NULL);
-}
+// t_cmd	*free_cmds_err(t_cmd *cmds, t_token *tokens)
+// {
+// 	free_cmds(cmds);
+// 	free_tokens(tokens, true, NULL);
+// 	return (NULL);
+// }

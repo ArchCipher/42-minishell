@@ -76,6 +76,8 @@ void	free_cmds(t_cmd *cmds)
 				close(cur_redir->fd);
 			free(cur_redir);
 		}
+		if (cmd->sub)
+			free_cmds(cmd->sub);
 		tmp = cmd;
 		cmd = cmd->next;
 		free(tmp);
