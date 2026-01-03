@@ -15,7 +15,7 @@
 static int	handle_heredoc(t_redir *redir, t_shell *shell);
 static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell);
 static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell);
-static int	heredoc_waitpid(pid_t pid);
+static int	wait_heredoc_child(pid_t pid);
 
 /*
 DESCRIPTION:
@@ -83,7 +83,7 @@ static int	handle_heredoc(t_redir *redir, t_shell *shell)
 	}
 	close(fd[1]);
 	redir->fd = fd[0];
-	return (heredoc_waitpid(pid));
+	return (wait_heredoc_child(pid));
 }
 
 /*
@@ -166,7 +166,7 @@ NOTE:
 	not set.
 */
 
-static int	heredoc_waitpid(pid_t pid)
+static int	wait_heredoc_child(pid_t pid)
 {
 	int	status;
 	int	ret;

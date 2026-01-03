@@ -127,7 +127,7 @@ static char	**env_to_envp(t_env *env)
 		{
 			envp[i] = ft_strjoin3(env->key, "=", env->value);
 			if (!envp[i])
-				return (perror(MINI), free_envp(envp), NULL);
+				return (perror(MINI), free_arr(envp), NULL);
 			i++;
 		}
 		env = env->next;

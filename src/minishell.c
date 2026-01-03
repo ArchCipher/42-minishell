@@ -120,10 +120,7 @@ static t_cmd	*parse_input(char *input, t_shell *shell)
 	tokens = parse_tokens(tokens, shell);
 	tmp = tokens;
 	cmds = parse_cmd_list(&tmp);
-	// if (cmds)
-    //     free_tokens(tokens, false, NULL);
-    // else
-        free_tokens(tokens, true, NULL);
+    free_tokens(tokens, true, NULL);
 	return (cmds);
 }
 

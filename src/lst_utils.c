@@ -14,6 +14,38 @@
 
 /*
 DESCRIPTION:
+	Adds a new node to the end of the list.
+
+NOTE:
+	Must update tail in the caller function to maintain the list.
+*/
+
+void	lstadd_back(void **head, void *new, void *last, t_node_type type)
+{
+	if (!head || !new)
+		return ;
+	if (*head && !last)
+	{
+		perr_msg("lstadd_back", "last is NULL", NULL, false);
+		return ;
+	}
+	if (!*head)
+		*head = new;
+	else
+	{
+		if (type == TYPE_TOKEN)
+			((t_token *)last)->next = new;
+		else if (type == TYPE_CMD)
+			((t_cmd *)last)->next = new;
+		else if (type == TYPE_REDIR)
+			((t_redir *)last)->next = new;
+		else if (type == TYPE_ENV)
+			((t_env *)last)->next = new;
+	}
+}
+
+/*
+DESCRIPTION:
 	Frees the tokens and their content.
 */
 
@@ -34,53 +66,6 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 		current = tokens;
 		tokens = tokens->next;
 		free(current);
-	}
-}
-
-void	free_args(char **args)
-{
-    size_t  i;
-
-	if (!args)
-		return ;
-    i = 0;
-    while(args[i])
-        free(args[i++]);
-	free(args);
-}
-
-/*
-DESCRIPTION:
-	Frees the command list and their content. Closes any open fds.
-	
-	// if subshell is added add check for cmd->args existence
-	// or move to separate fucntion
-*/
-void	free_cmds(t_cmd *cmds)
-{
-	t_cmd	*tmp;
-	t_redir	*cur_redir;
-	t_cmd	*cmd;
-
-	cmd = cmds;
-	while (cmd)
-	{
-		if (cmd->args)
-			free_args(cmd->args);
-		while (cmd->redirs)
-		{
-			cur_redir = cmd->redirs;
-			cmd->redirs = cmd->redirs->next;
-			free(cur_redir->file);
-			if (cur_redir->fd != -1)
-				close(cur_redir->fd);
-			free(cur_redir);
-		}
-		if (cmd->sub)
-			free_cmds(cmd->sub);
-		tmp = cmd;
-		cmd = cmd->next;
-		free(tmp);
 	}
 }
 
@@ -107,17 +92,53 @@ void	free_env(t_env *env)
 
 /*
 DESCRIPTION:
-	Frees the environment pointer array.
+	Frees the string array.
 */
 
-void	free_envp(char **envp)
+void	free_arr(char **arr)
 {
 	size_t	i;
 
-	if (!envp)
+	if (!arr)
 		return ;
 	i = 0;
-	while (envp[i])
-		free(envp[i++]);
-	free(envp);
+	while (arr[i])
+		free(arr[i++]);
+	free(arr);
+}
+
+
+/*
+DESCRIPTION:
+	Frees the command list and their content. Closes any open fds.
+	
+	// if subshell is added add check for cmd->args existence
+	// or move to separate fucntion
+*/
+void	free_cmds(t_cmd *cmds)
+{
+	t_cmd	*tmp;
+	t_redir	*cur_redir;
+	t_cmd	*cmd;
+
+	cmd = cmds;
+	while (cmd)
+	{
+		if (cmd->args)
+			free_arr(cmd->args);
+		while (cmd->redirs)
+		{
+			cur_redir = cmd->redirs;
+			cmd->redirs = cmd->redirs->next;
+			free(cur_redir->file);
+			if (cur_redir->fd != -1)
+				close(cur_redir->fd);
+			free(cur_redir);
+		}
+		if (cmd->sub)
+			free_cmds(cmd->sub);
+		tmp = cmd;
+		cmd = cmd->next;
+		free(tmp);
+	}
 }

@@ -109,7 +109,7 @@ static size_t	parse_word_token(char *s)
 	p = s;
 	while (*p && !(flag == WORD && is_word_delimiter(p)))
 	{
-		flag = get_flag(p, flag);
+		flag = update_quote_flag(p, flag);
 		if (*p == '$' && p[1] == '{')
 		{
 			tmp = ft_strchr(p + 1, '}');

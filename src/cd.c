@@ -37,7 +37,7 @@ static int	do_cd(char **args, t_shell *shell)
 		dir = shell->home->value;
     else if (*dir == '~' && dir[1] == '/')
     {
-        tmp = ft_strjoin(shell->home->value, dir + 1); // need to free
+        tmp = ft_strjoin(shell->home->value, dir + 1);
         dir = tmp;
     }
 	if (chdir(dir) == -1)

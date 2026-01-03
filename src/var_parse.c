@@ -12,10 +12,10 @@
 
 #include "minishell.h"
 
-static char			*status_itoa(int n, char *num);
-static const char	*expand_var(char **token, char *end, t_env *env);
-static int			valid_substitution(char *token, size_t len);
-static size_t		ft_numlen(int n, int base);
+static char			*exit_status_to_str(int n, char *num);
+static const char	*expand_env_var(char **token, char *end, t_env *env);
+static int			is_valid_var_subst(char *token, size_t len);
+static size_t		count_digits(int n, int base);
 
 /*
 DESCRIPTION:
@@ -34,9 +34,9 @@ const char	*get_var(char **token, char *end, t_shell *shell)
 	char	exit_code[4];
 
 	if (**token != '?')
-		return (expand_var(token, end, shell->env));
+		return (expand_env_var(token, end, shell->env));
 	(*token)++;
-	return (status_itoa(shell->status, exit_code));
+	return (exit_status_to_str(shell->status, exit_code));
 }
 
 /*
@@ -45,12 +45,12 @@ DESCRIPTION:
 	0-255.
 */
 
-static char	*status_itoa(int n, char *num)
+static char	*exit_status_to_str(int n, char *num)
 {
 	size_t	len;
 
 	n = n % EXIT_STATUS_MOD;
-	len = ft_numlen(n, 10);
+	len = count_digits(n, 10);
 	num[len] = '\0';
 	if (n == 0)
 		num[0] = '0';
@@ -74,7 +74,7 @@ NOTE:
 	compared to detect invalid substitution.
 */
 
-static const char	*expand_var(char **token, char *end, t_env *env)
+static const char	*expand_env_var(char **token, char *end, t_env *env)
 {
 	const char	*env_var;
 	char		*start;
@@ -83,7 +83,7 @@ static const char	*expand_var(char **token, char *end, t_env *env)
 	start = *token;
 	while (*token < end && (**token == '_' || ft_isalnum(**token)))
 		(*token)++;
-	if (*token == start && **token == '{' && valid_substitution(*token, end
+	if (*token == start && **token == '{' && is_valid_var_subst(*token, end
 			- *token))
 	{
 		start = *token + 1;
@@ -91,6 +91,7 @@ static const char	*expand_var(char **token, char *end, t_env *env)
 	}
 	else if (**token == '{')
 		return (((char *)-1));
+
 	tmp = ft_strndup(start, *token - start);
 	if (!tmp)
 		return (perror(MINI), ((char *)-1));
@@ -107,7 +108,7 @@ DESCRIPTION:
 	Returns 1 if valid, 0 if invalid.
 */
 
-static int	valid_substitution(char *token, size_t len)
+static int	is_valid_var_subst(char *token, size_t len)
 {
 	size_t	i;
 
@@ -134,7 +135,7 @@ DESCRIPTION:
 	Returns the length of the number.
 */
 
-static size_t	ft_numlen(int n, int base)
+static size_t	count_digits(int n, int base)
 {
 	size_t	count;
 

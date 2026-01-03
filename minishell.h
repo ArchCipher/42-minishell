@@ -75,7 +75,7 @@ void							lstadd_back(void **tokens, void *new,
 									void *last, t_node_type type);
 
 t_token							*parse_tokens(t_token *tokens, t_shell *shell);
-
+int	expand_word_token(t_token *tok, char *end, t_shell *shell);
 const char						*get_var(char **token, char *end,
 									t_shell *shell);
 
@@ -85,7 +85,7 @@ bool							dollar_expandable(char *s, char *end);
 
 // t_cmd							*build_ast(t_token *tokens);
 t_cmd							*parse_cmd_list(t_token **tok);
-
+int  build_cmd(t_token **tok, t_cmd *cmd, void **last_redir);
 // Execution (exec, exec_child, path, redirs, heredoc)
 int								exec_cmds(t_cmd *cmds, t_shell *shell);
 
@@ -137,10 +137,9 @@ void							handle_shell_signal(int *status);
 
 void							free_tokens(t_token *tokens, bool free_content,
 									t_token *end);
-void							free_args(char **args);
 void							free_cmds(t_cmd *cmds);
 void							free_env(t_env *env);
-void							free_envp(char **envp);
+void							free_arr(char **envp);
 
 void							perr_msg(const char *s1, const char *s2,
 									const char *s3, bool backtick);
@@ -151,9 +150,9 @@ int								is_redir(char c);
 int								is_connector(char *s);
 int								is_parenthesis(char c);
 int								is_word_delimiter(char *s);
-t_token_type					get_flag(char *s, t_token_type flag);
+t_token_type					update_quote_flag(char *s, t_token_type flag);
 
-int type_redir(t_token_type t);
-int type_con(t_token_type t);
+int is_type_redir(t_token_type t);
+int is_type_con(t_token_type t);
 
 #endif
