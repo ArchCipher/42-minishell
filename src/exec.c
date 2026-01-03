@@ -15,10 +15,10 @@
 /*
 make sure errors are not printed twice
 */
-static int	is_builtin(char *s);
+static int	is_builtin(char **s);
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell);
 static int	restore_fds(int actual_stdin, int actual_stdout, int ret);
-static int	cmds_waitpid(t_cmd *cmds);
+static int	cmds_waitpid(t_cmd **cmd);
 
 /*
 DESCRIPTION:
@@ -29,24 +29,30 @@ DESCRIPTION:
 	It returns the status of the last command.
 */
 
-int	exec_cmds(t_cmd *cmds, t_shell *shell)
+int	exec_cmds(t_cmd *cmd, t_shell *shell)
 {
-	t_cmd	*cmd;
-	int		prev_fd;
+	t_cmd	*pipe_head;
 
-	cmd = cmds;
-	prev_fd = -1;
-	cmd->exec.builtin = is_builtin(cmd->args[0]);
-	if (cmd->exec.builtin != -1 && !cmd->next)
-		return (exec_in_parent(cmd, shell));
+	if (!cmd)
+		return (0);
+	pipe_head = NULL;
 	while (cmd)
 	{
-		cmd->exec.builtin = is_builtin(cmd->args[0]);
-		if (fork_with_pipe(cmd, &prev_fd, shell))
-			break ;
+		if (cmd->con == NONE || (cmd->con == AND && !shell->status)
+			|| cmd->con == PIPE_CHAR || (cmd->con == OR && shell->status))
+		{
+			cmd->exec.builtin = is_builtin(cmd->args);
+			if (cmd->exec.builtin != -1 && !cmd->next && !cmd->sub)
+				return (exec_in_parent(cmd, shell));
+			fork_with_pipe(cmd, shell);
+			if (!pipe_head)
+				pipe_head = cmd;
+		}
+		if (pipe_head && (!cmd->next || cmd->con != PIPE_CHAR))
+			shell->status = cmds_waitpid(&pipe_head);
 		cmd = cmd->next;
 	}
-	return (cmds_waitpid(cmds));
+	return (shell->status);
 }
 
 /*
@@ -55,21 +61,23 @@ DESCRIPTION:
 	Returns the builtin command if it is, -1 otherwise.
 */
 
-static int	is_builtin(char *s)
+static int	is_builtin(char **s)
 {
-	if (ft_strcmp(s, "echo") == 0)
+	if (!s || !*s)
+		return (-1);
+	if (ft_strcmp(*s, "echo") == 0)
 		return (BUILTIN_ECHO);
-	if (ft_strcmp(s, "cd") == 0)
+	if (ft_strcmp(*s, "cd") == 0)
 		return (BUILTIN_CD);
-	if (ft_strcmp(s, "pwd") == 0)
+	if (ft_strcmp(*s, "pwd") == 0)
 		return (BUILTIN_PWD);
-	if (ft_strcmp(s, "export") == 0)
+	if (ft_strcmp(*s, "export") == 0)
 		return (BUILTIN_EXPORT);
-	if (ft_strcmp(s, "unset") == 0)
+	if (ft_strcmp(*s, "unset") == 0)
 		return (BUILTIN_UNSET);
-	if (ft_strcmp(s, "env") == 0)
+	if (ft_strcmp(*s, "env") == 0)
 		return (BUILTIN_ENV);
-	if (ft_strcmp(s, "exit") == 0)
+	if (ft_strcmp(*s, "exit") == 0)
 		return (BUILTIN_EXIT);
 	return (-1);
 }
@@ -141,15 +149,17 @@ DESCRIPTION:
 	If waitpid() returns -1, WIFSIGNALED or WEXITSTATUS is not set.
 */
 
-static int	cmds_waitpid(t_cmd *cmds)
+static int	cmds_waitpid(t_cmd **cmd)
 {
-	int	status;
-	int	last_status;
+	t_cmd	*cur;
+	int		status;
+	int		last_status;
 
 	last_status = 0;
-	while (cmds && cmds->exec.pid != -1)
+	cur = *cmd;
+	while (cur && cur->exec.pid != -1)
 	{
-		if (waitpid(cmds->exec.pid, &status, 0) != -1)
+		if (waitpid(cur->exec.pid, &status, 0) != -1)
 		{
 			if (WIFEXITED(status))
 				last_status = WEXITSTATUS(status);
@@ -161,7 +171,8 @@ static int	cmds_waitpid(t_cmd *cmds)
 			perror(MINI);
 			last_status = 1;
 		}
-		cmds = cmds->next;
+		cur = cur->next;
 	}
+	*cmd = NULL;
 	return (last_status);
 }

@@ -110,6 +110,7 @@ typedef struct s_exec
 {
 	int				builtin;
 	pid_t			pid;
+	int				p_fd;	
 }					t_exec;
 
 typedef struct s_cmd

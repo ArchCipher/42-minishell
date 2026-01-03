@@ -31,7 +31,7 @@ INC				= -I. \
 
 #				Sources & Objects
 MSRCS			= minishell \
-				lexer list parser var dollar parser_utils ast_utils \
+				lexer list parser var dollar parser_utils ast \
 				exec exec_child path redirs heredoc \
 				builtin cd export unset env_utils qsort exit \
 				signal error free

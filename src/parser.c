@@ -46,7 +46,7 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 			return (NULL);
 		if (ret == 2)
 			continue ;
-		if (process_depth(cur, &depth))
+		if (cur && process_depth(cur, &depth))
 			return (free_tokens(head, true, cur), NULL);
 		prev = cur;
 		cur = cur->next;

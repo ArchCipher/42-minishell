@@ -12,41 +12,54 @@
 
 #include "minishell.h"
 
-static t_cmd	*build_cmd(t_token **current);
-static size_t	count_args(t_token *token);
-static t_cmd	*create_cmd(size_t word_count);
-static int		build_redir(t_token **current, void **head, void **last);
+static int  parse_cmd(t_token **tok, t_cmd *cmd, void **last);
+static int  build_cmd(t_token **cur, t_cmd *cmd, void **last);
+static size_t   count_args(t_token *tok);
+static t_cmd	*create_cmd(void);
+static int	build_redir(t_token **current, void **head, void **last);
 
-/*
-DESCRIPTION:
-	Builds the abstract syntax tree (AST) from a list of tokens and returns the
-	head of the AST/ command list.
-*/
+// not needed?
+size_t  count_existing_args(char **args);
 
-t_cmd	*build_ast(t_token *tokens)
+t_cmd   *parse_cmd_list(t_token **tok)
 {
-	t_list	cmd;
-	t_token	*current;
+    t_list  cmd;
+    void    *last_redir;
 
-	if (!tokens)
-		return (NULL);
-	current = tokens;
-	cmd.head = NULL;
-	while (current)
-	{
-		if (current->type == WORD || type_redir(current->type))
-		{
-			cmd.new = build_cmd(&current);
-			if (!cmd.new)
-				return (free_cmds(cmd.head), free_tokens(tokens, true, NULL), NULL);
-			lstadd_back((void **)&cmd.head, cmd.new, cmd.tail, TYPE_CMD);
-			cmd.tail = cmd.new;
-		}
-		if (current && type_con(current->type))
-			current = current->next;
-	}
-	free_tokens(tokens, false, NULL);
-	return (cmd.head);
+    cmd.head = NULL;
+    while(*tok && (*tok)->type != R_PAREN)
+    {
+        cmd.new = create_cmd();
+        if (!cmd.new)
+            return (free_cmds(cmd.head), NULL);
+        lstadd_back((void **)&cmd.head, cmd.new, cmd.tail, TYPE_CMD);
+		cmd.tail = cmd.new;
+		if (*tok && type_con((*tok)->type))
+        {
+            ((t_cmd *)cmd.new)->con = (*tok)->type;
+            *tok = (*tok)->next;
+        }
+        if (!parse_cmd(tok, cmd.new, &last_redir))
+            return (free_cmds(cmd.head), NULL);
+    }
+    return (cmd.head);
+}
+
+static int  parse_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
+{
+	if (!*tok)
+		return (0);
+    if ((*tok)->type == L_PAREN)
+    {
+        *tok = (*tok)->next;
+        cmd->sub = parse_cmd_list(tok);
+        if (!cmd->sub || !*tok || (*tok)->type != R_PAREN)
+            return (0);
+        *tok = (*tok)->next;
+    }
+    else if (!build_cmd(tok, cmd, last_redir))
+            return (0);
+    return (1);
 }
 
 /*
@@ -58,30 +71,42 @@ DESCRIPTION:
 	Returns the newly built command struct on success, NULL on error.
 */
 
-static t_cmd	*build_cmd(t_token **cur)
+char    **realloc_arr(char **src, size_t old, size_t new)
 {
-	t_cmd	*new;
-	void	*last;
+    char    **dst;
+
+    dst = malloc(new * sizeof(char *));
+    if (!dst)
+        return (free(src), NULL);
+    if (src)
+        ft_memcpy(dst, src, old * sizeof(char *));
+    free(src);
+    return (dst);
+}
+
+static int  build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
+{
 	ssize_t	i;
 
-	new = create_cmd(count_args(*cur));
-	if (!new)
-		return (NULL);
-	i = 0;
-	while (*cur && !type_con((*cur)->type))
+    i = 0;
+    if (cmd->args)
+        i = count_existing_args(cmd->args);
+    cmd->args = realloc_arr(cmd->args, i, i + count_args(*tok) + 1);
+    if (!cmd->args)
+        return (perror(MINI), 0);
+	while (*tok && !type_con((*tok)->type) && (*tok)->type != R_PAREN)
 	{
-		if ((*cur)->type == WORD)
+		if ((*tok)->type == WORD)
 		{
-			new->args[i++] = (*cur)->token;
-			*cur = (*cur)->next;
+			cmd->args[i++] = (*tok)->token;
+            (*tok)->token = NULL;
+			*tok = (*tok)->next;
 		}
-		else if (type_redir((*cur)->type) && !build_redir(cur, (void **)&new->redirs, &last))
-			return (new->args[i] = NULL, free_cmds(new), NULL);
+		else if (type_redir((*tok)->type) && !build_redir(tok, (void **)&cmd->redirs, last_redir))
+			return (cmd->args[i] = NULL, 0);
 	}
-	if (*cur && type_con((*cur)->type))
-		new->con = (*cur)->type;
-	new->args[i] = NULL;
-	return (new);
+	cmd->args[i] = NULL;
+	return (1);
 }
 
 /*
@@ -91,18 +116,18 @@ DESCRIPTION:
 	Although only defensive, returns -1 on leaks in the parser.
 */
 
-static size_t	count_args(t_token *token)
+static size_t   count_args(t_token *tok)
 {
 	ssize_t	word_count;
 
 	word_count = 0;
-	while (token && !type_con(token->type))
+	while (tok && !type_con(tok->type) && tok->type != R_PAREN)
 	{
-		if (token->type == WORD)
+		if (tok->type == WORD)
 			word_count++;
-		else if (type_redir(token->type))
-			token = token->next;
-		token = token->next;
+		else if (type_redir(tok->type))
+			tok = tok->next;
+		tok = tok->next;
 	}
 	return (word_count);
 }
@@ -113,30 +138,23 @@ DESCRIPTION:
 	Returns the newly malloced cmd struct.
 */
 
-static t_cmd	*create_cmd(size_t word_count)
+static t_cmd	*create_cmd(void)
 {
 	t_cmd	*new;
 
 	new = malloc(sizeof(t_cmd));
 	if (!new)
 		return (perror(MINI), NULL);
-		if (word_count)
-	{
-		new->args = (char **)malloc((word_count + 1) * sizeof(char *));
-		if (!new->args)
-			return (perror(MINI), free(new), NULL);
-	}
-	else
-		new->args = NULL;
+	new->args = NULL;
 	new->redirs = NULL;
 	new->next = NULL;
 	new->exec.builtin = -1;
 	new->exec.pid = -1;
+	new->exec.p_fd = -1;
 	new->con = NONE;
 	new->sub = NULL;
 	return (new);
 }
-
 /*
 DESCRIPTION:
 	Builds redirect struct redirection token and following word token.
@@ -145,26 +163,26 @@ DESCRIPTION:
 	Old word tokens are made null, to avoid double free on error.
 */
 
-static int	build_redir(t_token **current, void **head, void **last)
+static int	build_redir(t_token **tok, void **head, void **last)
 {
 	t_redir	*new;
 
-	if (*current && !(*current)->next)
-		return (perr_msg("build_redir", "parsing error", NULL, false), 0);
-	while (*current && (*current)->next && (*current)->type != PIPE_CHAR
-		&& (*current)->type != WORD)
+	while (*tok && type_redir((*tok)->type) && (*tok)->next && (*tok)->next->type == WORD)
 	{
 		new = malloc(sizeof(t_redir));
 		if (!new)
 			return (perror(MINI), 0);
-		new->file = (*current)->next->token;
-		new->flag = (*current)->type;
+		new->file = (*tok)->next->token;
+        (*tok)->next->token = NULL; 
+		new->flag = (*tok)->type;
 		new->fd = -1;
-		new->quoted = (*current)->next->quoted;
+		new->quoted = (*tok)->next->quoted;
 		new->next = NULL;
 		lstadd_back(head, (void *)new, *last, TYPE_REDIR);
 		*last = new;
-		*current = (*current)->next->next;
+		*tok = (*tok)->next->next;
 	}
+    if (*tok && type_redir((*tok)->type) && (!(*tok)->next || (*tok)->next->type != WORD))
+		return (perr_msg("build_redir", "parsing error", NULL, false), 0);
 	return (1);
 }

@@ -89,8 +89,7 @@ t_cmd							*parse_cmd_list(t_token **tok);
 // Execution (exec, exec_child, path, redirs, heredoc)
 int								exec_cmds(t_cmd *cmds, t_shell *shell);
 
-int								fork_with_pipe(t_cmd *cmd, int *prev_fd,
-									t_shell *shell);
+int								fork_with_pipe(t_cmd *cmd, t_shell *shell);
 
 char							*get_valid_path(const char *filename,
 									t_env *env);

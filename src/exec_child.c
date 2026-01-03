@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static void		exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell);
+static void		exec_child(t_cmd *cmd, int *fd, t_shell *shell);
 static char		**env_to_envp(t_env *env);
 static size_t	envp_size(t_env *env);
 
@@ -30,27 +30,27 @@ DESCRIPTION:
 	On error, both pipe and fork return -1.
 */
 
-int	fork_with_pipe(t_cmd *cmd, int *prev_fd, t_shell *shell)
+int	fork_with_pipe(t_cmd *cmd, t_shell *shell)
 {
 	int	fd[2];
 	int	*pipe_fd;
 
 	pipe_fd = NULL;
-	if (cmd->next && pipe(fd) == -1)
+	if (cmd->next && cmd->next->con == PIPE_CHAR && pipe(fd) == -1)
 		return (perror(MINI), 1);
-	if (cmd->next)
+	if (cmd->next && cmd->next->con == PIPE_CHAR)
 		pipe_fd = fd;
 	cmd->exec.pid = fork();
 	if (cmd->exec.pid == -1)
-		return (close_fds_error(pipe_fd, *prev_fd));
+		return (close_fds_error(pipe_fd, cmd->exec.p_fd));
 	if (cmd->exec.pid == 0)
-		exec_child(cmd, pipe_fd, *prev_fd, shell);
-	if (*prev_fd != -1)
-		close(*prev_fd);
+		exec_child(cmd, pipe_fd, shell);
+	if (cmd->exec.p_fd != -1)
+		close(cmd->exec.p_fd);
 	if (pipe_fd)
 	{
 		close(pipe_fd[1]);
-		*prev_fd = pipe_fd[0];
+		cmd->next->exec.p_fd = pipe_fd[0];
 	}
 	return (0);
 }
@@ -73,21 +73,24 @@ DESCRIPTION:
 	The return value will be -1 and errno is set to indicate the error.
 */
 
-static void	exec_child(t_cmd *cmd, int *fd, int prev_fd, t_shell *shell)
+static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 {
 	char		*path;
 	char		**envp;
 
 	if (set_signal_handlers(SIG_DFL, SIG_DFL))
-		exit (close_fds_error(fd, prev_fd));
+		exit (close_fds_error(fd, cmd->exec.p_fd));
 	if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
-		exit (close_fds_error(fd, prev_fd));
-	if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
-		exit (close_fds_error(fd, prev_fd));
-	close_pipe_fds(fd, prev_fd);
+		exit (close_fds_error(fd, cmd->exec.p_fd));
+	if (cmd->exec.p_fd != -1 && (dup2(cmd->exec.p_fd, STDIN_FILENO) == -1))
+		exit (close_fds_error(fd, cmd->exec.p_fd));
+	close_pipe_fds(fd, cmd->exec.p_fd);
 	if (setup_redirs(cmd->redirs))
 		exit(EXIT_FAILURE);
-	path = cmd->args[0];
+	if (cmd->sub)
+		exit(exec_cmds(cmd->sub, shell));
+	if (!cmd->args || !cmd->args[0])
+		exit (EXIT_SUCCESS);
 	if (cmd->exec.builtin != -1)
 		exit(exec_builtin(cmd, shell));
 	path = get_valid_path(cmd->args[0], shell->env);
