@@ -13,7 +13,7 @@
 #include "minishell.h"
 
 static t_cmd	*build_cmd(t_token **current);
-static t_cmd	*build_cmd_from_tokens(t_token *token);
+static size_t	count_args(t_token *token);
 static t_cmd	*create_cmd(size_t word_count);
 static int		build_redir(t_token **current, void **head, void **last);
 
@@ -43,12 +43,8 @@ t_cmd	*build_ast(t_token *tokens)
 			cmd.tail = cmd.new;
 		}
 		if (current && type_con(current->type))
-		{
-			((t_cmd *)cmd.new)->con = current->type;
 			current = current->next;
-		}
 	}
-	free_tokens(tokens, false, NULL);
 	return (cmd.head);
 }
 
@@ -67,7 +63,7 @@ static t_cmd	*build_cmd(t_token **cur)
 	void	*last;
 	ssize_t	i;
 
-	new = build_cmd_from_tokens(*cur);
+	new = create_cmd(count_args(*cur));
 	if (!new)
 		return (NULL);
 	i = 0;
@@ -82,7 +78,7 @@ static t_cmd	*build_cmd(t_token **cur)
 		else if (type_redir((*cur)->type) && !build_redir(cur, (void **)&new->redirs, &last))
 			return (new->args[i] = NULL, free_cmds(new), NULL);
 	}
-	if (*cur)
+	if (*cur && type_con((*cur)->type))
 		new->con = (*cur)->type;
 	new->args[i] = NULL;
 	return (new);
@@ -95,7 +91,7 @@ DESCRIPTION:
 	Although only defensive, returns -1 on leaks in the parser.
 */
 
-static t_cmd	*build_cmd_from_tokens(t_token *token)
+static size_t	count_args(t_token *token)
 {
 	ssize_t	word_count;
 
@@ -108,7 +104,7 @@ static t_cmd	*build_cmd_from_tokens(t_token *token)
 			token = token->next;
 		token = token->next;
 	}
-	return (create_cmd(word_count));
+	return (word_count);
 }
 
 /*
@@ -124,15 +120,20 @@ static t_cmd	*create_cmd(size_t word_count)
 	new = malloc(sizeof(t_cmd));
 	if (!new)
 		return (perror(MINI), NULL);
-	new->args = (char **)malloc((word_count + 1) * sizeof(char *));
-	if (!new->args)
-		return (perror(MINI), free(new), NULL);
+		if (word_count)
+	{
+		new->args = (char **)malloc((word_count + 1) * sizeof(char *));
+		if (!new->args)
+			return (perror(MINI), free(new), NULL);
+	}
+	else
+		new->args = NULL;
 	new->redirs = NULL;
 	new->next = NULL;
 	new->exec.builtin = -1;
 	new->exec.pid = -1;
 	new->con = NONE;
-	new->subshell = NULL;
+	new->sub = NULL;
 	return (new);
 }
 

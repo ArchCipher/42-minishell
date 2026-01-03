@@ -30,8 +30,8 @@ typedef enum t_token_type
 	PIPE_CHAR,
 	AND,
 	OR,
-	PAREN_O,
-	PAREN_C
+	L_PAREN,
+	R_PAREN
 }					t_token_type;
 
 // for wildcard (*) check glob()
@@ -115,11 +115,12 @@ typedef struct s_exec
 typedef struct s_cmd
 {
 	char			**args;
+	size_t			arglen;
 	t_redir			*redirs;
 	t_exec			exec;
 	t_token_type	con;
 	struct s_cmd	*next;
-	struct s_cmd	*subshell;
+	struct s_cmd	*sub;
 }					t_cmd;
 
 typedef struct s_strtok

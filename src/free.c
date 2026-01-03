@@ -40,6 +40,9 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 /*
 DESCRIPTION:
 	Frees the command list and their content. Closes any open fds.
+	
+	// if subshell is added add check for cmd->args existence
+	// or move to separate fucntion
 */
 void	free_cmds(t_cmd *cmds)
 {

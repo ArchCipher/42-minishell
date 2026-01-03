@@ -34,12 +34,12 @@ void	lstadd_back(void **head, void *new, void *last, t_node_type type)
 	else
 	{
 		if (type == TYPE_TOKEN)
-			((t_token *)last)->next = (t_token *)new;
+			((t_token *)last)->next = new;
 		else if (type == TYPE_CMD)
-			((t_cmd *)last)->next = (t_cmd *)new;
+			((t_cmd *)last)->next = new;
 		else if (type == TYPE_REDIR)
-			((t_redir *)last)->next = (t_redir *)new;
+			((t_redir *)last)->next = new;
 		else if (type == TYPE_ENV)
-			((t_env *)last)->next = (t_env *)new;
+			((t_env *)last)->next = new;
 	}
 }

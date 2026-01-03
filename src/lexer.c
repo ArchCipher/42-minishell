@@ -71,9 +71,9 @@ static t_token	*get_token(char *s)
 	else if (*s == '&' && s[1] == '&')
 		type = AND;
 	else if (*s == '(')
-		type = PAREN_O;
+		type = L_PAREN;
 	else if (*s == ')')
-		type = PAREN_C;
+		type = R_PAREN;
 	else if (*s == '<')
 		type = REDIR_IN;
 	else if (*s == '>')
@@ -89,7 +89,7 @@ static size_t	get_tok_len(t_token_type type)
 {
 	if (type == APPEND || type == HEREDOC || type == OR || type == AND)
 		return (2);
-	if (type == REDIR_IN || type == REDIR_OUT || type == PIPE_CHAR || type == PAREN_O || type == PAREN_C)
+	if (type == REDIR_IN || type == REDIR_OUT || type == PIPE_CHAR || type == L_PAREN || type == R_PAREN)
 		return (1);
 	return (0);
 }

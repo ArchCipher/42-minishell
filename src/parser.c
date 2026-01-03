@@ -74,11 +74,11 @@ static int	process_token(t_token **head, t_token **cur, t_token *prev, t_shell *
 
 static int	process_depth(t_token *cur, int *depth)
 {
-	if (cur->type == PAREN_O)
+	if (cur->type == L_PAREN)
 		(*depth)++;
-	else if (cur->type == PAREN_C && *depth)
+	else if (cur->type == R_PAREN && *depth)
 		(*depth)--;
-	else if (cur->type == PAREN_C && !*depth)
+	else if (cur->type == R_PAREN && !*depth)
 		return (perr_token(cur->token, cur->len), 1);
 	return (0);
 }
@@ -164,19 +164,18 @@ NOTE:
 static int	valid_next_token(t_token_type t1, t_token_type t2)
 {
 	if (t1 == NONE)
-		return (t2 == WORD || t2 == PAREN_O || type_redir(t2));
+		return (t2 == WORD || t2 == L_PAREN || type_redir(t2));
 	if (t2 == NONE)
-		return (t1 == WORD || t1 == PAREN_C);
+		return (t1 == WORD || t1 == R_PAREN);
 	if (type_redir(t1))
 		return (t2 == WORD);
 	if (t1 == PIPE_CHAR || t1 == AND || t1 == OR)
-		return (t2 == WORD || type_redir(t2) || t2 == PAREN_O);
-	if (t1 == PAREN_O)
-		return (t2 == PAREN_O || t2 == WORD || type_redir(t2));
-	if (t1 == PAREN_C)
-		return (t2 == PAREN_C || t2 == PIPE_CHAR || t2 == AND || t2 == OR);
+		return (t2 == WORD || type_redir(t2) || t2 == L_PAREN);
+	if (t1 == L_PAREN)
+		return (t2 == L_PAREN || t2 == WORD || type_redir(t2));
+	if (t1 == R_PAREN)
+		return (t2 == R_PAREN || type_con(t2) || type_redir(t2));
 	if (t1 == WORD)
-		return (t2 == WORD || type_redir(t2) || t2 == PIPE_CHAR || t2 == AND
-			|| t2 == OR || t2 == PAREN_C);
+		return (t2 == WORD || type_redir(t2) || type_con(t2) || t2 == R_PAREN);
 	return (0);
 }
