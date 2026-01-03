@@ -37,6 +37,18 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 	}
 }
 
+void	free_args(char **args)
+{
+    size_t  i;
+
+	if (!args)
+		return ;
+    i = 0;
+    while(args[i])
+        free(args[i++]);
+	free(args);
+}
+
 /*
 DESCRIPTION:
 	Frees the command list and their content. Closes any open fds.
@@ -48,16 +60,13 @@ void	free_cmds(t_cmd *cmds)
 {
 	t_cmd	*tmp;
 	t_redir	*cur_redir;
-	size_t	i;
 	t_cmd	*cmd;
 
 	cmd = cmds;
 	while (cmd)
 	{
-		i = 0;
-		while (cmd->args[i])
-			free(cmd->args[i++]);
-		free(cmd->args);
+		if (cmd->args)
+			free_args(cmd->args);
 		while (cmd->redirs)
 		{
 			cur_redir = cmd->redirs;

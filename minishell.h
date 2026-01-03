@@ -137,6 +137,7 @@ void							handle_shell_signal(int *status);
 
 void							free_tokens(t_token *tokens, bool free_content,
 									t_token *end);
+void							free_args(char **args);
 void							free_cmds(t_cmd *cmds);
 void							free_env(t_env *env);
 void							free_envp(char **envp);

@@ -48,3 +48,13 @@ void	perr_token(char *s, size_t	len)
 	write(FD_ERR, s, len);
 	write(FD_ERR, "'\n", 2);
 }
+
+int type_redir(t_token_type t)
+{
+    return (t == REDIR_IN || t == REDIR_OUT || t == APPEND || t == HEREDOC);
+}
+
+int type_con(t_token_type t)
+{
+    return (t == PIPE_CHAR || t == AND || t == OR);
+}
