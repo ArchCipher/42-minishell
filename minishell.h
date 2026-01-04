@@ -35,6 +35,7 @@
 # define MINI "minishell"
 # define EXPANDABLE "?_{"
 
+# define EXIT_INVAL_OPTION 2
 # define EXIT_CANNOT_EXEC 126
 # define EXIT_CMD_NOT_FOUND 127
 # define SIG_EXIT_BASE 128
@@ -44,6 +45,7 @@
 # else
 #  define EXIT_NUMERIC_ERROR 255
 # endif
+# define E_OPTION "does not support options"
 # define E_PARSE "syntax error near unexpected token"
 # define E_PATH "command not found"
 # define E_DIR "is a directory"
@@ -61,11 +63,11 @@ t_token							*parse_tokens(t_token *tokens, t_shell *shell);
 t_cmd							*parse_cmd_list(t_token **tok);
 int								build_cmd(t_token **tok, t_cmd *cmd,
 									void **last_redir);
-int								expand_word_token(t_token *tok, char *end,
+int								process_word_token(t_token *tok, t_token *prev,
 									t_shell *shell);
 int								is_type_redir(t_token_type t);
 int								is_type_con(t_token_type t);
-t_token_type					update_quote_flag(char *s, t_token_type flag);
+t_token_type					update_quote_flag(char c, t_token_type flag);
 void							perr_token(char *s, size_t len);
 void							free_tokens(t_token *tokens, bool free_content,
 									t_token *end);
@@ -104,11 +106,12 @@ void							update_pwds(t_shell *shell);
 int								is_valid_identifier(const char *s);
 
 // Expansion
+t_string						alloc_tstring(size_t size);
 const char						*get_var(char **token, char *end,
 									t_shell *shell);
-int								append_var(t_string *str, const char *var,
-									size_t last);
-bool							dollar_expandable(char *s, char *end);
+int								append_var(t_string *str, char **token,
+									char *end, t_shell *shell);
+int								dollar_expandable(char *s, char *end);
 
 // Signal
 int								set_signal_handlers(void (*sigint)(int),

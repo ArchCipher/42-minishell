@@ -10,13 +10,13 @@ int	is_type_con(t_token_type t)
 	return (t == PIPE_CHAR || t == AND || t == OR);
 }
 
-t_token_type	update_quote_flag(char *s, t_token_type flag)
+t_token_type	update_quote_flag(char c, t_token_type flag)
 {
-	if (*s == '\'' && flag == WORD)
+	if (c == '\'' && flag == WORD)
 		return (SQUOTE);
-	else if (*s == '\"' && flag == WORD)
+	else if (c == '\"' && flag == WORD)
 		return (DQUOTE);
-	else if ((*s == '\'' && flag == SQUOTE) || (*s == '\"' && flag == DQUOTE))
+	else if ((c == '\'' && flag == SQUOTE) || (c == '\"' && flag == DQUOTE))
 		return (WORD);
 	return (flag);
 }

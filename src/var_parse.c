@@ -33,6 +33,14 @@ const char	*get_var(char **token, char *end, t_shell *shell)
 {
 	char	exit_code[4];
 
+	if (**token == '~')
+	{
+		(*token)++;
+		if (!shell->home || !shell->home->value)
+			return (getenv("HOME"));
+		return (shell->home->value);
+	}
+	(*token)++;
 	if (**token != '?')
 		return (expand_env_var(token, end, shell->env));
 	(*token)++;

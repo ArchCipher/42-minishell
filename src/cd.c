@@ -28,23 +28,14 @@ int	exec_cd(char **args, t_shell *shell)
 static int	do_cd(char **args, t_shell *shell)
 {
 	const char	*dir;
-	char		*tmp;
 
-	tmp = NULL;
 	dir = args[1];
-	if ((!dir || (*dir == '~' && !dir[1])) && (!shell->home
-			|| !shell->home->value))
+	if (!dir && (!shell->home || !shell->home->value))
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
-	else if (!dir || (*dir == '~' && !dir[1]))
+	else if (!dir)
 		dir = shell->home->value;
-	else if (*dir == '~' && dir[1] == '/')
-	{
-		tmp = ft_strjoin(shell->home->value, dir + 1);
-		dir = tmp;
-	}
 	if (chdir(dir) == -1)
-		return (free(tmp), perr_msg(*args, args[1], strerror(errno), false), 1);
-	free(tmp);
+		return (perr_msg(*args, args[1], strerror(errno), false), 1);
 	update_pwds(shell);
 	return (0);
 }

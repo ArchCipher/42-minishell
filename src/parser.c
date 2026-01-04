@@ -66,7 +66,7 @@ static int	process_token(t_token **head, t_token **cur, t_token *prev,
 				*cur), 1);
 	if ((*cur)->type == WORD)
 	{
-		if (expand_word_token(*cur, (*cur)->token + (*cur)->len, shell))
+		if (process_word_token(*cur, prev, shell))
 			return (free_tokens(*head, true, *cur), 1);
 		if (!prev && !*(*cur)->token)
 			return (del_empty_token(head, cur, prev), 2);

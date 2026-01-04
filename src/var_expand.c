@@ -14,7 +14,29 @@
 
 /*
 DESCRIPTION:
-	Appends the value of the environment variable to the string.
+	Initializes a t_string structure with the specified capacity.
+	Allocates size + 1 bytes and sets cap to size, len to 0.
+	Returns initialized t_string. If malloc fails, returns t_string with
+	all fields set to 0/NULL.
+*/
+
+t_string	alloc_tstring(size_t size)
+{
+	t_string	str;
+
+	str.s = malloc(size + 1);
+	if (!str.s)
+		return (str);
+	str.cap = size;
+	str.len = 0;
+	return (str);
+}
+
+/*
+DESCRIPTION:
+	Expands and appends the value of the environment variable to the string.
+	Expects token to point at the '$' character. Increments token to skip '$'
+	before calling get_var.
 	Returns 0 on success, 1 if malloc() fails or on invalid substitution.
 
 NOTE:
@@ -23,15 +45,19 @@ NOTE:
 	invalid substitution.
 */
 
-int	append_var(t_string *str, const char *var, size_t last)
+int	append_var(t_string *str, char **token, char *end, t_shell *shell)
 {
-	size_t	var_len;
+	const char	*var;
+	size_t		var_len;
+	size_t		last;
 
+	var = get_var(token, end, shell);
 	if (var == ((char *)-1))
 		return (1);
 	if (!var)
 		return (0);
 	var_len = ft_strlen(var);
+	last = end - *token;
 	if (str->cap < str->len + var_len + last)
 	{
 		str->cap = str->len + var_len + last;
@@ -50,7 +76,7 @@ DESCRIPTION:
 	Returns true if the character is expandable, false otherwise.
 */
 
-bool	dollar_expandable(char *s, char *end)
+int	dollar_expandable(char *s, char *end)
 {
 	return (*s == '$' && s + 1 < end && (ft_strchr(EXPANDABLE, s[1])
 			|| ft_isalnum(s[1])));

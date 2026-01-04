@@ -31,6 +31,8 @@ int	exec_export(char **args, t_shell *shell)
 	cmd = *(args++);
 	if (!*args)
 		return (print_exported_vars(shell->env));
+	if (**args == '-' && (*args)[1])
+		return (perr_msg(cmd, *args, E_OPTION, true), 2);
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
@@ -142,7 +144,7 @@ NOTE:
 int	is_valid_identifier(const char *s)
 {
 	if (!*s)
-		return (1);
+		return (0);
 	if (*s != '_' && !ft_isalpha(*s))
 		return (0);
 	s++;

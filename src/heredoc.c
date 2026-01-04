@@ -126,22 +126,16 @@ static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
 	t_string	str;
 	char		*current;
 
-	str.s = malloc(*len + 1);
+	str = alloc_tstring(*len);
 	if (!str.s)
 		return (perror(MINI), 0);
-	str.cap = end - *line;
-	str.len = 0;
 	current = *line;
 	while (*current)
 	{
-		if (dollar_expandable(current, end))
-		{
-			current++;
-			if (append_var(&str, get_var(&current, end, shell), end - current))
-				return (free(str.s), 0);
-		}
-		else
+		if (!dollar_expandable(current, end))
 			str.s[str.len++] = *(current++);
+		else if (append_var(&str, &current, end, shell))
+			return (free(str.s), 0);
 	}
 	str.s[str.len] = 0;
 	free(*line);

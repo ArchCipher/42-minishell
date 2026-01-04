@@ -65,8 +65,8 @@ int	exec_exit(char **s)
 	if (s[1] == NULL)
 		return (0);
 	n = status_atoi(s[1]) % EXIT_STATUS_MOD;
-	if (errno == EINVAL)
-		perr_msg(*s, s[1], E_EXIT_CODE, false);
+	if (!*s[1] || errno == EINVAL)
+		return (perr_msg(*s, s[1], E_EXIT_CODE, false), EXIT_NUMERIC_ERROR);
 	else if (s[2])
 	{
 		perr_msg(*s, E_MANY_ARGS, NULL, false);
@@ -103,9 +103,6 @@ static int	status_atoi(const char *str)
 		str++;
 	}
 	if (*str)
-	{
 		errno = EINVAL;
-		return (EXIT_NUMERIC_ERROR);
-	}
 	return ((int)(num * sign));
 }

@@ -31,7 +31,7 @@ int	exec_builtin(t_cmd *cmd, t_shell *shell)
 		return (exec_pwd());
 	else if (cmd->exec.builtin == BUILTIN_EXPORT)
 		return (exec_export(cmd->args, shell));
-	else if (cmd->exec.builtin == BUILTIN_ENV)
+	else if (cmd->exec.builtin == BUILTIN_ENV && !cmd->args[1])
 		return (exec_env(shell->env));
 	else if (cmd->exec.builtin == BUILTIN_UNSET)
 		return (exec_unset(cmd->args, shell));
@@ -61,13 +61,16 @@ static int	exec_echo(char **args)
 
 	args++;
 	nl = true;
-	if (!args || !*args)
+	if (!*args)
 		return (write(1, "\n", 1), 0);
-	if (ft_strcmp(*args, "-n") == 0)
+	while (*args && **args == '-' && (*args)[1] == 'n' && (ft_strspn(*args + 2,
+			"n") == ft_strlen(*args) - 2))
 	{
+		printf("arg: %s\n", *args);
 		nl = false;
 		args++;
 	}
+	printf("not working?\n");
 	while (*args)
 	{
 		if (ft_putstr(*args, STDOUT_FILENO))

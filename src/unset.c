@@ -29,9 +29,11 @@ int	exec_unset(char **args, t_shell *shell)
 	cmd = *(args++);
 	if (!*args)
 		return (0);
+	if (**args == '-' && (*args)[1])
+		return (perr_msg(cmd, *args, E_OPTION, true), 2);
 	while (*args)
 	{
-		if (!is_valid_identifier(*args))
+		if (!is_valid_identifier(*args) || ft_strchr(*args, '='))
 			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
 		if (!strcmp(*args, "PWD"))
 			shell->pwd = NULL;

@@ -16,6 +16,7 @@ static t_cmd	*parse_input(char *input, t_shell *shell);
 static void		init_shell(char **envp, t_shell *shell);
 static void		init_shell_terminal(struct termios *original_term);
 static void		init_env(t_shell *shell);
+static char		*get_next_line(int fd);
 
 /*
 	NAME
@@ -86,21 +87,28 @@ int	main(int ac, char **av, char **envp)
 	if (ac != 1)
 		return (perr_msg(E_MANY_ARGS, NULL, NULL, false), 1);
 	init_shell(envp, &shell);
-	input = readline(PROMPT);
+	if (isatty(STDIN_FILENO))
+		input = readline(PROMPT);
+	else
+		input = get_next_line(STDIN_FILENO);
 	while (input)
 	{
 		if (g_signal == SIGINT)
 			handle_shell_signal(&shell.status);
-		add_history(input);
+		if (isatty(STDIN_FILENO))
+			add_history(input);
 		cmds = parse_input(input, &shell);
 		free(input);
 		if (cmds && !process_heredoc(cmds, &shell))
 			shell.status = exec_cmds(cmds, &shell);
 		free_cmds(cmds);
-		input = readline(PROMPT);
+		if (isatty(STDIN_FILENO))
+			input = readline(PROMPT);
+		else
+			input = get_next_line(STDIN_FILENO);
 	}
-	if (isatty(STDIN_FILENO))
-		write(STDOUT_FILENO, "exit\n", 5);
+	// if (isatty(STDIN_FILENO))
+	// 	write(STDOUT_FILENO, "exit\n", 5);
 	exit_shell(shell.status, NULL, &shell);
 }
 
@@ -185,16 +193,56 @@ DESCRIPTION:
 	Updates the PWD and OLDPWD environment variables at startup.
 */
 
+/*
+DESCRIPTION:
+	Reads a line from the file descriptor (non-interactive mode).
+	Returns the line on success (without trailing newline), NULL on EOF or error.
+	The returned string must be freed.
+*/
+
+static char	*get_next_line(int fd)
+{
+	char	*line;
+	char	buf[2];
+	ssize_t	bytes_read;
+	size_t	len;
+	char	*tmp;
+
+	line = NULL;
+	len = 0;
+	buf[1] = '\0';
+	while ((bytes_read = read(fd, buf, 1)) > 0)
+	{
+		if (buf[0] == '\n')
+			break ;
+		tmp = line;
+		line = malloc(len + 2);
+		if (!line)
+			return (free(tmp), NULL);
+		if (tmp)
+		{
+			ft_memcpy(line, tmp, len);
+			free(tmp);
+		}
+		line[len] = buf[0];
+		len++;
+		line[len] = '\0';
+	}
+	if (bytes_read == -1)
+		return (free(line), NULL);
+	return (line);
+}
+
 static void	init_env(t_shell *shell)
 {
-	t_env	*last_cmd;
+	// t_env	*last_cmd;
 
 	shell->home = env_lookup(shell->env, "HOME");
 	shell->oldpwd = env_lookup(shell->env, "OLDPWD");
 	shell->pwd = env_lookup(shell->env, "PWD");
-	last_cmd = env_lookup(shell->env, "_");
-	if (last_cmd)
-		last_cmd->exported = false;
+	// last_cmd = env_lookup(shell->env, "_");
+	// if (last_cmd)
+	// 	last_cmd->exported = false;
 	update_pwds(shell);
 	if (shell->oldpwd && shell->oldpwd->value)
 	{
