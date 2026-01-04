@@ -83,14 +83,13 @@ static const char	*expand_env_var(char **token, char *end, t_env *env)
 	start = *token;
 	while (*token < end && (**token == '_' || ft_isalnum(**token)))
 		(*token)++;
-	if (*token == start && **token == '{' && is_valid_var_subst(*token, end
-			- *token))
+	if (*token == start && **token == '{')
 	{
+		if (!is_valid_var_subst(*token, end - *token))
+			return (((char *)-1));
 		start = *token + 1;
 		*token = ft_memchr(*token, '}', end - *token);
 	}
-	else if (**token == '{')
-		return (((char *)-1));
 	tmp = ft_strndup(start, *token - start);
 	if (!tmp)
 		return (perror(MINI), ((char *)-1));

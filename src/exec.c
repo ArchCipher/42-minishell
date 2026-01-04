@@ -33,14 +33,15 @@ int	exec_cmds(t_cmd *cmd, t_shell *shell)
 	if (!cmd)
 		return (0);
 	pipe_head = NULL;
+	cmd->exec.builtin = is_builtin(cmd->args);
+	if (cmd->exec.builtin != -1 && !cmd->next && !cmd->sub)
+		return (exec_in_parent(cmd, shell));
 	while (cmd)
 	{
 		if (cmd->con == NONE || (cmd->con == AND && !shell->status)
 			|| cmd->con == PIPE_CHAR || (cmd->con == OR && shell->status))
 		{
 			cmd->exec.builtin = is_builtin(cmd->args);
-			if (cmd->exec.builtin != -1 && !cmd->next && !cmd->sub)
-				return (exec_in_parent(cmd, shell));
 			fork_with_pipe(cmd, shell);
 			if (!pipe_head)
 				pipe_head = cmd;
