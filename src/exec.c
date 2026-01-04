@@ -48,7 +48,7 @@ int	exec_cmds(t_cmd *cmd, t_shell *shell)
 			if (!pipe_head)
 				pipe_head = cmd;
 		}
-		if (pipe_head && (!cmd->next || cmd->con != PIPE_CHAR))
+		if (pipe_head && (!cmd->next || cmd->next->con != PIPE_CHAR))
 			shell->status = cmds_waitpid(&pipe_head);
 		cmd = cmd->next;
 	}

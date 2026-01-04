@@ -116,7 +116,6 @@ typedef struct s_exec
 typedef struct s_cmd
 {
 	char			**args;
-	size_t			arglen;
 	t_redir			*redirs;
 	t_exec			exec;
 	t_token_type	con;
