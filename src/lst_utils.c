@@ -22,11 +22,9 @@ NOTE:
 
 void	lstadd_back(void **head, void *new, void *last, t_node_type type)
 {
-	if (!head || !new)
-		return ;
-	if (*head && !last)
+	if (!head || !new || (*head && !last))
 	{
-		perr_msg("lstadd_back", "last is NULL", NULL, false);
+		perr_msg("lstadd_back", "internal invariant violated", NULL, false);
 		return ;
 	}
 	if (!*head)
@@ -71,27 +69,6 @@ void	free_tokens(t_token *tokens, bool free_content, t_token *end)
 
 /*
 DESCRIPTION:
-	Frees the environment list and their content.
-*/
-
-void	free_env(t_env *env)
-{
-	t_env	*tmp;
-
-	tmp = env;
-	while (env)
-	{
-		free(env->key);
-		if (env->value)
-			free(env->value);
-		tmp = env;
-		env = env->next;
-		free(tmp);
-	}
-}
-
-/*
-DESCRIPTION:
 	Frees the string array.
 */
 
@@ -107,7 +84,6 @@ void	free_arr(char **arr)
 	free(arr);
 }
 
-
 /*
 DESCRIPTION:
 	Frees the command list and their content. Closes any open fds.
@@ -115,6 +91,7 @@ DESCRIPTION:
 	// if subshell is added add check for cmd->args existence
 	// or move to separate fucntion
 */
+
 void	free_cmds(t_cmd *cmds)
 {
 	t_cmd	*tmp;

@@ -18,9 +18,9 @@ DESCRIPTION:
 	Returns 0 on success, 1 if malloc() fails or on invalid substitution.
 
 NOTE:
-	As NULL is a valid expansion, (char *)-1 is used as a sentinal
-	value for invalid substitution. Must not be dereferenced, but only compared
-	to detect invalid substitution.
+	As NULL is a valid expansion, (char *)-1 is used as a sentinel value for
+	invalid substitution. Must not be dereferenced, but only compared to detect
+	invalid substitution.
 */
 
 int	append_var(t_string *str, const char *var, size_t last)

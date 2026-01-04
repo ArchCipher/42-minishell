@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "minishell.h"
+#include "lexer.h"
 
 static t_token	*get_token(char *s);
 static size_t	get_tok_len(t_token_type type);
@@ -89,7 +90,8 @@ static size_t	get_tok_len(t_token_type type)
 {
 	if (type == APPEND || type == HEREDOC || type == OR || type == AND)
 		return (2);
-	if (type == REDIR_IN || type == REDIR_OUT || type == PIPE_CHAR || type == L_PAREN || type == R_PAREN)
+	if (type == REDIR_IN || type == REDIR_OUT || type == PIPE_CHAR
+		|| type == L_PAREN || type == R_PAREN)
 		return (1);
 	return (0);
 }
@@ -123,7 +125,7 @@ static size_t	parse_word_token(char *s)
 
 /*
 DESCRIPTION:
-	Mallocates a token and returns it.
+	Allocates a token and returns it.
 	Returns the token on success, NULL on failure.
 */
 

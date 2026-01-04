@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static int	open_redir_file(t_token_type flag, char *file);
+static int	open_redir_file(const t_redir *redirs);
 
 /*
 DESCRIPTION:
@@ -33,9 +33,7 @@ int	setup_redirs(t_redir *redirs)
 		return (0);
 	while (redirs)
 	{
-		if (redirs->flag == REDIR_IN || redirs->flag == REDIR_OUT
-				|| redirs->flag == APPEND)
-			redirs->fd = open_redir_file(redirs->flag, redirs->file);
+		redirs->fd = open_redir_file(redirs);
 		if (redirs->fd == -1)
 			return (perr_msg(redirs->file, strerror(errno), NULL, false), 1);
 		if (((redirs->flag == REDIR_IN || redirs->flag == HEREDOC)
@@ -62,14 +60,17 @@ DESCRIPTION:
 NOTE:
 	The last line, return (-1), should be unreachable.
 */
-static int	open_redir_file(t_token_type flag, char *file)
+
+static int	open_redir_file(const t_redir *redir)
 {
-	if (flag == REDIR_IN)
-		return (open(file, O_RDONLY));
-	else if (flag == REDIR_OUT)
-		return (open(file, O_WRONLY | O_CREAT | O_TRUNC, 0660));
-	else if (flag == APPEND)
-		return (open(file, O_WRONLY | O_CREAT | O_APPEND, 0660));
+	if (redir->flag == HEREDOC)
+		return (redir->fd);
+	if (redir->flag == REDIR_IN)
+		return (open(redir->file, O_RDONLY));
+	else if (redir->flag == REDIR_OUT)
+		return (open(redir->file, O_WRONLY | O_CREAT | O_TRUNC, 0660));
+	else if (redir->flag == APPEND)
+		return (open(redir->file, O_WRONLY | O_CREAT | O_APPEND, 0660));
 	return (-1);
 }
 
@@ -82,6 +83,7 @@ NOTE:
 	prev_fd is the read end of the previous command.
 	Used in fork_with_pipe() and handle_heredoc().
 */
+
 void	close_pipe_fds(int *fd, int prev_fd)
 {
 	if (fd)

@@ -21,7 +21,7 @@ static void	child_path_error(const char *filename, char *msg, int exit_code,
 DESCRIPTION:
 	Gets the valid path for the filename and returns it.
 	Returns the valid path on success, exits on errors.
-	((char *)-1) is used as a sentinal value for malloc failure.
+	((char *)-1) is used as a sentinel value for malloc failure.
 
 NOTE:
 	Child only logic and should not be used in parent process.

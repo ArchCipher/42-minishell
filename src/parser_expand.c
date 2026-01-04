@@ -1,10 +1,10 @@
 #include "minishell.h"
 
-static void	append_char_to_wrod(char *s, t_token_type *flag, char *end, t_string *str);
+static void	append_char(char *s, t_token_type *flag, char *end, t_string *str);
 
 /*
 DESCRIPTION:
-	Handles the word token and returns 1 if successful, 0 on error.
+	Handles the word token and returns 0 on success, 1 on error.
 */
 
 int	expand_word_token(t_token *tok, char *end, t_shell *shell)
@@ -20,7 +20,7 @@ int	expand_word_token(t_token *tok, char *end, t_shell *shell)
 	flag = WORD;
 	while (tok->token < end)
 	{
-		append_char_to_wrod(tok->token, &flag, end, &str);
+		append_char(tok->token, &flag, end, &str);
 		if (dollar_expandable(tok->token, end) && flag != SQUOTE)
 		{
 			tok->token++;
@@ -42,7 +42,7 @@ DESCRIPTION:
 	dollar sign. In case of quotes, it updates the flag to the appropriate type.
 */
 
-static void	append_char_to_wrod(char *s, t_token_type *flag, char *end, t_string *str)
+static void	append_char(char *s, t_token_type *flag, char *end, t_string *str)
 {
 	t_token_type	old_flag;
 

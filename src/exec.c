@@ -12,9 +12,6 @@
 
 #include "minishell.h"
 
-/*
-make sure errors are not printed twice
-*/
 static int	is_builtin(char **s);
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell);
 static int	restore_fds(int actual_stdin, int actual_stdout, int ret);

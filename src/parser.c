@@ -12,7 +12,8 @@
 
 #include "minishell.h"
 
-static int	process_token(t_token **head, t_token **cur, t_token *prev, t_shell *shell);
+static int	process_token(t_token **head, t_token **cur, t_token *prev,
+				t_shell *shell);
 static int	update_paren_depth(t_token *cur, int *depth);
 static int	is_valid_next_token(t_token_type t1, t_token_type t2);
 static int	del_empty_token(t_token **tokens, t_token **cur, t_token *prev);
@@ -20,7 +21,7 @@ static int	del_empty_token(t_token **tokens, t_token **cur, t_token *prev);
 /*
 DESCRIPTION:
 	Parses the tokens and returns the parsed tokens.
-	Mallocates a new string for only word tokens, others are pointers to the
+	Allocates a new string for only word tokens, others are pointers to the
 	input strings with just the token->type set.
 	Returns the parsed tokens on success, NULL on error.
 */
@@ -54,19 +55,22 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 	return (head);
 }
 
-static int	process_token(t_token **head, t_token **cur, t_token *prev, t_shell *shell)
+static int	process_token(t_token **head, t_token **cur, t_token *prev,
+		t_shell *shell)
 {
 	if (!prev && !is_valid_next_token(NONE, (*cur)->type))
-		return (perr_token((*cur)->token, (*cur)->len), free_tokens(*head, false, NULL), 1);
+		return (perr_token((*cur)->token, (*cur)->len), free_tokens(*head,
+				false, NULL), 1);
 	if (prev && !is_valid_next_token(prev->type, (*cur)->type))
-		return (perr_token((*cur)->token, (*cur)->len), free_tokens(*head, true, *cur), 1);
+		return (perr_token((*cur)->token, (*cur)->len), free_tokens(*head, true,
+				*cur), 1);
 	if ((*cur)->type == WORD)
 	{
 		if (expand_word_token(*cur, (*cur)->token + (*cur)->len, shell))
 			return (free_tokens(*head, true, *cur), 1);
 		if (!prev && !*(*cur)->token)
 			return (del_empty_token(head, cur, prev), 2);
-	}	
+	}
 	return (0);
 }
 
@@ -83,10 +87,7 @@ static int	update_paren_depth(t_token *cur, int *depth)
 
 /*
 DESCRIPTION:
-	Returns 0 if t2 is an invalid token after t1.
-
-NOTE:
-	The caller must ensure t2 exists (current->next != NULL).
+	Returns 1 if t2 is a valid token after t1, 0 otherwise.
 */
 
 static int	is_valid_next_token(t_token_type t1, t_token_type t2)
@@ -104,7 +105,8 @@ static int	is_valid_next_token(t_token_type t1, t_token_type t2)
 	if (t1 == R_PAREN)
 		return (t2 == R_PAREN || is_type_con(t2) || is_type_redir(t2));
 	if (t1 == WORD)
-		return (t2 == WORD || is_type_redir(t2) || is_type_con(t2) || t2 == R_PAREN);
+		return (t2 == WORD || is_type_redir(t2) || is_type_con(t2)
+			|| t2 == R_PAREN);
 	return (0);
 }
 /*

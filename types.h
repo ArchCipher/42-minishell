@@ -13,7 +13,6 @@
 #ifndef TYPES_H
 # define TYPES_H
 
-# include <signal.h>  // pid_t, sigaction, sigemptyset, sigaddset
 # include <stdbool.h> // boolean
 # include <termios.h> // tcsetattr, tcgetattr, termios, ECOCTL
 
@@ -55,6 +54,20 @@ typedef enum t_node_type
 	TYPE_ENV
 }					t_node_type;
 
+typedef struct s_strtok
+{
+	const char		*token;
+	char			*p;
+	char			*str;
+}					t_strtok;
+
+typedef struct s_string
+{
+	char			*s;
+	size_t			len;
+	size_t			cap;
+}					t_string;
+
 typedef struct s_env
 {
 	char			*key;
@@ -73,29 +86,6 @@ typedef struct s_shell
 	int				status;
 	struct termios	original_term;
 }					t_shell;
-
-typedef struct s_token
-{
-	t_token_type	type;
-	char			*token;
-	bool			quoted;
-	size_t			len;
-	struct s_token	*next;
-}					t_token;
-
-typedef struct s_string
-{
-	char			*s;
-	size_t			len;
-	size_t			cap;
-}					t_string;
-
-typedef struct s_list
-{
-	void			*head;
-	void			*tail;
-	void			*new;
-}					t_list;
 
 typedef struct s_redir
 {
@@ -123,11 +113,20 @@ typedef struct s_cmd
 	struct s_cmd	*sub;
 }					t_cmd;
 
-typedef struct s_strtok
+typedef struct s_token
 {
-	const char		*token;
-	char			*p;
-	char			*str;
-}					t_strtok;
+	t_token_type	type;
+	char			*token;
+	bool			quoted;
+	size_t			len;
+	struct s_token	*next;
+}					t_token;
+
+typedef struct s_list
+{
+	void			*head;
+	void			*tail;
+	void			*new;
+}					t_list;
 
 #endif

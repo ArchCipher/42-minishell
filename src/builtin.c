@@ -12,6 +12,10 @@
 
 #include "minishell.h"
 
+static int	exec_echo(char **args);
+static int	exec_pwd(void);
+static int	exec_env(t_env *env);
+
 /*
 DESCRIPTION:
 	Executes the builtin command and returns the exit status of the builtin.
@@ -51,7 +55,7 @@ NOTE:
 	is full or when you explicitly call fflush(stdout)
 */
 
-int	exec_echo(char **args)
+static int	exec_echo(char **args)
 {
 	bool	nl;
 
@@ -83,7 +87,7 @@ DESCRIPTION:
 	Returns 0 on success, 1 if getcwd() or write() fails.
 */
 
-int	exec_pwd(void)
+static int	exec_pwd(void)
 {
 	char	*buf;
 
@@ -109,7 +113,7 @@ NOTE:
 	ft_dprintf() is used instead of printf() to avoid buffer flushing issues.
 */
 
-int	exec_env(t_env *env)
+static int	exec_env(t_env *env)
 {
 	int	ret;
 

@@ -12,6 +12,7 @@
 
 #include "minishell.h"
 
+static void	free_env(t_env *env);
 static int	status_atoi(const char *str);
 
 /*
@@ -28,6 +29,27 @@ void	exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
 		tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
 	rl_clear_history();
 	exit(exit_code);
+}
+
+/*
+DESCRIPTION:
+	Frees the environment list and their content.
+*/
+
+static void	free_env(t_env *env)
+{
+	t_env	*tmp;
+
+	tmp = env;
+	while (env)
+	{
+		free(env->key);
+		if (env->value)
+			free(env->value);
+		tmp = env;
+		env = env->next;
+		free(tmp);
+	}
 }
 
 /*

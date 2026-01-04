@@ -12,6 +12,7 @@
 
 #include "minishell.h"
 
+static int		setup_child_fds(int *fd, int prev_fd);
 static void		exec_child(t_cmd *cmd, int *fd, t_shell *shell);
 static char		**env_to_envp(t_env *env);
 static size_t	envp_size(t_env *env);
@@ -47,11 +48,10 @@ int	fork_with_pipe(t_cmd *cmd, t_shell *shell)
 		exec_child(cmd, pipe_fd, shell);
 	if (cmd->exec.p_fd != -1)
 		close(cmd->exec.p_fd);
-	if (pipe_fd)
-	{
-		close(pipe_fd[1]);
-		cmd->next->exec.p_fd = pipe_fd[0];
-	}
+	if (!pipe_fd)
+		return (0);
+	close(pipe_fd[1]);
+	cmd->next->exec.p_fd = pipe_fd[0];
 	return (0);
 }
 
@@ -73,18 +73,25 @@ DESCRIPTION:
 	The return value will be -1 and errno is set to indicate the error.
 */
 
+static int	setup_child_fds(int *fd, int prev_fd)
+{
+	if (set_signal_handlers(SIG_DFL, SIG_DFL))
+		return (1);
+	if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
+		return (1);
+	if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
+		return (1);
+	close_pipe_fds(fd, prev_fd);
+	return (0);
+}
+
 static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 {
 	char		*path;
 	char		**envp;
 
-	if (set_signal_handlers(SIG_DFL, SIG_DFL))
+	if (setup_child_fds(fd, cmd->exec.p_fd))
 		exit (close_fds_error(fd, cmd->exec.p_fd));
-	if (fd && (dup2(fd[1], STDOUT_FILENO) == -1))
-		exit (close_fds_error(fd, cmd->exec.p_fd));
-	if (cmd->exec.p_fd != -1 && (dup2(cmd->exec.p_fd, STDIN_FILENO) == -1))
-		exit (close_fds_error(fd, cmd->exec.p_fd));
-	close_pipe_fds(fd, cmd->exec.p_fd);
 	if (setup_redirs(cmd->redirs))
 		exit(EXIT_FAILURE);
 	if (cmd->sub)
