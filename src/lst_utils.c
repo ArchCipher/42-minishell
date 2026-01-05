@@ -14,28 +14,6 @@
 
 /*
 DESCRIPTION:
-	Allocates a token and returns it.
-	Returns the token on success, NULL on failure.
-*/
-
-t_token	*create_token(void *token, t_token_type type, size_t len)
-{
-	t_token	*new;
-
-	new = malloc(sizeof(t_token));
-	if (!new)
-		return (perror(MINI), NULL);
-	new->raw = token;
-	new->word = NULL;
-	new->type = type;
-	new->len = len;
-	new->quoted = false;
-	new->next = NULL;
-	return (new);
-}
-
-/*
-DESCRIPTION:
 	Adds a new node to the end of the list.
 
 NOTE:

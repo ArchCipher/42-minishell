@@ -74,6 +74,8 @@ int								expand_word_token(t_token *tok, t_token *prev,
 									t_shell *shell);
 int								split_word_token(t_token **head, t_token **cur,
 									t_token *prev);
+void							del_one_token(t_token **head, t_token *prev,
+									t_token **cur);
 t_token							*create_token(void *token, t_token_type type,
 									size_t len);
 void							free_tokens(t_token *tokens);

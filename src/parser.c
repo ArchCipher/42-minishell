@@ -38,8 +38,8 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 	depth = 0;
 	while (cur)
 	{
-		if (process_token(&head, &cur, prev, shell)
-			|| (cur && update_paren_depth(cur, &depth)))
+		if (process_token(&head, &cur, prev, shell) || (cur
+				&& update_paren_depth(cur, &depth)))
 			return (free_tokens(head), NULL);
 		if (!cur)
 			break ;
@@ -67,14 +67,18 @@ static int	process_token(t_token **head, t_token **cur, t_token *prev,
 	{
 		if (expand_word_token(*cur, prev, shell))
 			return (1);
-		if (!(*cur)->quoted
-			&& ft_strlen((*cur)->word) != ft_strcspn((*cur)->word, IS_SPACE))
+		if (!(*cur)->quoted && (*cur)->word)
 		{
-			if (prev && is_type_redir(prev->type))
-				return (perr_tok_msg(NULL, (*cur)->raw, (*cur)->len, E_REDIR),
-					1);
-			if (split_word_token(head, cur, prev))
-				return (1);
+			if (!*(*cur)->word)
+				return (del_one_token(head, prev, cur), 0);
+			if (ft_strlen((*cur)->word) != ft_strcspn((*cur)->word, IS_SPACE))
+			{
+				if (prev && is_type_redir(prev->type))
+					return (perr_tok_msg(NULL, (*cur)->raw, (*cur)->len,
+							E_REDIR), 1);
+				if (split_word_token(head, cur, prev))
+					return (1);
+			}
 		}
 	}
 	return (0);

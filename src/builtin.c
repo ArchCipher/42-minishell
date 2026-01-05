@@ -63,7 +63,7 @@ static int	exec_echo(char **args)
 	nl = true;
 	if (!*args)
 		return (write(1, "\n", 1), 0);
-	while (*args && **args == '-' && (*args)[1] == 'n' && (ft_strcspn(*args + 2,
+	while (*args && **args == '-' && (*args)[1] == 'n' && (ft_strspn(*args + 2,
 			"n") == ft_strlen(*args + 2)))
 	{
 		nl = false;
