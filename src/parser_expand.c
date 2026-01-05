@@ -1,42 +1,49 @@
 #include "minishell.h"
 
-static int	should_expand(char *s, char *end, t_token *prev,
-				t_token_type flag);
+static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag);
 static void	append_char(char *c, char *end, t_token_type *flag, t_string *str);
 
 /*
 DESCRIPTION:
-	Handles the word token and returns 0 on success, 1 on error.
+	Expands variables and tilde in a word token and allocates a new string
+	for the expanded result. Returns 0 on success, 1 on error.
 */
 
-int	process_word_token(t_token *tok, t_token *prev, t_shell *shell)
+int	expand_word_token(t_token *tok, t_token *prev, t_shell *shell)
 {
-	t_token_type	flag;
+	t_token_type	quote_state;
 	t_string		str;
 	char			*end;
+	char			*p;
 
 	str = alloc_tstring(tok->len);
 	if (!str.s)
 		return (perror(MINI), 1);
-	end = tok->token + tok->len;
-	flag = WORD;
-	while (tok->token < end)
+	p = tok->raw;
+	end = p + tok->len;
+	quote_state = WORD;
+	while (p < end)
 	{
-		if (!should_expand(tok->token, end, prev, flag))
+		if (!should_expand(p, end, prev, quote_state))
 		{
-			append_char(tok->token, end, &flag, &str);
-			tok->token++;
+			append_char(p, end, &quote_state, &str);
+			p++;
 		}
-		else if (append_var(&str, &tok->token, end, shell))
+		else if (append_var(&str, &p, end, shell))
 			return (free(str.s), 1);
 	}
 	str.s[str.len] = 0;
-	tok->token = str.s;
+	tok->word = str.s;
 	return (0);
 }
 
-static int	should_expand(char *s, char *end, t_token *prev,
-		t_token_type flag)
+/*
+DESCRIPTION:
+	Determines if the character at position s should be expanded.
+	Returns 1 if expansion should occur, 0 otherwise.
+*/
+
+static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag)
 {
 	if (prev && prev->type == HEREDOC)
 		return (0);
@@ -60,15 +67,16 @@ DESCRIPTION:
 	$"string"	locale translation
 */
 
-static void	append_char(char *s, char *end, t_token_type *flag, t_string *str)
+static void	append_char(char *s, char *end, t_token_type *quote_state,
+		t_string *str)
 {
 	t_token_type	old_flag;
 
-	if (*s == '$' && *flag == WORD && s + 1 < end && (s[1] == '\''
+	if (*s == '$' && *quote_state == WORD && s + 1 < end && (s[1] == '\''
 			|| s[1] == '\"'))
 		return ;
-	old_flag = *flag;
-	*flag = update_quote_flag(*s, *flag);
-	if (*flag == old_flag)
+	old_flag = *quote_state;
+	*quote_state = update_quote_flag(*s, *quote_state);
+	if (*quote_state == old_flag)
 		str->s[(str->len)++] = *s;
 }

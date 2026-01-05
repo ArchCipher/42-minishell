@@ -25,6 +25,12 @@ int	exec_cd(char **args, t_shell *shell)
 }
 #endif
 
+/*
+DESCRIPTION:
+	Changes the current working directory to the specified directory.
+	If no directory is specified, changes to HOME. Returns 0 on success, 1 on error.
+*/
+
 static int	do_cd(char **args, t_shell *shell)
 {
 	const char	*dir;

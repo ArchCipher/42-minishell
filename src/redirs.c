@@ -97,7 +97,8 @@ void	close_pipe_fds(int *fd, int prev_fd)
 
 /*
 DESCRIPTION:
-	closes fds, prints error message and return 1.
+	Closes file descriptors, prints error message, and returns 1.
+	Used for error cleanup in fork_with_pipe().
 */
 
 int	close_fds_error(int *fd, int prev_fd)

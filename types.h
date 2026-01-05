@@ -116,7 +116,8 @@ typedef struct s_cmd
 typedef struct s_token
 {
 	t_token_type	type;
-	char			*token;
+	char			*raw;
+	char			*word;
 	bool			quoted;
 	size_t			len;
 	struct s_token	*next;

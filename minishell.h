@@ -34,26 +34,33 @@
 # define PROMPT "$> "
 # define MINI "minishell"
 # define EXPANDABLE "?_{"
+# define IS_SPACE " \t\n\v\f\r"
+
+# define E_PARSE "syntax error near unexpected token"
+# define E_REDIR "ambiguous redirect"
+# define E_ENV "bad substitution"
+# define E_EXPORT "not a valid identifier"
+# define E_MANY_ARGS "too many arguments"
+# define E_HOME "HOME not set"
 
 # define EXIT_INVAL_OPTION 2
+# define E_OPTION "does not support options"
+
 # define EXIT_CANNOT_EXEC 126
+# define E_DIR "is a directory"
+
 # define EXIT_CMD_NOT_FOUND 127
+# define E_PATH "command not found"
+
 # define SIG_EXIT_BASE 128
 # define EXIT_STATUS_MOD 256
+
 # ifdef __linux__
 #  define EXIT_NUMERIC_ERROR 2
 # else
 #  define EXIT_NUMERIC_ERROR 255
 # endif
-# define E_OPTION "does not support options"
-# define E_PARSE "syntax error near unexpected token"
-# define E_PATH "command not found"
-# define E_DIR "is a directory"
-# define E_ENV "bad substitution"
 # define E_EXIT_CODE "numeric argument required"
-# define E_EXPORT "not a valid identifier"
-# define E_MANY_ARGS "too many arguments"
-# define E_HOME "HOME not set"
 
 extern volatile sig_atomic_t	g_signal;
 
@@ -63,14 +70,19 @@ t_token							*parse_tokens(t_token *tokens, t_shell *shell);
 t_cmd							*parse_cmd_list(t_token **tok);
 int								build_cmd(t_token **tok, t_cmd *cmd,
 									void **last_redir);
-int								process_word_token(t_token *tok, t_token *prev,
+int								expand_word_token(t_token *tok, t_token *prev,
 									t_shell *shell);
+int								split_word_token(t_token **head, t_token **cur,
+									t_token *prev);
+t_token							*create_token(void *token, t_token_type type,
+									size_t len);
+void							free_tokens(t_token *tokens);
 int								is_type_redir(t_token_type t);
 int								is_type_con(t_token_type t);
 t_token_type					update_quote_flag(char c, t_token_type flag);
 void							perr_token(char *s, size_t len);
-void							free_tokens(t_token *tokens, bool free_content,
-									t_token *end);
+void							perr_tok_msg(char *cmd, char *s, size_t len,
+									const char *msg);
 
 // Execution
 int								process_heredoc(t_cmd *cmds, t_shell *shell);

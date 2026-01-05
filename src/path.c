@@ -53,11 +53,12 @@ char	*get_valid_path(const char *filename, t_env *env)
 }
 
 /*
-DESCRIPTION
+DESCRIPTION:
 	Retrieves $PATH using ft_getenv(), and returns fully built path.
 	Returns fully built path on success, NULL if $PATH is not set or is empty,
 	((char *)-1) on malloc() failure.
 */
+
 static char	*get_path(const char *filename, t_env *env)
 {
 	const char	*path;

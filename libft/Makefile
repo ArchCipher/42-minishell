@@ -13,8 +13,8 @@ INC			= -I.
 MSRCS		= \
 			isalnum isalpha isdigit isspace memchr\
 			memcpy memset realloc strchr strcmp \
-			strdup strlen strncmp strndup strspn \
-			strtok_r
+			strcspn strdup strlen strncmp strndup \
+			strspn strtok_r
 ASRCS		= \
 			strjoin strjoin3 putstr
 

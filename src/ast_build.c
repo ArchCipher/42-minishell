@@ -23,8 +23,8 @@ int	build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 	{
 		if ((*tok)->type == WORD)
 		{
-			cmd->args[i++] = (*tok)->token;
-			(*tok)->token = NULL;
+			cmd->args[i++] = (*tok)->word;
+			(*tok)->word = NULL;
 			*tok = (*tok)->next;
 		}
 		else if (is_type_redir((*tok)->type)
@@ -56,8 +56,8 @@ static int	build_redir(t_token **tok, void **head, void **last)
 		new = malloc(sizeof(t_redir));
 		if (!new)
 			return (perror(MINI), 0);
-		new->file = (*tok)->next->token;
-		(*tok)->next->token = NULL;
+		new->file = (*tok)->next->word;
+		(*tok)->next->word = NULL;
 		new->flag = (*tok)->type;
 		new->fd = -1;
 		new->quoted = (*tok)->next->quoted;

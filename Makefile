@@ -31,13 +31,13 @@ INC				= -I. \
 
 #				Sources & Objects
 MSRCS			= minishell \
-				lexer parser parser_expand \
+				lexer parser parser_expand parser_split \
 				token_checks token_utils \
 				ast ast_build \
 				var_expand var_parse \
 				exec exec_child path redirs heredoc \
 				builtin cd export unset exit env_utils qsort \
-				signal lst_utils
+				signal lst_utils perr
 
 SRCS			= $(addprefix src/, $(addsuffix .c, $(MSRCS)))
 OBJS			= $(SRCS:.c=.o)

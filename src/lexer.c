@@ -16,7 +16,6 @@
 static t_token	*get_token(char *s);
 static size_t	get_tok_len(t_token_type type);
 static size_t	parse_word_token(char *s);
-static t_token	*create_token(void *token, t_token_type type, size_t len);
 
 /*
 DESCRIPTION:
@@ -41,12 +40,12 @@ t_token	*tokenise_input(char *s)
 		else
 			tokens.new = create_token(s, WORD, parse_word_token(s));
 		if (!tokens.new)
-			return (free_tokens(tokens.head, false, NULL), NULL);
+			return (free_tokens(tokens.head), NULL);
 		lstadd_back((void **)&tokens, tokens.new, tokens.tail, TYPE_TOKEN);
 		tokens.tail = tokens.new;
 		tmp = (t_token *)tokens.new;
-		if (tmp->type == WORD && (ft_memchr(tmp->token, '\'', tmp->len)
-				|| ft_memchr(tmp->token, '\"', tmp->len)))
+		if (tmp->type == WORD && (ft_memchr(tmp->raw, '\'', tmp->len)
+				|| ft_memchr(tmp->raw, '\"', tmp->len)))
 			tmp->quoted = true;
 		s += tmp->len;
 	}
@@ -86,6 +85,13 @@ static t_token	*get_token(char *s)
 	return (create_token(s, type, get_tok_len(type)));
 }
 
+/*
+DESCRIPTION:
+	Returns the length of a token based on its type.
+	Multi-character tokens (APPEND, HEREDOC, OR, AND) return 2,
+	single-character tokens return 1, others return 0.
+*/
+
 static size_t	get_tok_len(t_token_type type)
 {
 	if (type == APPEND || type == HEREDOC || type == OR || type == AND)
@@ -121,25 +127,4 @@ static size_t	parse_word_token(char *s)
 		p++;
 	}
 	return (p - s);
-}
-
-/*
-DESCRIPTION:
-	Allocates a token and returns it.
-	Returns the token on success, NULL on failure.
-*/
-
-static t_token	*create_token(void *token, t_token_type type, size_t len)
-{
-	t_token	*new;
-
-	new = malloc(sizeof(t_token));
-	if (!new)
-		return (perror(MINI), NULL);
-	new->token = token;
-	new->type = type;
-	new->len = len;
-	new->quoted = false;
-	new->next = NULL;
-	return (new);
 }

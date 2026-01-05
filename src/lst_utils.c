@@ -14,6 +14,28 @@
 
 /*
 DESCRIPTION:
+	Allocates a token and returns it.
+	Returns the token on success, NULL on failure.
+*/
+
+t_token	*create_token(void *token, t_token_type type, size_t len)
+{
+	t_token	*new;
+
+	new = malloc(sizeof(t_token));
+	if (!new)
+		return (perror(MINI), NULL);
+	new->raw = token;
+	new->word = NULL;
+	new->type = type;
+	new->len = len;
+	new->quoted = false;
+	new->next = NULL;
+	return (new);
+}
+
+/*
+DESCRIPTION:
 	Adds a new node to the end of the list.
 
 NOTE:
@@ -45,24 +67,19 @@ void	lstadd_back(void **head, void *new, void *last, t_node_type type)
 /*
 DESCRIPTION:
 	Frees the tokens and their content.
+	 && free_content && current->type == WORD
 */
 
-void	free_tokens(t_token *tokens, bool free_content, t_token *end)
+void	free_tokens(t_token *tok)
 {
 	t_token	*current;
 
-	while (tokens && tokens != end)
+	while (tok)
 	{
-		current = tokens;
-		tokens = tokens->next;
-		if (current->token && free_content && current->type == WORD)
-			free(current->token);
-		free(current);
-	}
-	while (tokens)
-	{
-		current = tokens;
-		tokens = tokens->next;
+		current = tok;
+		tok = tok->next;
+		if (current->word)
+			free(current->word);
 		free(current);
 	}
 }

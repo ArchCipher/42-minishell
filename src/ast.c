@@ -15,6 +15,12 @@
 static int		parse_cmd(t_token **tok, t_cmd *cmd, void **last_redir);
 static t_cmd	*create_cmd(void);
 
+/*
+DESCRIPTION:
+	Parses tokens into a command list, handling connectors and parentheses.
+	Returns the command list on success, NULL on error.
+*/
+
 t_cmd	*parse_cmd_list(t_token **tok)
 {
 	t_list	cmd;
@@ -38,6 +44,12 @@ t_cmd	*parse_cmd_list(t_token **tok)
 	}
 	return (cmd.head);
 }
+
+/*
+DESCRIPTION:
+	Parses a single command from tokens, handling regular commands and
+	subshells (parentheses). Returns 1 on success, 0 on error.
+*/
 
 static int	parse_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 {

@@ -85,6 +85,13 @@ static int	setup_child_fds(int *fd, int prev_fd)
 	return (0);
 }
 
+/*
+DESCRIPTION:
+	Executes the command in the child process. Sets up file descriptors,
+	redirections, handles subshells and builtins, resolves the command path,
+	and executes it with execve(). Exits with appropriate exit code on completion.
+*/
+
 static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 {
 	char		*path;

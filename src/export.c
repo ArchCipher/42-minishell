@@ -32,7 +32,7 @@ int	exec_export(char **args, t_shell *shell)
 	if (!*args)
 		return (print_exported_vars(shell->env));
 	if (**args == '-' && (*args)[1])
-		return (perr_msg(cmd, *args, E_OPTION, true), 2);
+		return (perr_tok_msg(cmd, *args, 2, E_OPTION), 2);
 	while (*args)
 	{
 		if (!is_valid_identifier(*args))
