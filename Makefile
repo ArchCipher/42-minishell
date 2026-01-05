@@ -30,9 +30,9 @@ INC				= -I. \
 				$(READLINE_INC)
 
 #				Sources & Objects
-# 				minishell
+# 				test_mini
 MSRCS			= \
-				test_mini \
+				minishell \
 				lexer parser parser_word \
 				token_checks token_utils \
 				ast ast_build \
