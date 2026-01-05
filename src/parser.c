@@ -40,7 +40,7 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 	while (cur)
 	{
 		ret = process_token(&head, &cur, prev, shell);
-		if (ret == 2)
+		if (!cur || ret == 2)
 			continue ;
 		if (ret == 1 || (cur && update_paren_depth(cur, &depth)))
 			return (free_tokens(head), NULL);
