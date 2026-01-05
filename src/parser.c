@@ -30,6 +30,7 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 	t_token	*cur;
 	t_token	*prev;
 	int		depth;
+	int		ret;
 
 	if (!head)
 		return (NULL);
@@ -38,11 +39,11 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 	depth = 0;
 	while (cur)
 	{
-		if (process_token(&head, &cur, prev, shell) || (cur
-				&& update_paren_depth(cur, &depth)))
+		ret = process_token(&head, &cur, prev, shell);
+		if (ret == 2)
+			continue ;
+		if (ret == 1 || (cur && update_paren_depth(cur, &depth)))
 			return (free_tokens(head), NULL);
-		if (!cur)
-			break ;
 		prev = cur;
 		cur = cur->next;
 	}
@@ -70,7 +71,7 @@ static int	process_token(t_token **head, t_token **cur, t_token *prev,
 		if (!(*cur)->quoted && (*cur)->word)
 		{
 			if (!*(*cur)->word)
-				return (del_one_token(head, prev, cur), 0);
+				return (del_one_token(head, prev, cur), 2);
 			if (ft_strlen((*cur)->word) != ft_strcspn((*cur)->word, IS_SPACE))
 			{
 				if (prev && is_type_redir(prev->type))

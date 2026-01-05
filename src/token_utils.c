@@ -38,10 +38,7 @@ void	del_one_token(t_token **head, t_token *prev, t_token **cur)
 		prev->next = (*cur)->next;
 	free((*cur)->word);
 	free(*cur);
-	if (prev)
-		*cur = prev;
-	else
-		*cur = next;
+	*cur = next;
 }
 
 int	is_type_redir(t_token_type t)
