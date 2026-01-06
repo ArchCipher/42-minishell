@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:22 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:41:22 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 14:42:10 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,9 +22,9 @@ DESCRIPTION:
 
 int	exec_unset(char **args, t_shell *shell)
 {
-	t_env		*prev;
-	t_env		*env;
-	char		*cmd;
+	t_env	*prev;
+	t_env	*env;
+	char	*cmd;
 
 	cmd = *(args++);
 	if (!*args)

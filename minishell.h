@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:33:15 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:39:50 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 21:50:53 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,10 +20,10 @@
 # include <fcntl.h>  // open
 # include <limits.h> // LONG_MAX (ft_atoi)
 // stdio.h must be included before readline.h
-# include <stdio.h>             // readline, perror
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
 # include <signal.h>            // sigaction, sigemptyset, sigaddset
+# include <stdio.h>             // readline, perror
 # include <stdlib.h>            // malloc, free, exit
 # include <string.h>            // strerror
 # include <sys/stat.h>          // stat
@@ -36,24 +36,31 @@
 # define EXPANDABLE "?_{"
 # define IS_SPACE " \t\n\v\f\r"
 
-# define E_PARSE "syntax error near unexpected token"
 # define E_REDIR "ambiguous redirect"
 # define E_ENV "bad substitution"
 # define E_EXPORT "not a valid identifier"
 # define E_MANY_ARGS "too many arguments"
 # define E_HOME "HOME not set"
+# define E_OLDPWD "OLDPWD not set"
 
-# define EXIT_INVAL_OPTION 2
+// heredoc EOF warning msg on linux
+# define W_EOF1 "warning: here-document at line"
+# define W_EOF2 "delimited by end-of-file"
+
+# define EXIT_INVAL_OPTION 258
+// invalid option exits with 2, minishell doesn't support options
 # define E_OPTION "does not support options"
+# define E_PARSE "syntax error near unexpected token"
+# define E_ARG "filename argument required"
 
 # define EXIT_CANNOT_EXEC 126
 # define E_DIR "is a directory"
 
 # define EXIT_CMD_NOT_FOUND 127
-# define E_PATH "command not found"
+# define E_CMD "command not found"
 
 # define SIG_EXIT_BASE 128
-# define EXIT_STATUS_MOD 256
+# define EXIT_STATUS_MASK 0xFF
 
 # ifdef __linux__
 #  define EXIT_NUMERIC_ERROR 2
@@ -79,6 +86,10 @@ void							del_one_token(t_token **head, t_token *prev,
 t_token							*create_token(void *token, t_token_type type,
 									size_t len);
 void							free_tokens(t_token *tokens);
+int								is_redir(char c);
+int								is_connector(char *s);
+int								is_parenthesis(char c);
+int								is_word_delimiter(char *s);
 int								is_type_redir(t_token_type t);
 int								is_type_con(t_token_type t);
 t_token_type					update_quote_flag(char c, t_token_type flag);
@@ -102,6 +113,7 @@ void							free_cmds(t_cmd *cmds);
 void							free_arr(char **envp);
 
 // Builtin
+int								exec_pwd(void);
 int								exec_cd(char **args, t_shell *shell);
 int								exec_exit(char **s);
 int								exec_export(char **args, t_shell *shell);

@@ -6,12 +6,11 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:27:11 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:04:56 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 17:11:57 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
-#include "lexer.h"
 
 static t_token	*get_token(char *s);
 static size_t	get_tok_len(t_token_type type);

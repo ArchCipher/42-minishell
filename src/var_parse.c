@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   var.c                                              :+:      :+:    :+:   */
+/*   var_parse.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/01 14:10:54 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:10:51 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 14:42:15 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ static char	*exit_status_to_str(int n, char *num)
 {
 	size_t	len;
 
-	n = n % EXIT_STATUS_MOD;
+	n = n & EXIT_STATUS_MASK;
 	len = count_digits(n, 10);
 	num[len] = '\0';
 	if (n == 0)

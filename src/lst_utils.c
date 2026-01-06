@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   free.c                                             :+:      :+:    :+:   */
+/*   lst_utils.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:03 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:43:19 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 14:41:30 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ void	lstadd_back(void **head, void *new, void *last, t_node_type type)
 /*
 DESCRIPTION:
 	Frees the tokens and their content.
-	 && free_content && current->type == WORD
+		&& free_content && current->type == WORD
 */
 
 void	free_tokens(t_token *tok)
@@ -82,7 +82,7 @@ void	free_arr(char **arr)
 /*
 DESCRIPTION:
 	Frees the command list and their content. Closes any open fds.
-	
+
 	// if subshell is added add check for cmd->args existence
 	// or move to separate fucntion
 */

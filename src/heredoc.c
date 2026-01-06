@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:05 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 17:10:17 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 16:00:57 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,6 +110,9 @@ static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
 		free(line);
 		line = readline("> ");
 	}
+	if (!line)
+		dprintf(STDERR_FILENO, "%s: %s %d %s (wanted `%s')\n", MINI, W_EOF1,
+			shell->line_num, W_EOF2, limiter);
 	free(line);
 	close(fd);
 	return (0);
@@ -173,8 +176,12 @@ static int	wait_heredoc_child(pid_t pid)
 	if (ret == -1)
 		return (perror(MINI), 1);
 	if (WIFSIGNALED(status))
+	{
 		write(1, "\n", 1);
-	if (WIFSIGNALED(status) || WEXITSTATUS(status))
+		g_signal = WTERMSIG(status);
+		return (1);
+	}
+	if (WIFEXITED(status) && WEXITSTATUS(status))
 		return (1);
 	return (0);
 }

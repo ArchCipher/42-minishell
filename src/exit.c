@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:47 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:40:27 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 19:12:14 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,9 +62,10 @@ int	exec_exit(char **s)
 {
 	int	n;
 
+	errno = 0;
 	if (s[1] == NULL)
 		return (0);
-	n = status_atoi(s[1]) % EXIT_STATUS_MOD;
+	n = status_atoi(s[1]) & EXIT_STATUS_MASK;
 	if (!*s[1] || errno == EINVAL)
 		return (perr_msg(*s, s[1], E_EXIT_CODE, false), EXIT_NUMERIC_ERROR);
 	else if (s[2])
@@ -93,7 +94,7 @@ static int	status_atoi(const char *str)
 		sign = -1;
 	if (*str == '-' || *str == '+')
 		str++;
-	while (*str >= '0' && *str <= '9')
+	while (ft_isdigit(*str))
 	{
 		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
 			return ((int)LONG_MAX);

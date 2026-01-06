@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/01 16:43:39 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 17:32:48 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 19:18:31 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ typedef enum t_token_type
 	WORD,
 	SQUOTE,
 	DQUOTE,
+	TARGET_FD,
 	REDIR_IN,
 	REDIR_OUT,
 	APPEND,
@@ -37,6 +38,7 @@ typedef enum t_token_type
 
 typedef enum t_builtin
 {
+	EMPTY_STRING,
 	BUILTIN_ECHO,
 	BUILTIN_CD,
 	BUILTIN_PWD,
@@ -84,6 +86,7 @@ typedef struct s_shell
 	t_env			*oldpwd;
 	t_env			*pwd;
 	int				status;
+	int				line_num;
 	struct termios	original_term;
 }					t_shell;
 
@@ -93,6 +96,7 @@ typedef struct s_redir
 	bool			quoted;
 	t_token_type	flag;
 	int				fd;
+	int				target_fd;
 	struct s_redir	*next;
 }					t_redir;
 

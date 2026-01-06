@@ -6,12 +6,13 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:43 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:10:16 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 20:19:38 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
+static void	get_target_fd(t_redir *redirs);
 static int	open_redir_file(const t_redir *redirs);
 
 /*
@@ -36,10 +37,8 @@ int	setup_redirs(t_redir *redirs)
 		redirs->fd = open_redir_file(redirs);
 		if (redirs->fd == -1)
 			return (perr_msg(redirs->file, strerror(errno), NULL, false), 1);
-		if (((redirs->flag == REDIR_IN || redirs->flag == HEREDOC)
-				&& dup2(redirs->fd, STDIN_FILENO) == -1)
-			|| ((redirs->flag == REDIR_OUT || redirs->flag == APPEND)
-				&& dup2(redirs->fd, STDOUT_FILENO) == -1))
+		get_target_fd(redirs);
+		if (dup2(redirs->fd, redirs->target_fd) == -1)
 		{
 			close(redirs->fd);
 			redirs->fd = -1;
@@ -50,6 +49,16 @@ int	setup_redirs(t_redir *redirs)
 		redirs = redirs->next;
 	}
 	return (0);
+}
+
+static void	get_target_fd(t_redir *redirs)
+{
+	if (redirs->target_fd != -1)
+		return ;
+	if (redirs->flag == REDIR_IN || redirs->flag == HEREDOC)
+		redirs->target_fd = STDIN_FILENO;
+	else if (redirs->flag == REDIR_OUT || redirs->flag == APPEND)
+		redirs->target_fd = STDOUT_FILENO;
 }
 
 /*

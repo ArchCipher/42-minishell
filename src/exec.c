@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:45 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 14:16:01 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 21:50:37 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@ int	exec_cmds(t_cmd *cmd, t_shell *shell)
 
 	if (!cmd)
 		return (0);
+	if (cmd->args && (!*cmd->args || !**cmd->args))
+		return (perr_msg("", E_CMD, NULL, false), EXIT_CMD_NOT_FOUND);
 	pipe_head = NULL;
 	cmd->exec.builtin = is_builtin(cmd->args);
 	if (cmd->exec.builtin != -1 && !cmd->next && !cmd->sub)
@@ -63,6 +65,8 @@ static int	is_builtin(char **s)
 {
 	if (!s || !*s)
 		return (-1);
+	if (!**s)
+		return (EMPTY_STRING);
 	if (ft_strcmp(*s, "echo") == 0)
 		return (BUILTIN_ECHO);
 	if (ft_strcmp(*s, "cd") == 0)

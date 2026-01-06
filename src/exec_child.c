@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:41 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 20:48:25 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 21:33:49 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,7 @@ DESCRIPTION:
 	an execve() call, it is entered as follows:
 		int main(int argc, char **argv, char **envp);
 	As the execve() function overlays the current process image with a new
-    process image, the successful call has no process to return to.
+	process image, the successful call has no process to return to.
 	If execve() does return to the calling process, an error has occurred.
 	The return value will be -1 and errno is set to indicate the error.
 */
@@ -89,22 +89,23 @@ static int	setup_child_fds(int *fd, int prev_fd)
 DESCRIPTION:
 	Executes the command in the child process. Sets up file descriptors,
 	redirections, handles subshells and builtins, resolves the command path,
-	and executes it with execve(). Exits with appropriate exit code on completion.
+	and executes it with execve(). Exits with appropriate exit code on
+	completion.
 */
 
 static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 {
-	char		*path;
-	char		**envp;
+	char	*path;
+	char	**envp;
 
 	if (setup_child_fds(fd, cmd->exec.p_fd))
-		exit (close_fds_error(fd, cmd->exec.p_fd));
+		exit(close_fds_error(fd, cmd->exec.p_fd));
 	if (setup_redirs(cmd->redirs))
 		exit(EXIT_FAILURE);
 	if (cmd->sub)
 		exit(exec_cmds(cmd->sub, shell));
 	if (!cmd->args || !cmd->args[0])
-		exit (EXIT_SUCCESS);
+		exit(EXIT_SUCCESS);
 	if (cmd->exec.builtin != -1)
 		exit(exec_builtin(cmd, shell));
 	path = get_valid_path(cmd->args[0], shell->env);

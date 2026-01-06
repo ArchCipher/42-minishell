@@ -6,14 +6,13 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 14:01:35 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:56:00 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 14:40:57 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
 static int	exec_echo(char **args);
-static int	exec_pwd(void);
 static int	exec_env(t_env *env);
 
 /*
@@ -23,6 +22,10 @@ DESCRIPTION:
 
 int	exec_builtin(t_cmd *cmd, t_shell *shell)
 {
+	if (cmd->exec.builtin == NONE)
+		return (0);
+	if (cmd->exec.builtin == EMPTY_STRING)
+		return (perr_msg(*cmd->args, NULL, E_CMD, false), EXIT_CMD_NOT_FOUND);
 	if (cmd->exec.builtin == BUILTIN_ECHO)
 		return (exec_echo(cmd->args));
 	else if (cmd->exec.builtin == BUILTIN_CD)
@@ -64,7 +67,7 @@ static int	exec_echo(char **args)
 	if (!*args)
 		return (write(1, "\n", 1), 0);
 	while (*args && **args == '-' && (*args)[1] == 'n' && (ft_strspn(*args + 2,
-			"n") == ft_strlen(*args + 2)))
+				"n") == ft_strlen(*args + 2)))
 	{
 		nl = false;
 		args++;
@@ -88,7 +91,7 @@ DESCRIPTION:
 	Returns 0 on success, 1 if getcwd() or write() fails.
 */
 
-static int	exec_pwd(void)
+int	exec_pwd(void)
 {
 	char	*buf;
 

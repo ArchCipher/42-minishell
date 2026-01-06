@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parser_word.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/06 14:41:34 by kmurugan          #+#    #+#             */
+/*   Updated: 2026/01/06 17:36:27 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag);
@@ -27,10 +39,7 @@ int	expand_word_token(t_token *tok, t_token *prev, t_shell *shell)
 	while (p < end)
 	{
 		if (!should_expand(p, end, prev, quote_state))
-		{
-			append_char(p, end, &quote_state, &str);
-			p++;
-		}
+			append_char(p++, end, &quote_state, &str);
 		else if (append_var(&str, &p, end, shell))
 			return (free(str.s), 1);
 	}

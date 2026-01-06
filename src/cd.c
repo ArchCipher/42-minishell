@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cd.c                                               :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/06 14:35:35 by kmurugan          #+#    #+#             */
+/*   Updated: 2026/01/06 20:33:11 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 static int	do_cd(char **args, t_shell *shell);
@@ -28,7 +40,8 @@ int	exec_cd(char **args, t_shell *shell)
 /*
 DESCRIPTION:
 	Changes the current working directory to the specified directory.
-	If no directory is specified, changes to HOME. Returns 0 on success, 1 on error.
+	If no directory is specified, changes to HOME. Returns 0 on success, 1 on
+	error.
 */
 
 static int	do_cd(char **args, t_shell *shell)
@@ -36,13 +49,23 @@ static int	do_cd(char **args, t_shell *shell)
 	const char	*dir;
 
 	dir = args[1];
+	if (args[1] && args[2])
+		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
 	if (!dir && (!shell->home || !shell->home->value))
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
-	else if (!dir)
+	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2]))
 		dir = shell->home->value;
+	else if (dir && dir[0] == '-' && dir[1])
+		return (perr_tok_msg(*args, args[1], 2, E_OPTION), 2);
+	if (!strcmp(dir, "-") && (!shell->oldpwd || !shell->oldpwd->value))
+		return (perr_msg(*args, E_OLDPWD, NULL, false), 1);
+	else if (!strcmp(dir, "-"))
+		dir = shell->oldpwd->value;
 	if (chdir(dir) == -1)
-		return (perr_msg(*args, args[1], strerror(errno), false), 1);
+		return (perr_msg(*args, dir, strerror(errno), false), 1);
 	update_pwds(shell);
+	if (args[1] && args[1][0] == '-' && !args[1][1])
+		exec_pwd();
 	return (0);
 }
 

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   perr.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/06 14:41:44 by kmurugan          #+#    #+#             */
+/*   Updated: 2026/01/06 21:56:50 by kmurugan         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "minishell.h"
 
 /*
@@ -16,6 +28,7 @@ void	perr_token(char *s, size_t len)
 	ft_dprintf(STDERR_FILENO, "%s: %s `", MINI, E_PARSE);
 	write(STDERR_FILENO, s, len);
 	write(STDERR_FILENO, "'\n", 2);
+	errno = EINVAL;
 }
 
 /*
@@ -60,4 +73,3 @@ void	perr_tok_msg(char *cmd, char *s, size_t len, const char *msg)
 	if (msg)
 		dprintf(STDERR_FILENO, ": %s\n", msg);
 }
-

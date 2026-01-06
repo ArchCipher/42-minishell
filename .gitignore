@@ -11,4 +11,4 @@ test_quick.sh
 TEST_README.md
 minishell_tester/
 42_minishell_tester/
-src/test_mini.c
+src/test_minihell.c

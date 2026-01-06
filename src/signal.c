@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:20 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 14:10:48 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 14:41:55 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,6 +99,6 @@ DESCRIPTION:
 
 void	handle_shell_signal(int *status)
 {
-	*status = 1;
+	*status = SIG_EXIT_BASE + g_signal;
 	g_signal = 0;
 }

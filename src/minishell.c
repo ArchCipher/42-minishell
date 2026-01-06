@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:27:07 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:06:20 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 15:36:57 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,9 +78,9 @@ static void		init_env(t_shell *shell);
 
 int	main(int ac, char **av, char **envp)
 {
-	t_shell		shell;
-	char		*input;
-	t_cmd		*cmds;
+	t_shell	shell;
+	char	*input;
+	t_cmd	*cmds;
 
 	(void)av;
 	if (ac != 1)
@@ -89,6 +89,7 @@ int	main(int ac, char **av, char **envp)
 	input = readline(PROMPT);
 	while (input)
 	{
+		shell.line_num++;
 		if (g_signal == SIGINT)
 			handle_shell_signal(&shell.status);
 		add_history(input);
@@ -116,10 +117,15 @@ static t_cmd	*parse_input(char *input, t_shell *shell)
 	t_token	*tmp;
 	t_cmd	*cmds;
 
+	errno = 0;
 	tokens = tokenise_input(input);
 	tokens = parse_tokens(tokens, shell);
+	if (!tokens && errno == EINVAL)
+		return (shell->status = EXIT_INVAL_OPTION, NULL);
 	tmp = tokens;
 	cmds = parse_cmd_list(&tmp);
+	if ((!tokens || !cmds) && errno)
+		shell->status = 1;
 	free_tokens(tokens);
 	return (cmds);
 }
@@ -195,10 +201,6 @@ static void	init_env(t_shell *shell)
 	last_cmd = env_lookup(shell->env, "_");
 	if (last_cmd)
 		last_cmd->exported = false;
-	update_pwds(shell);
-	if (shell->oldpwd && shell->oldpwd->value)
-	{
-		free(shell->oldpwd->value);
-		shell->oldpwd->value = NULL;
-	}
+	if (!shell->oldpwd || !shell->pwd)
+		update_pwds(shell);
 }

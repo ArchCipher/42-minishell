@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:52 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:40:55 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 14:41:18 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,11 +39,13 @@ int	exec_export(char **args, t_shell *shell)
 			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
 			return (perror(MINI), 1);
-		if (!shell->pwd && !strcmp(*args, "PWD"))
+		if (!shell->pwd && !strncmp(*args, "PWD", 3) && (*args)[3] == '=')
 			shell->pwd = env_lookup(shell->env, *args);
-		else if (!shell->oldpwd && !strcmp(*args, "OLDPWD"))
+		else if (!shell->oldpwd && !strncmp(*args, "OLDPWD", 6)
+			&& (*args)[6] == '=')
 			shell->oldpwd = env_lookup(shell->env, *args);
-		else if (!shell->home && !strcmp(*args, "HOME"))
+		else if (!shell->home && !strncmp(*args, "HOME", 4)
+			&& (*args)[4] == '=')
 			shell->home = env_lookup(shell->env, *args);
 		args++;
 	}

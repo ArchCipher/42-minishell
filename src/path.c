@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/01 14:10:19 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/01 21:09:07 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/06 21:42:40 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,9 @@ char	*get_valid_path(const char *filename, t_env *env)
 		exit(EXIT_FAILURE);
 	}
 	if (!path)
-		child_path_error(filename, E_PATH, EXIT_CMD_NOT_FOUND, path);
+		child_path_error(filename, E_CMD, EXIT_CMD_NOT_FOUND, path);
+	if (*filename == '.' && !filename[1])
+		child_path_error(filename, E_ARG, EXIT_INVAL_OPTION, path);
 	if (stat(path, &sb) == -1)
 		child_path_error(filename, strerror(errno), EXIT_CMD_NOT_FOUND, path);
 	if (!S_ISREG(sb.st_mode))
