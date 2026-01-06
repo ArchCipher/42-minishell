@@ -111,7 +111,7 @@ static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
 		line = readline("> ");
 	}
 	if (!line)
-		dprintf(STDERR_FILENO, "%s: %s %d %s (wanted `%s')\n", MINI, W_EOF1,
+		ft_dprintf(STDERR_FILENO, "%s: %s %d %s (wanted `%s')\n", MINI, W_EOF1,
 			shell->line_num, W_EOF2, limiter);
 	free(line);
 	close(fd);

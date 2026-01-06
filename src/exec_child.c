@@ -119,7 +119,7 @@ static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 	perror(MINI);
 	if (!ft_strchr(cmd->args[0], '/'))
 		free(path);
-	free(envp);
+	free_arr(envp);
 	exit(EXIT_FAILURE);
 }
 

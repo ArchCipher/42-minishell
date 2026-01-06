@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   perr.c                                             :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/06 14:41:44 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 21:56:50 by kmurugan         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "minishell.h"
 
 /*
@@ -71,5 +59,6 @@ void	perr_tok_msg(char *cmd, char *s, size_t len, const char *msg)
 		ft_dprintf(STDERR_FILENO, "%s: ", cmd);
 	write(STDERR_FILENO, s, len);
 	if (msg)
-		dprintf(STDERR_FILENO, ": %s\n", msg);
+		ft_dprintf(STDERR_FILENO, ": %s\n", msg);
 }
+

@@ -61,7 +61,7 @@ int	is_target_fd(t_token *cur)
 	if (!cur->next || !is_type_redir(cur->next->type))
 		return (0);
 	i = 0;
-	while (i < cur->len && isdigit(p[i]))
+	while (i < cur->len && ft_isdigit(p[i]))
 		i++;
 	if (i != cur->len || !is_redir(p[i]))
 		return (0);

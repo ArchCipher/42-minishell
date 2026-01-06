@@ -26,7 +26,7 @@ int	split_word_token(t_token **head, t_token **cur, t_token *prev)
 {
 	t_strtok	str;
 
-	str.str = strdup((*cur)->word);
+	str.str = ft_strdup((*cur)->word);
 	if (!str.str)
 		return (1);
 	del_one_token(head, prev, cur);
@@ -53,7 +53,7 @@ static int	insert_token(t_token **head, t_token **prev, t_token *next,
 	t_token	*new;
 	char	*word;
 
-	word = strdup(tok);
+	word = ft_strdup(tok);
 	if (!word)
 		return (1);
 	new = create_token(word, WORD, ft_strlen(word));

@@ -55,9 +55,9 @@ static int	do_cd(char **args, t_shell *shell)
 		dir = shell->home->value;
 	else if (dir && dir[0] == '-' && dir[1])
 		return (perr_tok_msg(*args, args[1], 2, E_OPTION), 2);
-	if (!strcmp(dir, "-") && (!shell->oldpwd || !shell->oldpwd->value))
+	if (!ft_strcmp(dir, "-") && (!shell->oldpwd || !shell->oldpwd->value))
 		return (perr_msg(*args, E_OLDPWD, NULL, false), 1);
-	else if (!strcmp(dir, "-"))
+	else if (!ft_strcmp(dir, "-"))
 		dir = shell->oldpwd->value;
 	if (chdir(dir) == -1)
 		return (perr_msg(*args, dir, strerror(errno), false), 1);

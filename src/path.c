@@ -69,7 +69,7 @@ static char	*get_path(const char *filename, t_env *env)
 	path = ft_getenv(env, "PATH");
 	if (!path)
 		return (NULL);
-	full_path = strdup(path);
+	full_path = ft_strdup(path);
 	if (!full_path)
 		return (((char *)-1));
 	return (build_path(filename, full_path));

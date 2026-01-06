@@ -12,3 +12,4 @@ TEST_README.md
 minishell_tester/
 42_minishell_tester/
 src/test_minihell.c
+mand.out

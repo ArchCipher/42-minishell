@@ -35,11 +35,11 @@ int	exec_unset(char **args, t_shell *shell)
 	{
 		if (!is_valid_identifier(*args) || ft_strchr(*args, '='))
 			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
-		if (!strcmp(*args, "PWD"))
+		if (!ft_strcmp(*args, "PWD"))
 			shell->pwd = NULL;
-		else if (!strcmp(*args, "OLDPWD"))
+		else if (!ft_strcmp(*args, "OLDPWD"))
 			shell->oldpwd = NULL;
-		else if (!strcmp(*args, "HOME"))
+		else if (!ft_strcmp(*args, "HOME"))
 			shell->home = NULL;
 		env = env_lookup_prev(shell->env, &prev, *args);
 		if (env)

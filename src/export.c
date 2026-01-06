@@ -39,13 +39,13 @@ int	exec_export(char **args, t_shell *shell)
 			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
 			return (perror(MINI), 1);
-		if (!shell->pwd && !strncmp(*args, "PWD", 3) && ((*args)[3] == '='
+		if (!shell->pwd && !ft_strncmp(*args, "PWD", 3) && ((*args)[3] == '='
 			|| ((*args)[3] == '+' && (*args)[4] == '=')))
 			shell->pwd = env_lookup(shell->env, *args);
-		else if (!shell->oldpwd && !strncmp(*args, "OLDPWD", 6)
+		else if (!shell->oldpwd && !ft_strncmp(*args, "OLDPWD", 6)
 			&& ((*args)[6] == '=' || ((*args)[6] == '+' && (*args)[7] == '=')))
 			shell->oldpwd = env_lookup(shell->env, *args);
-		else if (!shell->home && !strncmp(*args, "HOME", 4)
+		else if (!shell->home && !ft_strncmp(*args, "HOME", 4)
 			&& ((*args)[4] == '=' || ((*args)[4] == '+' && (*args)[5] == '=')))
 			shell->home = env_lookup(shell->env, *args);
 		args++;
