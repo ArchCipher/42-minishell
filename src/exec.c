@@ -30,8 +30,6 @@ int	exec_cmds(t_cmd *cmd, t_shell *shell)
 {
 	t_cmd	*pipe_head;
 
-	if (!cmd)
-		return (0);
 	if (cmd->args && (!*cmd->args || !**cmd->args))
 		return (perr_msg("", E_CMD, NULL, false), EXIT_CMD_NOT_FOUND);
 	pipe_head = NULL;
@@ -40,14 +38,12 @@ int	exec_cmds(t_cmd *cmd, t_shell *shell)
 		return (exec_in_parent(cmd, shell));
 	while (cmd)
 	{
-		if (cmd->con == NONE || (cmd->con == AND && !shell->status)
-			|| cmd->con == PIPE_CHAR || (cmd->con == OR && shell->status))
-		{
-			cmd->exec.builtin = is_builtin(cmd->args);
-			fork_with_pipe(cmd, shell);
-			if (!pipe_head)
-				pipe_head = cmd;
-		}
+		if ((cmd->con == OR && !shell->status) || (cmd->con == AND && shell->status))
+			return (shell->status);
+		cmd->exec.builtin = is_builtin(cmd->args);
+		fork_with_pipe(cmd, shell);
+		if (!pipe_head)
+			pipe_head = cmd;
 		if (pipe_head && (!cmd->next || cmd->next->con != PIPE_CHAR))
 			shell->status = cmds_waitpid(&pipe_head);
 		cmd = cmd->next;

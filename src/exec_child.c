@@ -37,10 +37,13 @@ int	fork_with_pipe(t_cmd *cmd, t_shell *shell)
 	int	*pipe_fd;
 
 	pipe_fd = NULL;
-	if (cmd->next && cmd->next->con == PIPE_CHAR && pipe(fd) == -1)
-		return (perror(MINI), 1);
+
 	if (cmd->next && cmd->next->con == PIPE_CHAR)
+	{
+		if (pipe(fd) == -1)
+			return (perror(MINI), 1);
 		pipe_fd = fd;
+	}
 	cmd->exec.pid = fork();
 	if (cmd->exec.pid == -1)
 		return (close_fds_error(pipe_fd, cmd->exec.p_fd));
@@ -81,7 +84,6 @@ static int	setup_child_fds(int *fd, int prev_fd)
 		return (1);
 	if (prev_fd != -1 && (dup2(prev_fd, STDIN_FILENO) == -1))
 		return (1);
-	close_pipe_fds(fd, prev_fd);
 	return (0);
 }
 
@@ -102,6 +104,7 @@ static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 		exit(close_fds_error(fd, cmd->exec.p_fd));
 	if (setup_redirs(cmd->redirs))
 		exit(EXIT_FAILURE);
+	close_pipe_fds(fd, cmd->exec.p_fd);
 	if (cmd->sub)
 		exit(exec_cmds(cmd->sub, shell));
 	if (!cmd->args || !cmd->args[0])
