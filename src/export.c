@@ -39,13 +39,14 @@ int	exec_export(char **args, t_shell *shell)
 			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
 			return (perror(MINI), 1);
-		if (!shell->pwd && !strncmp(*args, "PWD", 3) && (*args)[3] == '=')
+		if (!shell->pwd && !strncmp(*args, "PWD", 3) && ((*args)[3] == '='
+			|| ((*args)[3] == '+' && (*args)[4] == '=')))
 			shell->pwd = env_lookup(shell->env, *args);
 		else if (!shell->oldpwd && !strncmp(*args, "OLDPWD", 6)
-			&& (*args)[6] == '=')
+			&& ((*args)[6] == '=' || ((*args)[6] == '+' && (*args)[7] == '=')))
 			shell->oldpwd = env_lookup(shell->env, *args);
 		else if (!shell->home && !strncmp(*args, "HOME", 4)
-			&& (*args)[4] == '=')
+			&& ((*args)[4] == '=' || ((*args)[4] == '+' && (*args)[5] == '=')))
 			shell->home = env_lookup(shell->env, *args);
 		args++;
 	}
@@ -131,30 +132,4 @@ static size_t	count_exported_vars(t_env *env)
 		env = env->next;
 	}
 	return (i);
-}
-
-/*
-DESCRIPTION:
-	Checks if the key is a valid identifier.
-	Returns 0 if not a valid identifier, 1 otherwise.
-
-NOTE:
-	KEY must start with an alphabet or underscore and can only contain
-	alphabets, numbers and underscores.
-*/
-
-int	is_valid_identifier(const char *s)
-{
-	if (!*s)
-		return (0);
-	if (*s != '_' && !ft_isalpha(*s))
-		return (0);
-	s++;
-	while (*s && *s != '=')
-	{
-		if (*s != '_' && !ft_isalnum(*s))
-			return (0);
-		s++;
-	}
-	return (1);
 }

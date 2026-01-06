@@ -129,7 +129,7 @@ t_env							*env_lookup_prev(t_env *env, t_env **prev,
 int								update_env(t_shell *shell, const char *arg,
 									t_env *env);
 void							update_pwds(t_shell *shell);
-int								is_valid_identifier(const char *s);
+const char						*is_valid_identifier(const char *s);
 
 // Expansion
 t_string						alloc_tstring(size_t size);
