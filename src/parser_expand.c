@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   parser_word.c                                      :+:      :+:    :+:   */
+/*   parser_expand.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -12,9 +12,9 @@
 
 #include "minishell.h"
 
-static int	init_expand_vars(t_expand *exp, t_string *str, t_token *tok);
 static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag);
 static void	append_char(char *c, char *end, t_token_type *flag, t_string *str);
+static int	init_expand_vars(t_expand *expand, t_string *str, t_token *tok);
 static int	is_fully_quoted(const char *raw, size_t len);
 
 /*
@@ -61,6 +61,20 @@ static int	init_expand_vars(t_expand *exp, t_string *str, t_token *tok)
 	return (0);
 }
 
+static int	is_fully_quoted(const char *raw, size_t len)
+{
+	const char	*p;
+
+	if (len < 2)
+		return (0);
+	if (*raw != '\'' && *raw != '\"')
+		return (0);
+	p = ft_memchr(raw + 1, *raw, len - 1);
+	if (!p)
+		return (0);
+	return (p == raw + len - 1);
+}
+
 /*
 DESCRIPTION:
 	Determines if the character at position s should be expanded.
@@ -103,24 +117,4 @@ static void	append_char(char *s, char *end, t_token_type *quote_state,
 	*quote_state = update_quote_flag(*s, *quote_state);
 	if (*quote_state == old_flag)
 		str->s[(str->len)++] = *s;
-}
-
-/*
-DESCRIPTION:
-	Checks if the word is fully quoted.
-	Returns 1 if the word is fully quoted, 0 otherwise.
-*/
-
-static int	is_fully_quoted(const char *raw, size_t len)
-{
-	const char	*p;
-
-	if (len < 2)
-		return (0);
-	if (*raw != '\'' && *raw != '\"')
-		return (0);
-	p = ft_memchr(raw + 1, *raw, len - 1);
-	if (!p)
-		return (0);
-	return (p == raw + len - 1);
 }

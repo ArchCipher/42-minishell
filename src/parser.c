@@ -85,9 +85,9 @@ static int	process_token(t_token **head, t_token **cur, t_token *prev,
 		return (0);
 	if (expand_word_token(*cur, prev, shell))
 		return (1);
-	if (!(*cur)->quoted && is_target_fd(*cur))
-		return (0);
 	if ((*cur)->quoted || !(*cur)->word)
+		return (0);
+	if (!(*cur)->quoted && is_target_fd(*cur))
 		return (0);
 	if (!*(*cur)->word)
 		return (del_one_token(head, prev, cur), 2);

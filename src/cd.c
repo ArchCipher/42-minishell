@@ -49,8 +49,6 @@ static int	do_cd(char **args, t_shell *shell)
 	const char	*dir;
 
 	dir = args[1];
-	if (args[1] && args[2])
-		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
 	if (!dir && (!shell->home || !shell->home->value))
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
 	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2]))

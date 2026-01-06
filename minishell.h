@@ -20,10 +20,10 @@
 # include <fcntl.h>  // open
 # include <limits.h> // LONG_MAX (ft_atoi)
 // stdio.h must be included before readline.h
+# include <stdio.h>             // readline, perror
 # include <readline/history.h>  // readline (linux)
 # include <readline/readline.h> // readline
 # include <signal.h>            // sigaction, sigemptyset, sigaddset
-# include <stdio.h>             // readline, perror
 # include <stdlib.h>            // malloc, free, exit
 # include <string.h>            // strerror
 # include <sys/stat.h>          // stat

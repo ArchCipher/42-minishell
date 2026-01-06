@@ -117,6 +117,14 @@ typedef struct s_cmd
 	struct s_cmd	*sub;
 }					t_cmd;
 
+typedef struct s_expand
+{
+	t_token_type	quote_state;
+	char			*p;
+	char			*end;
+	bool			unquoted_var;
+}					t_expand;
+
 typedef struct s_token
 {
 	t_token_type	type;
