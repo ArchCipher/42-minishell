@@ -13,6 +13,7 @@
 #include "minishell.h"
 
 static int		print_exported_vars(t_env *env);
+static void		update_shell_env(char *arg, t_shell *shell);
 static t_env	**env_list_to_array(t_env *env, size_t len);
 static size_t	count_exported_vars(t_env *env);
 
@@ -26,7 +27,8 @@ DESCRIPTION:
 
 int	exec_export(char **args, t_shell *shell)
 {
-	char	*cmd;
+	char		*cmd;
+	const char	*equal;
 
 	cmd = *(args++);
 	if (!*args)
@@ -35,19 +37,12 @@ int	exec_export(char **args, t_shell *shell)
 		return (perr_tok_msg(cmd, *args, 2, E_OPTION), 2);
 	while (*args)
 	{
-		if (!is_valid_identifier(*args))
+		equal = is_valid_identifier(*args);
+		if (!equal)
 			return (perr_msg(cmd, *args, E_EXPORT, true), 1);
 		if (update_env(shell, *args, env_lookup(shell->env, *args)))
 			return (perror(MINI), 1);
-		if (!shell->pwd && !ft_strncmp(*args, "PWD", 3) && ((*args)[3] == '='
-			|| ((*args)[3] == '+' && (*args)[4] == '=')))
-			shell->pwd = env_lookup(shell->env, *args);
-		else if (!shell->oldpwd && !ft_strncmp(*args, "OLDPWD", 6)
-			&& ((*args)[6] == '=' || ((*args)[6] == '+' && (*args)[7] == '=')))
-			shell->oldpwd = env_lookup(shell->env, *args);
-		else if (!shell->home && !ft_strncmp(*args, "HOME", 4)
-			&& ((*args)[4] == '=' || ((*args)[4] == '+' && (*args)[5] == '=')))
-			shell->home = env_lookup(shell->env, *args);
+		update_shell_env(*args, shell);
 		args++;
 	}
 	return (0);
@@ -90,6 +85,19 @@ static int	print_exported_vars(t_env *env)
 		i++;
 	}
 	return (free(arr), ret);
+}
+
+static void	update_shell_env(char *arg, t_shell *shell)
+{
+	if (!shell->pwd && !ft_strncmp(arg, "PWD", 3) && (!arg[3] || arg[3] == '='
+			|| (arg[3] == '+' && arg[4] == '=')))
+		shell->pwd = env_lookup(shell->env, arg);
+	else if (!shell->oldpwd && !ft_strncmp(arg, "OLDPWD", 6) && (!arg[6]
+			|| arg[6] == '=' || (arg[6] == '+' && arg[7] == '=')))
+		shell->oldpwd = env_lookup(shell->env, arg);
+	else if (!shell->home && !ft_strncmp(arg, "HOME", 4) && (!arg[4]
+			|| arg[4] == '=' || (arg[4] == '+' && arg[5] == '=')))
+		shell->home = env_lookup(shell->env, arg);
 }
 
 /*

@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:39 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 14:41:04 by kmurugan          ###   ########.fr       */
+/*   Updated: 2026/01/06 14:41:04 by kmurugan          ###   ########.fr      */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,8 @@ t_env	*env_lookup_prev(t_env *env, t_env **prev, const char *arg)
 	*prev = NULL;
 	key_len = ft_strlen(arg);
 	equal = is_valid_identifier(arg);
+	if (equal && !*equal)
+		equal = NULL;
 	if (equal && equal > arg && *(equal - 1) == '+')
 		key_len = equal - arg - 1;
 	else if (equal)
@@ -70,4 +72,3 @@ t_env	*env_lookup_prev(t_env *env, t_env **prev, const char *arg)
 	}
 	return (NULL);
 }
-

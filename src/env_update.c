@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:39 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 14:41:04 by kmurugan          ###   ########.fr       */
+/*   Updated: 2026/01/06 14:41:04 by kmurugan          ###   ########.fr      */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,8 @@ static t_env	*create_env(const char *envp);
 DESCRIPTION:
 	Checks if the key is a valid identifier and returns a pointer to the '='
 	character, or NULL if invalid or no assignment found.
-	Returns pointer to '=' for 'KEY=value' or 'KEY+=value', NULL otherwise.
+	Returns pointer to '=' for 'KEY=value' or 'KEY+=value', pointer to null
+	terminator if valid identifier without '='.
 
 NOTE:
 	KEY must start with an alphabet or underscore and can only contain
@@ -36,11 +37,29 @@ const char	*is_valid_identifier(const char *s)
 			return (NULL);
 		s++;
 	}
+	if (!*s)
+		return (s);
 	if (*s == '+')
 		s++;
 	if (*s != '=')
 		return (NULL);
 	return (s);
+}
+
+static int	update_value(const char *equal, const char *arg, t_env *env)
+{
+	char	*value;
+
+	if (equal > arg && *(equal - 1) == '+' && env->value)
+		value = ft_strjoin(env->value, equal + 1);
+	else
+		value = ft_strdup(equal + 1);
+	if (!value)
+		return (1);
+	free(env->value);
+	env->value = value;
+	env->exported = true;
+	return (0);
 }
 
 /*
@@ -53,7 +72,6 @@ DESCRIPTION:
 int	update_env(t_shell *shell, const char *arg, t_env *env)
 {
 	const char	*equal;
-	char		*value;
 
 	if (!env)
 	{
@@ -67,32 +85,38 @@ int	update_env(t_shell *shell, const char *arg, t_env *env)
 	equal = is_valid_identifier(arg);
 	if (!equal)
 		return (1);
-	if (equal > arg && *(equal - 1) == '+' && env->value)
-		value = ft_strjoin(env->value, equal + 1);
-	else
-		value = ft_strdup(equal + 1);
-	if (!value)
-		return (free(env->value), 1);
-	free(env->value);
-	env->value = value;
-	env->exported = true;
+	if (!*equal)
+	{
+		env->exported = true;
+		return (0);
+	}
+	if (update_value(equal, arg, env))
+		return (1);
 	return (0);
 }
 
-char	*create_key(const char *envp, const char *equal)
+static	int	update_key_value(const char *envp, t_env *new)
 {
-	if (!equal)
-		return (ft_strdup(envp));
-	if (equal > envp && *(equal - 1) == '+')
-		return (ft_strndup(envp, equal - envp - 1));
-	return (ft_strndup(envp, equal - envp));
-}
+	const char	*equal;
 
-char	*create_value(const char *equal)
-{
+	equal = is_valid_identifier(envp);
+	if (equal && !*equal)
+		equal = NULL;
 	if (!equal)
-		return (NULL);
-	return (ft_strdup(equal + 1));
+		new->key = ft_strdup(envp);
+	else if (equal > envp && *(equal - 1) == '+')
+		new->key = ft_strndup(envp, equal - envp - 1);
+	else
+		new->key = ft_strndup(envp, equal - envp);
+	if (!new->key)
+		return (1);
+	if (!equal || !*equal)
+		new->value = NULL;
+	else
+		new->value = ft_strdup(equal + 1);
+	if (equal && *equal && !new->value)
+		return (free(new->key), 1);
+	return (0);
 }
 
 /*
@@ -105,21 +129,14 @@ DESCRIPTION:
 static t_env	*create_env(const char *envp)
 {
 	t_env		*new;
-	const char	*equal;
 
 	new = malloc(sizeof(t_env));
 	if (!new)
 		return (NULL);
 	new->exported = false;
 	new->next = NULL;
-	equal = is_valid_identifier(envp);
-	new->key = create_key(envp, equal);
-	if (!new->key)
+	if (update_key_value(envp, new))
 		return (free(new), NULL);
-	new->value = create_value(equal);
-	if (equal && !new->value)
-		return (free(new->key), free(new), NULL);
 	new->exported = true;
 	return (new);
 }
-

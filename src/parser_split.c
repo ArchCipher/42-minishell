@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/06 14:41:34 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 17:36:27 by kmurugan          ###   ########.fr       */
+/*   Updated: 2026/01/06 17:36:27 by kmurugan          ###   ########.fr      */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ DESCRIPTION:
 */
 
 static int	insert_token(t_token **head, t_token **prev, t_token *next,
-				const char *tok)
+		const char *tok)
 {
 	t_token	*new;
 	char	*word;
@@ -68,4 +68,3 @@ static int	insert_token(t_token **head, t_token **prev, t_token *next,
 	*prev = new;
 	return (0);
 }
-

@@ -37,7 +37,6 @@ int	fork_with_pipe(t_cmd *cmd, t_shell *shell)
 	int	*pipe_fd;
 
 	pipe_fd = NULL;
-
 	if (cmd->next && cmd->next->con == PIPE_CHAR)
 	{
 		if (pipe(fd) == -1)

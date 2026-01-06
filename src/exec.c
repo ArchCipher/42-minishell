@@ -38,7 +38,8 @@ int	exec_cmds(t_cmd *cmd, t_shell *shell)
 		return (exec_in_parent(cmd, shell));
 	while (cmd)
 	{
-		if ((cmd->con == OR && !shell->status) || (cmd->con == AND && shell->status))
+		if ((cmd->con == OR && !shell->status) || (cmd->con == AND
+				&& shell->status))
 			return (shell->status);
 		cmd->exec.builtin = is_builtin(cmd->args);
 		fork_with_pipe(cmd, shell);
