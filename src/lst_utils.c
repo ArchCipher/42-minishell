@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:03 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 14:41:30 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 17:29:29 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,9 +89,9 @@ DESCRIPTION:
 
 void	free_cmds(t_cmd *cmds)
 {
+	t_cmd	*cmd;
 	t_cmd	*tmp;
 	t_redir	*cur_redir;
-	t_cmd	*cmd;
 
 	cmd = cmds;
 	while (cmd)

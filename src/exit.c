@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:47 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 19:12:14 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 18:19:52 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,13 +66,10 @@ int	exec_exit(char **s)
 	if (s[1] == NULL)
 		return (0);
 	n = status_atoi(s[1]) & EXIT_STATUS_MASK;
+	if (errno != EINVAL && s[2])
+		return (perr_msg(*s, E_MANY_ARGS, NULL, false), 1);
 	if (!*s[1] || errno == EINVAL)
 		return (perr_msg(*s, s[1], E_EXIT_CODE, false), EXIT_NUMERIC_ERROR);
-	else if (s[2])
-	{
-		perr_msg(*s, E_MANY_ARGS, NULL, false);
-		n = 1;
-	}
 	return (n);
 }
 

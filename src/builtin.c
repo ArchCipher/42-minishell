@@ -6,14 +6,14 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 14:01:35 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 14:40:57 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 18:04:29 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
 static int	exec_echo(char **args);
-static int	exec_env(t_env *env);
+static int	exec_env(char **args, t_env *env);
 
 /*
 DESCRIPTION:
@@ -34,8 +34,8 @@ int	exec_builtin(t_cmd *cmd, t_shell *shell)
 		return (exec_pwd());
 	else if (cmd->exec.builtin == BUILTIN_EXPORT)
 		return (exec_export(cmd->args, shell));
-	else if (cmd->exec.builtin == BUILTIN_ENV && !cmd->args[1])
-		return (exec_env(shell->env));
+	else if (cmd->exec.builtin == BUILTIN_ENV)
+		return (exec_env(cmd->args, shell->env));
 	else if (cmd->exec.builtin == BUILTIN_UNSET)
 		return (exec_unset(cmd->args, shell));
 	else if (cmd->exec.builtin == BUILTIN_EXIT)
@@ -117,10 +117,12 @@ NOTE:
 	ft_dprintf() is used instead of printf() to avoid buffer flushing issues.
 */
 
-static int	exec_env(t_env *env)
+static int	exec_env(char **args, t_env *env)
 {
 	int	ret;
 
+	if (args[1])
+		return (perr_msg(*args, args[1], E_OPTION, false), 2);
 	ret = 0;
 	while (env)
 	{

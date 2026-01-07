@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:27:07 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 15:36:57 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 15:55:21 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,19 +86,19 @@ int	main(int ac, char **av, char **envp)
 	if (ac != 1)
 		return (perr_msg(E_MANY_ARGS, NULL, NULL, false), 1);
 	init_shell(envp, &shell);
-	input = readline(PROMPT);
-	while (input)
+	while (1)
 	{
+		input = readline(PROMPT);
 		shell.line_num++;
 		if (g_signal == SIGINT)
 			handle_shell_signal(&shell.status);
-		add_history(input);
+		if (!input)
+			break ;
 		cmds = parse_input(input, &shell);
 		free(input);
 		if (cmds && !process_heredoc(cmds, &shell))
 			shell.status = exec_cmds(cmds, &shell);
 		free_cmds(cmds);
-		input = readline(PROMPT);
 	}
 	if (isatty(STDIN_FILENO))
 		write(STDOUT_FILENO, "exit\n", 5);
@@ -118,6 +118,7 @@ static t_cmd	*parse_input(char *input, t_shell *shell)
 	t_cmd	*cmds;
 
 	errno = 0;
+	add_history(input);
 	tokens = tokenise_input(input);
 	tokens = parse_tokens(tokens, shell);
 	if (!tokens && errno == EINVAL)

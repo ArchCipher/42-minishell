@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:45 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 21:50:37 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 18:29:23 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 static int	is_builtin(char **s);
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell);
-static int	restore_fds(int actual_stdin, int actual_stdout, int ret);
+static int	restore_fds(int actual_stdin, int o_stdout, int o_stderr, int ret);
 static int	cmds_waitpid(t_cmd **cmd);
 
 /*
@@ -92,25 +92,29 @@ NOTE:
 
 static int	exec_in_parent(t_cmd *cmd, t_shell *shell)
 {
-	int	actual_stdin;
-	int	actual_stdout;
+	int	o_stdin;
+	int	o_stdout;
+	int	o_stderr;
 	int	ret;
 
-	actual_stdout = dup(STDOUT_FILENO);
-	if (actual_stdout == -1)
+	o_stdout = dup(STDOUT_FILENO);
+	if (o_stdout == -1)
 		return (perror(MINI), 1);
-	actual_stdin = dup(STDIN_FILENO);
-	if (actual_stdin == -1)
-		return (close(actual_stdout), perror(MINI), 1);
+	o_stdin = dup(STDIN_FILENO);
+	if (o_stdin == -1)
+		return (close(o_stdout), perror(MINI), 1);
+	o_stderr = dup(STDERR_FILENO);
+	if (o_stderr == -1)
+		return (close(o_stdout), close(o_stdin), perror(MINI), 1);
 	if (setup_redirs(cmd->redirs))
-		return (restore_fds(actual_stdin, actual_stdout, 1));
-	if (isatty(actual_stdout) && cmd->exec.builtin == BUILTIN_EXIT
-		&& (!cmd->args[1] || (cmd->args[1] && !cmd->args[2])))
-		write(actual_stdout, "exit\n", 5);
+		return (restore_fds(o_stdin, o_stdout, o_stderr, 1));
+	if (isatty(o_stdout) && cmd->exec.builtin == BUILTIN_EXIT)
+		write(o_stdout, "exit\n", 5);
 	ret = exec_builtin(cmd, shell);
-	ret = restore_fds(actual_stdin, actual_stdout, ret);
-	if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1] || (cmd->args[1]
-				&& !cmd->args[2])))
+	ret = restore_fds(o_stdin, o_stdout, o_stderr, ret);
+	if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1]
+			|| (cmd->args[1] && !cmd->args[2])
+			|| (cmd->args[2] && errno == EINVAL)))
 		exit_shell(ret, cmd, shell);
 	return (ret);
 }
@@ -121,16 +125,18 @@ DESCRIPTION:
 	Returns the exit status of the builtin execution or 1 on error.
 */
 
-static int	restore_fds(int actual_stdin, int actual_stdout, int ret)
+static int	restore_fds(int o_stdin, int o_stdout, int o_stderr, int ret)
 {
-	if ((dup2(actual_stdin, STDIN_FILENO) == -1) || (dup2(actual_stdout,
-				STDOUT_FILENO) == -1))
+	if ((dup2(o_stdin, STDIN_FILENO) == -1)
+		|| (dup2(o_stdout, STDOUT_FILENO) == -1)
+		|| (dup2(o_stderr, STDERR_FILENO) == -1))
 	{
 		perror(MINI);
 		ret = 1;
 	}
-	close(actual_stdin);
-	close(actual_stdout);
+	close(o_stdin);
+	close(o_stdout);
+	close(o_stderr);
 	return (ret);
 }
 

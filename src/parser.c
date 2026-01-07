@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/09 13:47:52 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 21:14:20 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 16:47:01 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 static int	process_token(t_token **head, t_token **cur, t_token *prev,
 				t_shell *shell);
+static int	is_target_fd(t_token *cur);
 static int	update_paren_depth(t_token *cur, int *depth);
 static int	is_valid_token(t_token_type t1, t_token_type t2);
 
@@ -52,21 +53,21 @@ t_token	*parse_tokens(t_token *head, t_shell *shell)
 	return (head);
 }
 
-int	is_target_fd(t_token *cur)
-{
-	char	*p;
-	size_t	i;
+/*
+DESCRIPTION:
+	Updates the parenthesis depth counter based on the current token type.
+	Returns 0 on success, 1 if an unmatched closing parenthesis is found.
+*/
 
-	p = cur->raw;
-	if (!cur->next || !is_type_redir(cur->next->type))
-		return (0);
-	i = 0;
-	while (i < cur->len && ft_isdigit(p[i]))
-		i++;
-	if (i != cur->len || !is_redir(p[i]))
-		return (0);
-	cur->type = TARGET_FD;
-	return (1);
+static int	update_paren_depth(t_token *cur, int *depth)
+{
+	if (cur->type == L_PAREN)
+		(*depth)++;
+	else if (cur->type == R_PAREN && *depth)
+		(*depth)--;
+	else if (cur->type == R_PAREN && !*depth)
+		return (perr_token(cur->raw, cur->len), 1);
+	return (0);
 }
 
 /*
@@ -101,21 +102,21 @@ static int	process_token(t_token **head, t_token **cur, t_token *prev,
 	return (0);
 }
 
-/*
-DESCRIPTION:
-	Updates the parenthesis depth counter based on the current token type.
-	Returns 0 on success, 1 if an unmatched closing parenthesis is found.
-*/
-
-static int	update_paren_depth(t_token *cur, int *depth)
+static int	is_target_fd(t_token *cur)
 {
-	if (cur->type == L_PAREN)
-		(*depth)++;
-	else if (cur->type == R_PAREN && *depth)
-		(*depth)--;
-	else if (cur->type == R_PAREN && !*depth)
-		return (perr_token(cur->raw, cur->len), 1);
-	return (0);
+	char	*p;
+	size_t	i;
+
+	p = cur->raw;
+	if (!cur->next || !is_type_redir(cur->next->type))
+		return (0);
+	i = 0;
+	while (i < cur->len && ft_isdigit(p[i]))
+		i++;
+	if (i != cur->len || !is_redir(p[i]))
+		return (0);
+	cur->type = TARGET_FD;
+	return (1);
 }
 
 /*

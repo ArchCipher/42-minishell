@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/06 14:35:12 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 21:19:08 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/07 16:58:20 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,8 @@ int	build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 	while (*tok && ((*tok)->type == WORD || (*tok)->type == TARGET_FD
 			|| is_type_redir((*tok)->type)))
 	{
+		if (is_type_redir((*tok)->type) && !(*tok)->next)
+			return (perr_token((*tok)->raw, (*tok)->len), 0);
 		if ((*tok)->type == WORD)
 		{
 			cmd->args[i++] = (*tok)->word;
@@ -49,6 +51,35 @@ int	build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
 			return (0);
 		}
 	}
+	return (1);
+}
+
+/*
+DESCRIPTION:
+	Counts words until it reaches end of cmd / pipe character.
+	Returns the number of words found.
+	Although only defensive, returns -1 on leaks in the parser.
+*/
+
+static int	alloc_cmd_args(t_token *tok, t_cmd *cmd)
+{
+	ssize_t	word_count;
+
+	word_count = 0;
+	while (tok && (tok->type == WORD || is_type_redir(tok->type)))
+	{
+		if (tok->type == WORD)
+			word_count++;
+		else if (is_type_redir(tok->type))
+			tok = tok->next;
+		tok = tok->next;
+	}
+	if (!word_count)
+		return (1);
+	cmd->args = malloc(sizeof(char *) * (word_count + 1));
+	if (!cmd->args)
+		return (perror(MINI), 0);
+	cmd->args[word_count] = NULL;
 	return (1);
 }
 
@@ -82,9 +113,9 @@ static int	build_redir(t_token **tok, void **head, void **last)
 		*last = new;
 		*tok = (*tok)->next->next;
 	}
-	if (*tok && is_type_redir((*tok)->type) && !((*tok)->next
-			&& (*tok)->next->type == WORD))
-		return (perr_msg("build_redir", "parsing error", NULL, false), 0);
+	if (*tok && is_type_redir((*tok)->type) && (*tok)->next
+		&& (*tok)->next->type != WORD)
+		return (perr_token((*tok)->next->raw, (*tok)->next->len), 0);
 	return (1);
 }
 
@@ -97,33 +128,4 @@ static void	init_redir(t_redir *new, t_token *tok, int target_fd)
 	new->target_fd = target_fd;
 	new->quoted = tok->next->quoted;
 	new->next = NULL;
-}
-
-/*
-DESCRIPTION:
-	Counts words until it reaches end of cmd / pipe character.
-	Returns the number of words found.
-	Although only defensive, returns -1 on leaks in the parser.
-*/
-
-static int	alloc_cmd_args(t_token *tok, t_cmd *cmd)
-{
-	ssize_t	word_count;
-
-	word_count = 0;
-	while (tok && (tok->type == WORD || is_type_redir(tok->type)))
-	{
-		if (tok->type == WORD)
-			word_count++;
-		else if (is_type_redir(tok->type))
-			tok = tok->next;
-		tok = tok->next;
-	}
-	if (!word_count)
-		return (1);
-	cmd->args = malloc(sizeof(char *) * (word_count + 1));
-	if (!cmd->args)
-		return (perror(MINI), 0);
-	cmd->args[word_count] = NULL;
-	return (1);
 }
