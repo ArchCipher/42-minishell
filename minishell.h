@@ -81,7 +81,7 @@ t_env							*get_env(t_list *lst);
 
 // Parsing
 t_list							*tokenise_input(char *s);
-t_list							*parse_tokens(t_list *tokens, t_shell *shell);
+t_list							*parse_tokens(t_list *tokens);
 t_list							*parse_cmd_list(t_list **tokens);
 int								build_cmd(t_list **tokens, t_cmd *cmd,
 									t_list **last_redir);
@@ -143,11 +143,9 @@ void							update_pwds(t_shell *shell);
 const char						*is_valid_identifier(const char *s);
 
 // Expansion
-t_string						alloc_tstring(size_t size);
-const char						*get_var(char **token, char *end,
-									t_shell *shell);
-int								append_var(t_string *str, char **token,
-									char *end, t_shell *shell);
+t_expand						init_expand(char *src, size_t size);
+const char						*get_var(char **token, t_shell *shell);
+int								append_var(t_expand *s, t_shell *shell);
 int								dollar_expandable(char *s, char *end);
 
 // Signal

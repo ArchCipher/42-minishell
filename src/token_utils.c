@@ -31,7 +31,6 @@ t_list	*create_token(char *raw, t_token_type type, size_t len)
 	token->word = NULL;
 	token->type = type;
 	token->len = len;
-	token->quoted = false;
 	return (new);
 }
 
@@ -74,4 +73,49 @@ t_token_type	update_quote_flag(char c, t_token_type flag)
 	else if ((c == '\'' && flag == SQUOTE) || (c == '\"' && flag == DQUOTE))
 		return (WORD);
 	return (flag);
+}
+
+/*
+DESCRIPTION:
+	Checks if a string is fully quoted (starts and ends with matching quotes).
+	Returns 1 if fully quoted, 0 otherwise.
+*/
+
+int	is_fully_quoted(const char *raw, size_t len)
+{
+	const char	*p;
+
+	if (len < 2)
+		return (0);
+	if (*raw != '\'' && *raw != '\"')
+		return (0);
+	p = ft_memchr(raw + 1, *raw, len - 1);
+	if (!p)
+		return (0);
+	return (p == raw + len - 1);
+}
+
+/*
+DESCRIPTION:
+	Copies src to dst while removing quote characters.
+	Returns pointer to the null terminator in dst.
+*/
+
+char	*remove_quotes(char *dst, const char *src)
+{
+	t_token_type	old_flag;
+	t_token_type	flag;
+
+	old_flag = WORD;
+	while (*src)
+	{
+		flag = update_quote_flag(*src, old_flag);
+		if (flag == old_flag)
+			*dst++ = *src++;
+		else
+			src++;
+		old_flag = flag;
+	}
+	*dst = 0;
+	return (dst);
 }

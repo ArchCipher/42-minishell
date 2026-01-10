@@ -14,21 +14,23 @@
 
 /*
 DESCRIPTION:
-	Initializes a t_string structure with the specified capacity.
+	Initializes a t_expand structure with the specified capacity.
 	Allocates size + 1 bytes and sets cap to size, len to 0.
-	Returns initialized t_string. If malloc fails, returns t_string with
+	Returns initialized t_expand. If malloc fails, returns t_expand with
 	all fields set to 0/NULL.
 */
 
-t_string	alloc_tstring(size_t size)
+t_expand	init_expand(char *src, size_t size)
 {
-	t_string	str;
+	t_expand	str;
 
-	str.s = malloc(size + 1);
-	if (!str.s)
+	str.dst = malloc(size + 1);
+	if (!str.dst)
 		return (str);
 	str.cap = size;
 	str.len = 0;
+	str.src = src;
+	str.src_end = src + size;
 	return (str);
 }
 
@@ -45,28 +47,26 @@ NOTE:
 	invalid substitution.
 */
 
-int	append_var(t_string *str, char **token, char *end, t_shell *shell)
+int	append_var(t_expand *s, t_shell *shell)
 {
 	const char	*var;
 	size_t		var_len;
-	size_t		last;
 
-	var = get_var(token, end, shell);
+	var = get_var(&s->src, shell);
 	if (var == ((char *)-1))
 		return (1);
 	if (!var)
 		return (0);
 	var_len = ft_strlen(var);
-	last = end - *token;
-	if (str->cap < str->len + var_len + last)
+	if (s->cap < s->len + var_len + (s->src_end - s->src))
 	{
-		str->cap = str->len + var_len + last;
-		str->s = ft_realloc(str->s, str->len, (str->cap) + 1);
-		if (!str->s)
+		s->cap = s->len + var_len + (s->src_end - s->src);
+		s->dst = ft_realloc(s->dst, s->len, (s->cap) + 1);
+		if (!s->dst)
 			return (perror(MINI), 1);
 	}
-	ft_memcpy(str->s + (str->len), var, var_len);
-	str->len += var_len;
+	ft_memcpy(s->dst + (s->len), var, var_len);
+	s->len += var_len;
 	return (0);
 }
 

@@ -17,6 +17,7 @@ static int		build_redir(t_list **tokens, t_list **redirs,
 					t_list **last_redir);
 static t_list	*create_redir(t_list *tokens, int target_fd);
 static int		validate_redir(t_list *tokens);
+static int		get_target_fd(t_token *token);
 
 /*
 DESCRIPTION:
@@ -106,20 +107,15 @@ DESCRIPTION:
 
 static int	build_redir(t_list **tokens, t_list **redirs, t_list **last_redir)
 {
-	t_token	*token;
 	t_list	*new;
 	int		target_fd;
 
 	while (*tokens && (*tokens)->content)
 	{
-		token = get_tok(*tokens);
-		target_fd = -1;
-		if (token->type == TARGET_FD)
-		{
-			target_fd = ft_atoi(token->word);
+		target_fd = get_target_fd(get_tok(*tokens));
+		if (get_tok_type(*tokens) == TARGET_FD)
 			*tokens = (*tokens)->next;
-		}
-		if (!is_type_redir(token->type)
+		if (!is_type_redir(get_tok(*tokens)->type)
 			|| get_tok_type((*tokens)->next) != WORD)
 			break ;
 		new = create_redir(*tokens, target_fd);
@@ -131,6 +127,18 @@ static int	build_redir(t_list **tokens, t_list **redirs, t_list **last_redir)
 	if (*tokens && !validate_redir(*tokens))
 		return (0);
 	return (1);
+}
+
+static int	get_target_fd(t_token *token)
+{
+	if (token->type == TARGET_FD)
+		return (ft_atoi(token->raw));
+	if (token->type == REDIR_IN || token->type == HEREDOC)
+		return (STDIN_FILENO);
+	else if (token->type == REDIR_OUT || token->type == APPEND)
+		return (STDOUT_FILENO);
+	else
+		return (-1);
 }
 
 static t_list	*create_redir(t_list *tokens, int target_fd)
@@ -151,7 +159,6 @@ static t_list	*create_redir(t_list *tokens, int target_fd)
 	redir->flag = get_tok_type(tokens);
 	redir->fd = -1;
 	redir->target_fd = target_fd;
-	redir->quoted = next_token->quoted;
 	return (new);
 }
 

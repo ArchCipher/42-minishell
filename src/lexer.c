@@ -14,7 +14,6 @@
 
 static t_list		*get_token(char *s);
 static t_token_type	get_nonword_tok_type(char *s);
-static size_t		get_nonword_tok_len(t_token_type type);
 static size_t		get_word_tok_len(char *s);
 
 /*
@@ -26,7 +25,6 @@ DESCRIPTION:
 t_list	*tokenise_input(char *s)
 {
 	t_list_info	tokens;
-	t_token		*tok;
 
 	tokens.head = NULL;
 	tokens.last = NULL;
@@ -40,11 +38,7 @@ t_list	*tokenise_input(char *s)
 		if (!tokens.new)
 			return (ft_lstclear(&tokens.head, free_token), NULL);
 		ft_lstadd_back(&tokens.head, tokens.new, &tokens.last);
-		tok = get_tok(tokens.new);
-		if (tok->type == WORD && (ft_memchr(tok->raw, '\'', tok->len)
-				|| ft_memchr(tok->raw, '\"', tok->len)))
-			tok->quoted = true;
-		s += tok->len;
+		s += get_tok(tokens.new)->len;
 	}
 	return (tokens.head);
 }
@@ -60,7 +54,9 @@ static t_list	*get_token(char *s)
 		type = get_nonword_tok_type(s);
 		if (type == NONE)
 			return (NULL);
-		len = get_nonword_tok_len(type);
+		len = 1;
+		if (type == APPEND || type == HEREDOC || type == OR || type == AND)
+			len = 2;
 	}
 	else
 		len = get_word_tok_len(s);
@@ -103,23 +99,6 @@ static t_token_type	get_nonword_tok_type(char *s)
 
 /*
 DESCRIPTION:
-	Returns the length of a token based on its type.
-	Multi-character tokens (APPEND, HEREDOC, OR, AND) return 2,
-	single-character tokens return 1, others return 0.
-*/
-
-static size_t	get_nonword_tok_len(t_token_type type)
-{
-	if (type == APPEND || type == HEREDOC || type == OR || type == AND)
-		return (2);
-	if (type == REDIR_IN || type == REDIR_OUT || type == PIPE_CHAR
-		|| type == L_PAREN || type == R_PAREN)
-		return (1);
-	return (0);
-}
-
-/*
-DESCRIPTION:
 	Parses the word token and returns the length of the word.
 */
 
@@ -144,3 +123,4 @@ static size_t	get_word_tok_len(char *s)
 	}
 	return (p - s);
 }
+

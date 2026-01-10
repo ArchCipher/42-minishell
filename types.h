@@ -61,19 +61,19 @@ typedef struct s_shell
 	struct termios	original_term;
 }					t_shell;
 
-typedef struct s_list_info
-{
-	t_list			*head;
-	t_list			*last;
-	t_list			*new;
-}					t_list_info;
-
 typedef struct s_env
 {
 	char			*key;
 	char			*value;
 	bool			exported;
 }					t_env;
+
+typedef struct s_list_info
+{
+	t_list			*head;
+	t_list			*last;
+	t_list			*new;
+}					t_list_info;
 
 typedef struct s_token
 {
@@ -109,14 +109,6 @@ typedef struct s_cmd
 	t_list			*subshell;
 }					t_cmd;
 
-typedef struct s_expand
-{
-	t_token_type	quote_state;
-	char			*p;
-	char			*end;
-	bool			unquoted_var;
-}					t_expand;
-
 typedef struct s_strtok
 {
 	const char		*token;
@@ -124,11 +116,13 @@ typedef struct s_strtok
 	char			*str;
 }					t_strtok;
 
-typedef struct s_string
+typedef struct s_expand
 {
-	char			*s;
+	char			*dst;
 	size_t			len;
 	size_t			cap;
-}					t_string;
+	char			*src;
+	char			*src_end;
+}					t_expand;
 
 #endif

@@ -13,8 +13,8 @@
 #include "minishell.h"
 
 static int	handle_heredoc(t_redir *redir, t_shell *shell);
-static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell);
-static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell);
+static int	exec_heredoc(char *limiter, int fd, t_shell *shell);
+static int	expand_dollar(char **line, size_t *len, t_shell *shell);
 static int	wait_heredoc_child(pid_t pid);
 
 /*
@@ -33,7 +33,6 @@ int	process_heredoc(t_list *cmds, t_shell *shell)
 {
 	t_list	*head;
 	t_list	*redirs;
-	t_redir	*redir;
 
 	head = cmds;
 	while (cmds && cmds->content)
@@ -41,10 +40,9 @@ int	process_heredoc(t_list *cmds, t_shell *shell)
 		redirs = get_cmd(cmds)->redirs;
 		while (redirs && redirs->content)
 		{
-			redir = get_redir(redirs);
-			if (redir->flag == HEREDOC)
+			if (get_redir(redirs)->flag == HEREDOC)
 			{
-				shell->status = handle_heredoc(redir, shell);
+				shell->status = handle_heredoc(get_redir(redirs), shell);
 				if (shell->status == 1)
 					return (1);
 				if (shell->status == -1)
@@ -84,12 +82,13 @@ static int	handle_heredoc(t_redir *redir, t_shell *shell)
 		if (set_signal_handlers(SIG_DFL, SIG_IGN))
 			exit(close_fds_error(fd, -1));
 		close(fd[0]);
-		exit(exec_heredoc(redir->file, fd[1], redir->quoted, shell));
+		exit(exec_heredoc(redir->file, fd[1], shell));
 	}
 	close(fd[1]);
 	redir->fd = fd[0];
 	return (wait_heredoc_child(pid));
 }
+
 
 /*
 DESCRIPTION:
@@ -98,18 +97,21 @@ DESCRIPTION:
 	It returns 0 on success, 1 on error.
 */
 
-static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
+static int	exec_heredoc(char *limiter, int fd, t_shell *shell)
 {
 	char	*line;
 	size_t	len;
+	bool	quoted;
 
+	quoted = (ft_strchr(limiter, '\'') || ft_strchr(limiter, '"'));
+	remove_quotes(limiter, limiter);
 	line = readline("> ");
 	while (line && ft_strcmp(line, limiter))
 	{
 		shell->line_num++;
 		len = ft_strlen(line);
-		if (!quoted && ft_memchr(line, '$', len) && !expand_dollar(&line, line
-				+ len, &len, shell))
+		if (!quoted && ft_memchr(line, '$', len)
+			&& expand_dollar(&line, &len, shell))
 			return (free(line), close(fd), 1);
 		if (write(fd, line, len) == -1 || write(fd, "\n", 1) == -1)
 			return (perror(MINI), free(line), close(fd), 1);
@@ -130,27 +132,25 @@ DESCRIPTION:
 	dollar sign. Returns 0 on success, 1 on error.
 */
 
-static int	expand_dollar(char **line, char *end, size_t *len, t_shell *shell)
+static int	expand_dollar(char **src, size_t *len, t_shell *shell)
 {
-	t_string	str;
-	char		*current;
+	t_expand	s;
 
-	str = alloc_tstring(*len);
-	if (!str.s)
-		return (perror(MINI), 0);
-	current = *line;
-	while (*current)
+	s = init_expand(*src, *len);
+	if (!s.dst)
+		return (perror(MINI), 1);
+	while (s.src < s.src_end)
 	{
-		if (!dollar_expandable(current, end))
-			str.s[str.len++] = *(current++);
-		else if (append_var(&str, &current, end, shell))
-			return (free(str.s), 0);
+		if (!dollar_expandable(s.src, s.src_end))
+			s.dst[s.len++] = *(s.src++);
+		else if (append_var(&s, shell))
+			return (free(s.dst), 1);
 	}
-	str.s[str.len] = 0;
-	free(*line);
-	*line = str.s;
-	*len = str.len;
-	return (1);
+	s.dst[s.len] = 0;
+	free(*src);
+	*src = s.dst;
+	*len = s.len;
+	return (0);
 }
 
 /*

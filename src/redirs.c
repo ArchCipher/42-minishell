@@ -12,7 +12,6 @@
 
 #include "minishell.h"
 
-static void	get_target_fd(t_redir *redir);
 static int	open_redir_file(const t_redir *redir);
 
 /*
@@ -38,7 +37,6 @@ int	setup_redirs(t_list *redirs)
 		redir->fd = open_redir_file(redir);
 		if (redir->fd == -1)
 			return (perr_msg(redir->file, strerror(errno), NULL, false), 1);
-		get_target_fd(redir);
 		if (dup2(redir->fd, redir->target_fd) == -1)
 		{
 			close(redir->fd);
@@ -50,16 +48,6 @@ int	setup_redirs(t_list *redirs)
 		redirs = redirs->next;
 	}
 	return (0);
-}
-
-static void	get_target_fd(t_redir *redir)
-{
-	if (redir->target_fd != -1)
-		return ;
-	if (redir->flag == REDIR_IN || redir->flag == HEREDOC)
-		redir->target_fd = STDIN_FILENO;
-	else if (redir->flag == REDIR_OUT || redir->flag == APPEND)
-		redir->target_fd = STDOUT_FILENO;
 }
 
 /*

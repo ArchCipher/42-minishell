@@ -12,10 +12,10 @@
 
 #include "minishell.h"
 
-static void			status_int_to_str(t_shell *shell);
-static const char	*expand_env_var(char **token, char *end, t_list *envs);
-static int			is_valid_var_subst(char *token, size_t len);
-static size_t		count_digits(int n, int base);
+static void		status_int_to_str(t_shell *shell);
+static const char	*expand_env_var(char **token, t_list *envs);
+// static int		is_valid_var_subst(char *token, size_t len);
+static size_t	count_digits(int n, int base);
 
 /*
 DESCRIPTION:
@@ -29,22 +29,22 @@ NOTE:
 	invalid substitution.
 */
 
-const char	*get_var(char **token, char *end, t_shell *shell)
+const char	*get_var(char **str, t_shell *shell)
 {
 	t_env	*home;
 
-	if (**token == '~')
+	if (**str == '~')
 	{
-		(*token)++;
+		(*str)++;
 		home = get_env(shell->home);
 		if (home && home->value)
 			return (home->value);
 		return (NULL);
 	}
-	(*token)++;
-	if (**token != '?')
-		return (expand_env_var(token, end, shell->env));
-	(*token)++;
+	(*str)++;
+	if (**str != '?')
+		return (expand_env_var(str, shell->env))
+	(*str)++;
 	status_int_to_str(shell);
 	return (shell->exit_code);
 }
@@ -84,30 +84,29 @@ NOTE:
 	compared to detect invalid substitution.
 */
 
-static const char	*expand_env_var(char **token, char *end, t_list *envs)
+// maybe should err when no closing brackets
+
+static const char	*expand_env_var(char **str, t_list *envs)
 {
-	const char	*env_var;
+	const char	*var;
 	char		*start;
 	char		*tmp;
 
-	start = *token;
-	while (*token < end && (**token == '_' || ft_isalnum(**token)))
-		(*token)++;
-	if (*token == start && **token == '{')
-	{
-		if (!is_valid_var_subst(*token, end - *token))
-			return (((char *)-1));
-		start = *token + 1;
-		*token = ft_memchr(*token, '}', end - *token);
-	}
-	tmp = ft_strndup(start, *token - start);
+	if (**str == '{')
+		(*str)++;
+	start = *str;
+	while (**str && (**str == '_' || ft_isalnum(**str)))
+		(*str)++;
+	if (*str - start == 0)
+		return (perr_msg(E_ENV, NULL, NULL, false), ((char *)-1));
+	tmp = ft_strndup(start, *str - start);
 	if (!tmp)
 		return (perror(MINI), ((char *)-1));
-	env_var = ft_getenv(envs, tmp);
+	var = ft_getenv(envs, tmp);
 	free(tmp);
-	if (**token == '}')
-		(*token)++;
-	return (env_var);
+	if (**str == '}')
+		(*str)++;
+	return (var);
 }
 
 /*
@@ -117,26 +116,26 @@ DESCRIPTION:
 */
 // ft_dprintf("%s: %s\n", MINI, E_ENV);
 
-static int	is_valid_var_subst(char *token, size_t len)
-{
-	size_t	i;
+// static int	is_valid_var_subst(char *token, size_t len)
+// {
+// 	size_t	i;
 
-	if (token[len - 1] == '\'' || token[len - 1] == '\"')
-		len--;
-	if (len == 1)
-		return (perr_msg(E_ENV, NULL, NULL, false), 0);
-	i = 1;
-	while (i < len && (token[i] == '_' || ft_isalnum(token[i])))
-		i++;
-	if (token[i] != '}')
-	{
-		ft_dprintf(STDERR_FILENO, "%s: $", MINI);
-		write(STDERR_FILENO, token, len);
-		ft_dprintf(STDERR_FILENO, ": %s\n", E_ENV);
-		return (0);
-	}
-	return (1);
-}
+// 	if (token[len - 1] == '\'' || token[len - 1] == '\"')
+// 		len--;
+// 	if (len == 1)
+// 		return (perr_msg(E_ENV, NULL, NULL, false), 0);
+// 	i = 1;
+// 	while (i < len && (token[i] == '_' || ft_isalnum(token[i])))
+// 		i++;
+// 	if (token[i] != '}')
+// 	{
+// 		ft_dprintf(STDERR_FILENO, "%s: $", MINI);
+// 		write(STDERR_FILENO, token, len);
+// 		ft_dprintf(STDERR_FILENO, ": %s\n", E_ENV);
+// 		return (0);
+// 	}
+// 	return (1);
+// }
 
 /*
 DESCRIPTION:

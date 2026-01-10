@@ -121,7 +121,7 @@ static t_list	*parse_input(char *input, t_shell *shell)
 	errno = 0;
 	add_history(input);
 	tokens = tokenise_input(input);
-	tokens = parse_tokens(tokens, shell);
+	tokens = parse_tokens(tokens);
 	if (!tokens && errno == EINVAL)
 		return (shell->status = EXIT_INVAL_OPTION, NULL);
 	tmp = tokens;
