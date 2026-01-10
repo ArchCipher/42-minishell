@@ -12,8 +12,8 @@
 
 #include "minishell.h"
 
-static void	get_target_fd(t_redir *redirs);
-static int	open_redir_file(const t_redir *redirs);
+static void	get_target_fd(t_redir *redir);
+static int	open_redir_file(const t_redir *redir);
 
 /*
 DESCRIPTION:
@@ -28,37 +28,38 @@ NOTE:
 	redirs->fd is set to -1 after closing, to avoid double close.
 */
 
-int	setup_redirs(t_redir *redirs)
+int	setup_redirs(t_list *redirs)
 {
-	if (!redirs)
-		return (0);
-	while (redirs)
+	t_redir	*redir;
+
+	while (redirs && redirs->content)
 	{
-		redirs->fd = open_redir_file(redirs);
-		if (redirs->fd == -1)
-			return (perr_msg(redirs->file, strerror(errno), NULL, false), 1);
-		get_target_fd(redirs);
-		if (dup2(redirs->fd, redirs->target_fd) == -1)
+		redir = get_redir(redirs);
+		redir->fd = open_redir_file(redir);
+		if (redir->fd == -1)
+			return (perr_msg(redir->file, strerror(errno), NULL, false), 1);
+		get_target_fd(redir);
+		if (dup2(redir->fd, redir->target_fd) == -1)
 		{
-			close(redirs->fd);
-			redirs->fd = -1;
+			close(redir->fd);
+			redir->fd = -1;
 			return (perror(MINI), 1);
 		}
-		close(redirs->fd);
-		redirs->fd = -1;
+		close(redir->fd);
+		redir->fd = -1;
 		redirs = redirs->next;
 	}
 	return (0);
 }
 
-static void	get_target_fd(t_redir *redirs)
+static void	get_target_fd(t_redir *redir)
 {
-	if (redirs->target_fd != -1)
+	if (redir->target_fd != -1)
 		return ;
-	if (redirs->flag == REDIR_IN || redirs->flag == HEREDOC)
-		redirs->target_fd = STDIN_FILENO;
-	else if (redirs->flag == REDIR_OUT || redirs->flag == APPEND)
-		redirs->target_fd = STDOUT_FILENO;
+	if (redir->flag == REDIR_IN || redir->flag == HEREDOC)
+		redir->target_fd = STDIN_FILENO;
+	else if (redir->flag == REDIR_OUT || redir->flag == APPEND)
+		redir->target_fd = STDOUT_FILENO;
 }
 
 /*
@@ -76,9 +77,9 @@ static int	open_redir_file(const t_redir *redir)
 		return (redir->fd);
 	if (redir->flag == REDIR_IN)
 		return (open(redir->file, O_RDONLY));
-	else if (redir->flag == REDIR_OUT)
+	if (redir->flag == REDIR_OUT)
 		return (open(redir->file, O_WRONLY | O_CREAT | O_TRUNC, 0660));
-	else if (redir->flag == APPEND)
+	if (redir->flag == APPEND)
 		return (open(redir->file, O_WRONLY | O_CREAT | O_APPEND, 0660));
 	return (-1);
 }

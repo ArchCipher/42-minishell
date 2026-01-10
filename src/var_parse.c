@@ -12,8 +12,8 @@
 
 #include "minishell.h"
 
-static char			*exit_status_to_str(int n, char *num);
-static const char	*expand_env_var(char **token, char *end, t_env *env);
+static void			status_int_to_str(t_shell *shell);
+static const char	*expand_env_var(char **token, char *end, t_list *envs);
 static int			is_valid_var_subst(char *token, size_t len);
 static size_t		count_digits(int n, int base);
 
@@ -31,20 +31,22 @@ NOTE:
 
 const char	*get_var(char **token, char *end, t_shell *shell)
 {
-	char	exit_code[4];
+	t_env	*home;
 
 	if (**token == '~')
 	{
 		(*token)++;
-		if (!shell->home || !shell->home->value)
-			return (getenv("HOME"));
-		return (shell->home->value);
+		home = get_env(shell->home);
+		if (home && home->value)
+			return (home->value);
+		return (NULL);
 	}
 	(*token)++;
 	if (**token != '?')
 		return (expand_env_var(token, end, shell->env));
 	(*token)++;
-	return (exit_status_to_str(shell->status, exit_code));
+	status_int_to_str(shell);
+	return (shell->exit_code);
 }
 
 /*
@@ -53,21 +55,21 @@ DESCRIPTION:
 	0-255.
 */
 
-static char	*exit_status_to_str(int n, char *num)
+static void	status_int_to_str(t_shell *shell)
 {
+	int		n;
 	size_t	len;
 
-	n = n & EXIT_STATUS_MASK;
+	n = shell->status & EXIT_STATUS_MASK;
 	len = count_digits(n, 10);
-	num[len] = '\0';
+	shell->exit_code[len] = '\0';
 	if (n == 0)
-		num[0] = '0';
+		shell->exit_code[0] = '0';
 	while (len-- > 0 && n)
 	{
-		num[len] = (n % 10) + '0';
+		shell->exit_code[len] = (n % 10) + '0';
 		n /= 10;
 	}
-	return (num);
 }
 
 /*
@@ -82,7 +84,7 @@ NOTE:
 	compared to detect invalid substitution.
 */
 
-static const char	*expand_env_var(char **token, char *end, t_env *env)
+static const char	*expand_env_var(char **token, char *end, t_list *envs)
 {
 	const char	*env_var;
 	char		*start;
@@ -101,7 +103,7 @@ static const char	*expand_env_var(char **token, char *end, t_env *env)
 	tmp = ft_strndup(start, *token - start);
 	if (!tmp)
 		return (perror(MINI), ((char *)-1));
-	env_var = ft_getenv(env, tmp);
+	env_var = ft_getenv(envs, tmp);
 	free(tmp);
 	if (**token == '}')
 		(*token)++;
@@ -113,6 +115,7 @@ DESCRIPTION:
 	Checks if the substitution is valid.
 	Returns 1 if valid, 0 if invalid.
 */
+// ft_dprintf("%s: %s\n", MINI, E_ENV);
 
 static int	is_valid_var_subst(char *token, size_t len)
 {

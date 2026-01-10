@@ -36,9 +36,9 @@ MSRCS			= \
 				token_checks token_utils \
 				ast ast_build \
 				var_expand var_parse \
-				exec exec_child path redirs heredoc \
+				exec exec_parent exec_child path redirs heredoc \
 				builtin cd export unset exit env_lookup env_update qsort \
-				signal lst_utils perr
+				signal lst_utils cast perr
 
 SRCS			= $(addprefix src/, $(addsuffix .c, $(MSRCS)))
 OBJS			= $(SRCS:.c=.o)

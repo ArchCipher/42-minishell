@@ -12,7 +12,6 @@
 
 #include "minishell.h"
 
-static void	free_env(t_env *env);
 static int	status_atoi(const char *str);
 
 /*
@@ -21,35 +20,14 @@ DESCRIPTION:
 	It also restores the original terminal settings and clears the history.
 */
 
-void	exit_shell(int exit_code, t_cmd *cmds, t_shell *shell)
+void	exit_shell(t_list *cmds, t_shell *shell)
 {
-	free_cmds(cmds);
-	free_env(shell->env);
+	ft_lstclear(&cmds, free_cmd);
+	ft_lstclear(&shell->env, free_env);
 	if (isatty(STDIN_FILENO))
 		tcsetattr(STDIN_FILENO, TCSANOW, &shell->original_term);
 	rl_clear_history();
-	exit(exit_code);
-}
-
-/*
-DESCRIPTION:
-	Frees the environment list and their content.
-*/
-
-static void	free_env(t_env *env)
-{
-	t_env	*tmp;
-
-	tmp = env;
-	while (env)
-	{
-		free(env->key);
-		if (env->value)
-			free(env->value);
-		tmp = env;
-		env = env->next;
-		free(tmp);
-	}
+	exit(shell->status);
 }
 
 /*
@@ -58,18 +36,19 @@ DESCRIPTION:
 	Checks if the argument is a valid numeric value and prints error if not.
 */
 
-int	exec_exit(char **s)
+int	exec_exit(char **args, t_shell *shell)
 {
 	int	n;
 
 	errno = 0;
-	if (s[1] == NULL)
-		return (0);
-	n = status_atoi(s[1]) & EXIT_STATUS_MASK;
-	if (errno != EINVAL && s[2])
-		return (perr_msg(*s, E_MANY_ARGS, NULL, false), 1);
-	if (!*s[1] || errno == EINVAL)
-		return (perr_msg(*s, s[1], E_EXIT_CODE, false), EXIT_NUMERIC_ERROR);
+	if (args[1] == NULL)
+		return (shell->status);
+	n = status_atoi(args[1]) & EXIT_STATUS_MASK;
+	if (!errno && args[2])
+		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
+	if (!*args[1] || errno)
+		return (perr_msg(*args, args[1], E_EXIT_CODE, false),
+			EXIT_NUMERIC_ERROR);
 	return (n);
 }
 
@@ -94,9 +73,9 @@ static int	status_atoi(const char *str)
 	while (ft_isdigit(*str))
 	{
 		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
-			return ((int)LONG_MAX);
+			return (errno = ERANGE, (int)LONG_MAX);
 		if (sign == -1 && (LONG_MAX - (num * 10)) <= (*str - '0') - 1)
-			return ((int)LONG_MIN);
+			return (errno = ERANGE, (int)LONG_MIN);
 		num = (num * 10) + (*str - '0');
 		str++;
 	}

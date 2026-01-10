@@ -48,13 +48,74 @@ typedef enum t_builtin
 	BUILTIN_EXIT
 }					t_builtin;
 
-typedef enum t_node_type
+typedef struct s_shell
 {
-	TYPE_TOKEN,
-	TYPE_CMD,
-	TYPE_REDIR,
-	TYPE_ENV
-}					t_node_type;
+	t_list			*env;
+	t_list			*env_last;
+	t_list			*home;
+	t_list			*oldpwd;
+	t_list			*pwd;
+	int				status;
+	char			exit_code[4];
+	int				line_num;
+	struct termios	original_term;
+}					t_shell;
+
+typedef struct s_list_info
+{
+	t_list			*head;
+	t_list			*last;
+	t_list			*new;
+}					t_list_info;
+
+typedef struct s_env
+{
+	char			*key;
+	char			*value;
+	bool			exported;
+}					t_env;
+
+typedef struct s_token
+{
+	char			*raw;
+	char			*word;
+	t_token_type	type;
+	size_t			len;
+	bool			quoted;
+}					t_token;
+
+typedef struct s_redir
+{
+	char			*file;
+	bool			quoted;
+	t_token_type	flag;
+	int				fd;
+	int				target_fd;
+}					t_redir;
+
+typedef struct s_exec
+{
+	int				builtin;
+	pid_t			pid;
+	int				prev_fd;	
+}					t_exec;
+
+typedef struct s_cmd
+{
+	char			**args;
+	t_list			*redirs;
+	t_exec			exec;
+	t_token_type	con;
+	t_list			*subshell;
+}					t_cmd;
+
+typedef struct s_expand
+{
+	t_token_type	quote_state;
+	char			*p;
+	char			*end;
+	bool			unquoted_var;
+}					t_expand;
 
 typedef struct s_strtok
 {
@@ -69,77 +130,5 @@ typedef struct s_string
 	size_t			len;
 	size_t			cap;
 }					t_string;
-
-typedef struct s_env
-{
-	char			*key;
-	char			*value;
-	bool			exported;
-	struct s_env	*next;
-}					t_env;
-
-typedef struct s_shell
-{
-	t_env			*env;
-	t_env			*env_tail;
-	t_env			*home;
-	t_env			*oldpwd;
-	t_env			*pwd;
-	int				status;
-	int				line_num;
-	struct termios	original_term;
-}					t_shell;
-
-typedef struct s_redir
-{
-	char			*file;
-	bool			quoted;
-	t_token_type	flag;
-	int				fd;
-	int				target_fd;
-	struct s_redir	*next;
-}					t_redir;
-
-typedef struct s_exec
-{
-	int				builtin;
-	pid_t			pid;
-	int				p_fd;	
-}					t_exec;
-
-typedef struct s_cmd
-{
-	char			**args;
-	t_redir			*redirs;
-	t_exec			exec;
-	t_token_type	con;
-	struct s_cmd	*next;
-	struct s_cmd	*sub;
-}					t_cmd;
-
-typedef struct s_expand
-{
-	t_token_type	quote_state;
-	char			*p;
-	char			*end;
-	bool			unquoted_var;
-}					t_expand;
-
-typedef struct s_token
-{
-	t_token_type	type;
-	char			*raw;
-	char			*word;
-	bool			quoted;
-	size_t			len;
-	struct s_token	*next;
-}					t_token;
-
-typedef struct s_list
-{
-	void			*head;
-	void			*tail;
-	void			*new;
-}					t_list;
 
 #endif

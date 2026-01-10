@@ -12,10 +12,9 @@
 
 #include "minishell.h"
 
+static int	exec_no_pipe(t_list *cmds, t_shell *shell);
 static int	is_builtin(char **s);
-static int	exec_in_parent(t_cmd *cmd, t_shell *shell);
-static int	restore_fds(int actual_stdin, int o_stdout, int o_stderr, int ret);
-static int	cmds_waitpid(t_cmd **cmd);
+static int	cmds_waitpid(t_list *pipe, t_shell *shell);
 
 /*
 DESCRIPTION:
@@ -26,31 +25,53 @@ DESCRIPTION:
 	It returns the status of the last command.
 */
 
-int	exec_cmds(t_cmd *cmd, t_shell *shell)
+int	exec_cmds(t_list *cmds, t_shell *shell)
 {
-	t_cmd	*pipe_head;
+	t_list	*pipe;
+	t_cmd	*cmd;
 
-	if (cmd->args && (!*cmd->args || !**cmd->args))
-		return (perr_msg("", E_CMD, NULL, false), EXIT_CMD_NOT_FOUND);
-	pipe_head = NULL;
-	cmd->exec.builtin = is_builtin(cmd->args);
-	if (cmd->exec.builtin != -1 && !cmd->next && !cmd->sub)
-		return (exec_in_parent(cmd, shell));
-	while (cmd)
+	if (exec_no_pipe(cmds, shell))
+		return (shell->status);
+	pipe = NULL;
+	while (cmds && cmds->content)
 	{
+		cmd = get_cmd(cmds);
 		if ((cmd->con == OR && !shell->status) || (cmd->con == AND
 				&& shell->status))
 			return (shell->status);
 		cmd->exec.builtin = is_builtin(cmd->args);
-		fork_with_pipe(cmd, shell);
-		if (!pipe_head)
-			pipe_head = cmd;
-		if (pipe_head && (!cmd->next || cmd->next->con != PIPE_CHAR))
-			shell->status = cmds_waitpid(&pipe_head);
-		cmd = cmd->next;
+		fork_with_pipe(cmds, shell);
+		if (!pipe)
+			pipe = cmds;
+		if (pipe && (!cmds->next || !cmds->next->content
+				|| get_cmd(cmds->next)->con != PIPE_CHAR))
+		{
+			shell->status = cmds_waitpid(pipe, shell);
+			pipe = NULL;
+		}
+		cmds = cmds->next;
 	}
 	return (shell->status);
 }
+
+static int	exec_no_pipe(t_list *cmds, t_shell *shell)
+{
+	t_cmd	*cmd;
+
+	cmd = get_cmd(cmds);
+	if (!cmd || (cmd->args && (!*cmd->args || !**cmd->args)))
+	{
+		perr_msg("", E_CMD, NULL, false);
+		shell->status = EXIT_CMD_NOT_FOUND;
+		return (1);
+	}
+	cmd->exec.builtin = is_builtin(cmd->args);
+	if (cmds->next || cmd->exec.builtin == -1 || cmd->subshell)
+		return (0);
+	shell->status = exec_in_parent(cmds, shell);
+	return (1);
+}
+
 
 /*
 DESCRIPTION:
@@ -83,65 +104,6 @@ static int	is_builtin(char **s)
 
 /*
 DESCRIPTION:
-	Executes builtin in parent and restores standard input and output
-	fds after execution.
-NOTE:
-	On exit from shell, "exit\n" should be written to stdout, before exec_exit
-	is called. exec_exit() error messages should be printed after "exit\n".
-*/
-
-static int	exec_in_parent(t_cmd *cmd, t_shell *shell)
-{
-	int	o_stdin;
-	int	o_stdout;
-	int	o_stderr;
-	int	ret;
-
-	o_stdout = dup(STDOUT_FILENO);
-	if (o_stdout == -1)
-		return (perror(MINI), 1);
-	o_stdin = dup(STDIN_FILENO);
-	if (o_stdin == -1)
-		return (close(o_stdout), perror(MINI), 1);
-	o_stderr = dup(STDERR_FILENO);
-	if (o_stderr == -1)
-		return (close(o_stdout), close(o_stdin), perror(MINI), 1);
-	if (setup_redirs(cmd->redirs))
-		return (restore_fds(o_stdin, o_stdout, o_stderr, 1));
-	if (isatty(o_stdout) && cmd->exec.builtin == BUILTIN_EXIT)
-		write(o_stdout, "exit\n", 5);
-	ret = exec_builtin(cmd, shell);
-	ret = restore_fds(o_stdin, o_stdout, o_stderr, ret);
-	if (cmd->exec.builtin == BUILTIN_EXIT && (!cmd->args[1]
-			|| (cmd->args[1] && !cmd->args[2])
-			|| (cmd->args[2] && errno == EINVAL)))
-		exit_shell(ret, cmd, shell);
-	return (ret);
-}
-
-/*
-DESCRIPTION:
-	Restores standard input and output fds after execution.
-	Returns the exit status of the builtin execution or 1 on error.
-*/
-
-static int	restore_fds(int o_stdin, int o_stdout, int o_stderr, int ret)
-{
-	if ((dup2(o_stdin, STDIN_FILENO) == -1)
-		|| (dup2(o_stdout, STDOUT_FILENO) == -1)
-		|| (dup2(o_stderr, STDERR_FILENO) == -1))
-	{
-		perror(MINI);
-		ret = 1;
-	}
-	close(o_stdin);
-	close(o_stdout);
-	close(o_stderr);
-	return (ret);
-}
-
-/*
-DESCRIPTION:
 	Waits for the child processes to finish and returns the exit status of the
 	last command.
 	Returns 0 on success, 1 on error.
@@ -154,30 +116,31 @@ DESCRIPTION:
 	If waitpid() returns -1, WIFSIGNALED or WEXITSTATUS is not set.
 */
 
-static int	cmds_waitpid(t_cmd **cmd)
-{
-	t_cmd	*cur;
-	int		status;
-	int		last_status;
+// maybe setup handler to detect signal and kill processes before exit.
 
-	last_status = 0;
-	cur = *cmd;
-	while (cur && cur->exec.pid != -1)
+static int	cmds_waitpid(t_list *pipe, t_shell *shell)
+{
+	int		status;
+
+	if (set_signal_handler(SIGINT, SIG_IGN) == -1)
+		return (perror(MINI), 1);
+	while (pipe && pipe->content && get_cmd(pipe)->exec.pid != -1)
 	{
-		if (waitpid(cur->exec.pid, &status, 0) != -1)
+		if (waitpid(get_cmd(pipe)->exec.pid, &status, 0) != -1)
 		{
 			if (WIFEXITED(status))
-				last_status = WEXITSTATUS(status);
+				shell->status = WEXITSTATUS(status);
 			else if (WIFSIGNALED(status))
-				last_status = SIG_EXIT_BASE + WTERMSIG(status);
+				shell->status = SIG_EXIT_BASE + WTERMSIG(status);
 		}
 		else
 		{
 			perror(MINI);
-			last_status = 1;
+			shell->status = 1;
 		}
-		cur = cur->next;
+		pipe = pipe->next;
 	}
-	*cmd = NULL;
-	return (last_status);
+	if (set_signal_handler(SIGINT, shell_handler) == -1)
+		return (perror(MINI), 1);
+	return (shell->status);
 }

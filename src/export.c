@@ -12,10 +12,10 @@
 
 #include "minishell.h"
 
-static int		print_exported_vars(t_env *env);
+static int		print_exported_vars(t_list *envs);
 static void		update_shell_env(char *arg, t_shell *shell);
-static t_env	**env_list_to_array(t_env *env, size_t len);
-static size_t	count_exported_vars(t_env *env);
+static t_env	**env_list_to_array(t_list *envs, size_t len);
+static size_t	count_exported_vars(t_list *envs);
 
 /*
 DESCRIPTION:
@@ -58,17 +58,17 @@ FORMAT:
 	declare -x KEY
 */
 
-static int	print_exported_vars(t_env *env)
+static int	print_exported_vars(t_list *envs)
 {
 	t_env	**arr;
 	size_t	len;
 	size_t	i;
 	int		ret;
 
-	len = count_exported_vars(env);
+	len = count_exported_vars(envs);
 	if (!len)
 		return (0);
-	arr = env_list_to_array(env, len);
+	arr = env_list_to_array(envs, len);
 	if (!arr)
 		return (perror(MINI), 1);
 	ft_qsort_env(arr, 0, len - 1);
@@ -106,8 +106,9 @@ DESCRIPTION:
 	Returns the array of pointers on success, NULL on failure.
 */
 
-static t_env	**env_list_to_array(t_env *env, size_t len)
+static t_env	**env_list_to_array(t_list *envs, size_t len)
 {
+	t_env	*env;
 	t_env	**arr;
 	size_t	i;
 
@@ -117,9 +118,10 @@ static t_env	**env_list_to_array(t_env *env, size_t len)
 	i = 0;
 	while (i < len)
 	{
+		env = get_env(envs);
 		if (env->exported)
 			arr[i++] = env;
-		env = env->next;
+		envs = envs->next;
 	}
 	return (arr);
 }
@@ -128,16 +130,16 @@ static t_env	**env_list_to_array(t_env *env, size_t len)
 DESCRIPTION:
 	Calculates and returns the number of environment variables.
 */
-static size_t	count_exported_vars(t_env *env)
+static size_t	count_exported_vars(t_list *envs)
 {
 	size_t	i;
 
 	i = 0;
-	while (env)
+	while (envs && envs->content)
 	{
-		if (env->exported)
+		if (get_env(envs)->exported)
 			i++;
-		env = env->next;
+		envs = envs->next;
 	}
 	return (i);
 }

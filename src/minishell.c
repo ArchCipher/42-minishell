@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static t_cmd	*parse_input(char *input, t_shell *shell);
+static t_list	*parse_input(char *input, t_shell *shell);
 static void		init_shell(char **envp, t_shell *shell);
 static void		init_shell_terminal(struct termios *original_term);
 static void		init_env(t_shell *shell);
@@ -69,18 +69,19 @@ static void		init_env(t_shell *shell);
 	EXIT STATUS:
 		0: success
 		1: general error
-		2: non numeric argument for exit on Linux
 		126: not executable (insufficient permissions or is a directory)
 		127: command not found
 		128 + N: fatal error signal N (ex: 137 is 128 + 9 for SIGKILL)
-		255: non numeric argument for exit on MacOS
+		2 or 255: non numeric argument or numeric > LONG_MAX for exit
+			[Linux (2), MacOS (255)]
+		258: syntax error near unexpected token
 */
 
 int	main(int ac, char **av, char **envp)
 {
 	t_shell	shell;
 	char	*input;
-	t_cmd	*cmds;
+	t_list	*cmds;
 
 	(void)av;
 	if (ac != 1)
@@ -89,20 +90,20 @@ int	main(int ac, char **av, char **envp)
 	while (1)
 	{
 		input = readline(PROMPT);
-		shell.line_num++;
 		if (g_signal == SIGINT)
 			handle_shell_signal(&shell.status);
 		if (!input)
 			break ;
+		shell.line_num++;
 		cmds = parse_input(input, &shell);
 		free(input);
-		if (cmds && !process_heredoc(cmds, &shell))
+		if (cmds)
 			shell.status = exec_cmds(cmds, &shell);
-		free_cmds(cmds);
+		ft_lstclear(&cmds, free_cmd);
 	}
 	if (isatty(STDIN_FILENO))
 		write(STDOUT_FILENO, "exit\n", 5);
-	exit_shell(shell.status, NULL, &shell);
+	exit_shell(NULL, &shell);
 }
 
 /*
@@ -111,11 +112,11 @@ DESCRIPTION:
 	Returns the command tree on success, NULL on failure.
 */
 
-static t_cmd	*parse_input(char *input, t_shell *shell)
+static t_list	*parse_input(char *input, t_shell *shell)
 {
-	t_token	*tokens;
-	t_token	*tmp;
-	t_cmd	*cmds;
+	t_list	*tokens;
+	t_list	*tmp;
+	t_list	*cmds;
 
 	errno = 0;
 	add_history(input);
@@ -127,7 +128,9 @@ static t_cmd	*parse_input(char *input, t_shell *shell)
 	cmds = parse_cmd_list(&tmp);
 	if ((!tokens || !cmds) && errno)
 		shell->status = 1;
-	free_tokens(tokens);
+	ft_lstclear(&tokens, free_token);
+	if (cmds && process_heredoc(cmds, shell))
+		return (ft_lstclear(&cmds, free_cmd), NULL);
 	return (cmds);
 }
 
@@ -147,14 +150,17 @@ static void	init_shell(char **envp, t_shell *shell)
 	}
 	if (isatty(STDIN_FILENO))
 		init_shell_terminal(&shell->original_term);
+	shell->line_num = 0;
 	shell->status = 0;
 	shell->env = NULL;
+	shell->env_last = NULL;
 	while (*envp)
 	{
 		if (update_env(shell, *envp, NULL))
 		{
 			perror(MINI);
-			exit_shell(1, NULL, shell);
+			shell->status = 1;
+			exit_shell(NULL, shell);
 		}
 		envp++;
 	}
@@ -179,13 +185,14 @@ static void	init_shell_terminal(struct termios *original_term)
 	}
 	term = *original_term;
 	term.c_lflag &= ~ECHOCTL;
-	if (tcsetattr(STDIN_FILENO, TCSANOW, &term) == -1)
-	{
-		perror(MINI);
-		tcsetattr(STDIN_FILENO, TCSANOW, original_term);
-		exit(1);
-	}
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &term) != -1)
+		return ;
+	perror(MINI);
+	tcsetattr(STDIN_FILENO, TCSANOW, original_term);
+	exit(1);
 }
+
+
 
 /*
 DESCRIPTION:
@@ -194,14 +201,14 @@ DESCRIPTION:
 
 static void	init_env(t_shell *shell)
 {
-	t_env	*last_cmd;
+	t_list	*last_cmd;
 
 	shell->home = env_lookup(shell->env, "HOME");
 	shell->oldpwd = env_lookup(shell->env, "OLDPWD");
 	shell->pwd = env_lookup(shell->env, "PWD");
 	last_cmd = env_lookup(shell->env, "_");
-	if (last_cmd)
-		last_cmd->exported = false;
+	if (last_cmd && last_cmd->content)
+		get_env(last_cmd)->exported = false;
 	if (!shell->oldpwd || !shell->pwd)
 		update_pwds(shell);
 }

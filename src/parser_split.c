@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static int	insert_token(t_token **head, t_token **prev, t_token *next,
+static int	insert_token(t_list **tokens, t_list **prev, t_list *next,
 				const char *tok);
 
 /*
@@ -22,18 +22,18 @@ DESCRIPTION:
 	the space-separated words. Returns 0 on success, 1 on failure.
 */
 
-int	split_word_token(t_token **head, t_token **cur, t_token *prev)
+int	split_word_token(t_list **tokens, t_list **cur, t_list *prev)
 {
 	t_strtok	str;
 
-	str.str = ft_strdup((*cur)->word);
+	str.str = ft_strdup(get_tok(*cur)->word);
 	if (!str.str)
 		return (1);
-	del_one_token(head, prev, cur);
+	del_one_token(tokens, prev, cur);
 	str.token = ft_strtok_r(str.str, IS_SPACE, &str.p);
 	while (str.token)
 	{
-		if (insert_token(head, &prev, *cur, str.token))
+		if (insert_token(tokens, &prev, *cur, str.token))
 			return (free(str.str), 1);
 		str.token = ft_strtok_r(NULL, IS_SPACE, &str.p);
 	}
@@ -47,10 +47,10 @@ DESCRIPTION:
 	Returns 0 on success, 1 on failure.
 */
 
-static int	insert_token(t_token **head, t_token **prev, t_token *next,
+static int	insert_token(t_list **tokens, t_list **prev, t_list *next,
 		const char *tok)
 {
-	t_token	*new;
+	t_list	*new;
 	char	*word;
 
 	word = ft_strdup(tok);
@@ -59,10 +59,10 @@ static int	insert_token(t_token **head, t_token **prev, t_token *next,
 	new = create_token(word, WORD, ft_strlen(word));
 	if (!new)
 		return (free(word), 1);
-	new->word = word;
+	get_tok(new)->word = word;
 	new->next = next;
 	if (!*prev)
-		*head = new;
+		*tokens = new;
 	else
 		(*prev)->next = new;
 	*prev = new;

@@ -14,7 +14,7 @@
 
 static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag);
 static void	append_char(char *c, char *end, t_token_type *flag, t_string *str);
-static int	init_expand_vars(t_expand *expand, t_string *str, t_token *tok);
+static int	init_expand_vars(t_token *token, t_string *str, t_expand *exp);
 static int	is_fully_quoted(const char *raw, size_t len);
 
 /*
@@ -23,12 +23,12 @@ DESCRIPTION:
 	for the expanded result. Returns 0 on success, 1 on error.
 */
 
-int	expand_word_token(t_token *tok, t_token *prev, t_shell *shell)
+int	expand_word_token(t_token *token, t_token *prev, t_shell *shell)
 {
 	t_string		str;
 	t_expand		exp;
 
-	if (init_expand_vars(&exp, &str, tok))
+	if (init_expand_vars(token, &str, &exp))
 		return (1);
 	while (exp.p < exp.end)
 	{
@@ -42,20 +42,20 @@ int	expand_word_token(t_token *tok, t_token *prev, t_shell *shell)
 				return (free(str.s), 1);
 		}
 	}
-	if (exp.unquoted_var && !is_fully_quoted(tok->raw, tok->len))
-		tok->quoted = false;
+	if (exp.unquoted_var && !is_fully_quoted(token->raw, token->len))
+		token->quoted = false;
 	str.s[str.len] = 0;
-	tok->word = str.s;
+	token->word = str.s;
 	return (0);
 }
 
-static int	init_expand_vars(t_expand *exp, t_string *str, t_token *tok)
+static int	init_expand_vars(t_token *token, t_string *str, t_expand *exp)
 {
-	*str = alloc_tstring(tok->len);
+	*str = alloc_tstring(token->len);
 	if (!str->s)
 		return (perror(MINI), 1);
-	exp->p = tok->raw;
-	exp->end = exp->p + tok->len;
+	exp->p = token->raw;
+	exp->end = exp->p + token->len;
 	exp->quote_state = WORD;
 	exp->unquoted_var = false;
 	return (0);

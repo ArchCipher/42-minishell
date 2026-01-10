@@ -29,28 +29,33 @@ DESCRIPTION:
 		the parent process displays a new prompt on a new line.
 */
 
-int	process_heredoc(t_cmd *cmds, t_shell *shell)
+int	process_heredoc(t_list *cmds, t_shell *shell)
 {
-	t_redir	*current;
-	t_cmd	*cmd;
+	t_list	*head;
+	t_list	*redirs;
+	t_redir	*redir;
 
-	cmd = cmds;
-	while (cmd)
+	head = cmds;
+	while (cmds && cmds->content)
 	{
-		current = cmd->redirs;
-		while (current)
+		redirs = get_cmd(cmds)->redirs;
+		while (redirs && redirs->content)
 		{
-			if (current->flag == HEREDOC)
+			redir = get_redir(redirs);
+			if (redir->flag == HEREDOC)
 			{
-				shell->status = handle_heredoc(current, shell);
+				shell->status = handle_heredoc(redir, shell);
 				if (shell->status == 1)
 					return (1);
 				if (shell->status == -1)
-					exit_shell(1, cmds, shell);
+				{
+					shell->status = 1;
+					exit_shell(head, shell);
+				}
 			}
-			current = current->next;
+			redirs = redirs->next;
 		}
-		cmd = cmd->next;
+		cmds = cmds->next;
 	}
 	return (0);
 }
@@ -101,6 +106,7 @@ static int	exec_heredoc(char *limiter, int fd, bool quoted, t_shell *shell)
 	line = readline("> ");
 	while (line && ft_strcmp(line, limiter))
 	{
+		shell->line_num++;
 		len = ft_strlen(line);
 		if (!quoted && ft_memchr(line, '$', len) && !expand_dollar(&line, line
 				+ len, &len, shell))
@@ -181,7 +187,5 @@ static int	wait_heredoc_child(pid_t pid)
 		g_signal = WTERMSIG(status);
 		return (1);
 	}
-	if (WIFEXITED(status) && WEXITSTATUS(status))
-		return (1);
-	return (0);
+	return (WIFEXITED(status) && WEXITSTATUS(status));
 }

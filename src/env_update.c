@@ -12,7 +12,38 @@
 
 #include "minishell.h"
 
-static t_env	*create_env(const char *envp);
+static t_list	*create_env(const char *envp);
+static int		update_value(const char *equal, const char *arg, t_env *env);
+static int		get_key_value(const char *envp, t_env *new);
+
+/*
+DESCRIPTION:
+	Creates a new environment variable if t_env *env is NULL, otherwise updates
+	the value of the existing environment variable.
+	Returns 0 on success, 1 on failure.
+*/
+
+int	update_env(t_shell *shell, const char *arg, t_list *envs)
+{
+	t_list		*new;
+	const char	*equal;
+
+	if (!envs)
+	{
+		new = create_env(arg);
+		if (!new)
+			return (1);
+		ft_lstadd_back(&shell->env, new, &shell->env_last);
+		return (0);
+	}
+	equal = is_valid_identifier(arg);
+	if (!equal)
+		return (1);
+	if (*equal)
+		return (update_value(equal, arg, get_env(envs)));
+	get_env(envs)->exported = true;
+	return (0);
+}
 
 /*
 DESCRIPTION:
@@ -46,10 +77,16 @@ const char	*is_valid_identifier(const char *s)
 	return (s);
 }
 
+/*
+DESCRIPTION
+	Updates or appends the value of environemnt variable.
+*/
 static int	update_value(const char *equal, const char *arg, t_env *env)
 {
 	char	*value;
 
+	if (!equal || !arg || !env)
+		return (0);
 	if (equal > arg && *(equal - 1) == '+' && env->value)
 		value = ft_strjoin(env->value, equal + 1);
 	else
@@ -64,38 +101,30 @@ static int	update_value(const char *equal, const char *arg, t_env *env)
 
 /*
 DESCRIPTION:
-	Creates a new environment variable if t_env *env is NULL, otherwise updates
-	the value of the existing environment variable.
-	Returns 0 on success, 1 on failure.
+	Creates a new environment variable from the environment variable string.
+	Splits the environment variable string into key and value if '=' is present.
+	Returns the new environment variable if created, NULL otherwise.
 */
 
-int	update_env(t_shell *shell, const char *arg, t_env *env)
+static t_list	*create_env(const char *envp)
 {
-	const char	*equal;
+	t_list		*new;
+	t_env		*env;
 
-	if (!env)
-	{
-		env = create_env(arg);
-		if (!env)
-			return (1);
-		lstadd_back((void **)&shell->env, env, shell->env_tail, TYPE_ENV);
-		shell->env_tail = env;
-		return (0);
-	}
-	equal = is_valid_identifier(arg);
-	if (!equal)
-		return (1);
-	if (!*equal)
-	{
-		env->exported = true;
-		return (0);
-	}
-	if (update_value(equal, arg, env))
-		return (1);
-	return (0);
+	new = ft_lstnew(sizeof(t_env));
+	if (!new)
+		return (perror(MINI), NULL);
+	env = get_env(new);
+	env->exported = false;
+	env->key = NULL;
+	env->value = NULL;
+	if (get_key_value(envp, env))
+		return (ft_lstdelone(new, free_env), NULL);
+	env->exported = true;
+	return (new);
 }
 
-static	int	update_key_value(const char *envp, t_env *new)
+static int	get_key_value(const char *envp, t_env *new)
 {
 	const char	*equal;
 
@@ -110,33 +139,11 @@ static	int	update_key_value(const char *envp, t_env *new)
 		new->key = ft_strndup(envp, equal - envp);
 	if (!new->key)
 		return (1);
-	if (!equal || !*equal)
-		new->value = NULL;
-	else
+	if (equal && *equal)
+	{
 		new->value = ft_strdup(equal + 1);
-	if (equal && *equal && !new->value)
-		return (free(new->key), 1);
+		if (!new->value)
+			return (free(new->key), 1);
+	}
 	return (0);
-}
-
-/*
-DESCRIPTION:
-	Creates a new environment variable from the environment variable string.
-	Splits the environment variable string into key and value if '=' is present.
-	Returns the new environment variable if created, NULL otherwise.
-*/
-
-static t_env	*create_env(const char *envp)
-{
-	t_env		*new;
-
-	new = malloc(sizeof(t_env));
-	if (!new)
-		return (NULL);
-	new->exported = false;
-	new->next = NULL;
-	if (update_key_value(envp, new))
-		return (free(new), NULL);
-	new->exported = true;
-	return (new);
 }

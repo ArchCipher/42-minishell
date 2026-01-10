@@ -13,7 +13,7 @@
 #include "minishell.h"
 
 static int	exec_echo(char **args);
-static int	exec_env(char **args, t_env *env);
+static int	exec_env(char **args, t_list *envs);
 
 /*
 DESCRIPTION:
@@ -39,7 +39,7 @@ int	exec_builtin(t_cmd *cmd, t_shell *shell)
 	else if (cmd->exec.builtin == BUILTIN_UNSET)
 		return (exec_unset(cmd->args, shell));
 	else if (cmd->exec.builtin == BUILTIN_EXIT)
-		return (exec_exit(cmd->args));
+		return (exec_exit(cmd->args, shell));
 	return (0);
 }
 
@@ -65,9 +65,9 @@ static int	exec_echo(char **args)
 	args++;
 	nl = true;
 	if (!*args)
-		return (write(1, "\n", 1), 0);
-	while (*args && **args == '-' && (*args)[1] == 'n' && (ft_strspn(*args + 2,
-				"n") == ft_strlen(*args + 2)))
+		return (write(STDOUT_FILENO, "\n", 1), 0);
+	while (*args && **args == '-' && (*args)[1] == 'n'
+		&& (ft_strspn(*args + 2, "n") == ft_strlen(*args + 2)))
 	{
 		nl = false;
 		args++;
@@ -117,19 +117,21 @@ NOTE:
 	ft_dprintf() is used instead of printf() to avoid buffer flushing issues.
 */
 
-static int	exec_env(char **args, t_env *env)
+static int	exec_env(char **args, t_list *envs)
 {
-	int	ret;
+	t_env	*env;
+	int		ret;
 
 	if (args[1])
 		return (perr_msg(*args, args[1], E_OPTION, false), 2);
 	ret = 0;
-	while (env)
+	while (envs)
 	{
+		env = get_env(envs);
 		if (env->exported && env->value && ft_dprintf(STDOUT_FILENO, "%s=%s\n",
 				env->key, env->value) < 0)
 			ret = 1;
-		env = env->next;
+		envs = envs->next;
 	}
 	return (ret);
 }

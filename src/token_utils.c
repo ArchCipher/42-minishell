@@ -18,39 +18,41 @@ DESCRIPTION:
 	Returns the token on success, NULL on failure.
 */
 
-t_token	*create_token(void *token, t_token_type type, size_t len)
+t_list	*create_token(char *raw, t_token_type type, size_t len)
 {
-	t_token	*new;
+	t_list	*new;
+	t_token	*token;
 
-	new = malloc(sizeof(t_token));
+	new = ft_lstnew(sizeof(t_token));
 	if (!new)
 		return (perror(MINI), NULL);
-	new->raw = token;
-	new->word = NULL;
-	new->type = type;
-	new->len = len;
-	new->quoted = false;
-	new->next = NULL;
+	token = get_tok(new);
+	token->raw = raw;
+	token->word = NULL;
+	token->type = type;
+	token->len = len;
+	token->quoted = false;
 	return (new);
 }
 
 /*
 DESCRIPTION:
-	Deletes the current token from the token list and frees its memory.
+	Deletes the current token from the token list and frees its contents.
 */
 
-void	del_one_token(t_token **head, t_token *prev, t_token **cur)
+void	del_one_token(t_list **head, t_list *prev, t_list **cur)
 {
-	t_token	*next;
+	t_list	*tmp;
 
-	next = (*cur)->next;
+	if (!cur || !*cur)
+		return ;
+	tmp = (*cur)->next;
 	if (!prev)
-		*head = (*cur)->next;
+		*head = tmp;
 	else
-		prev->next = (*cur)->next;
-	free((*cur)->word);
-	free(*cur);
-	*cur = next;
+		prev->next = tmp;
+	ft_lstdelone(*cur, free_token);
+	*cur = tmp;
 }
 
 int	is_type_redir(t_token_type t)

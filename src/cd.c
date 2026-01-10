@@ -13,6 +13,7 @@
 #include "minishell.h"
 
 static int	do_cd(char **args, t_shell *shell);
+static char	*get_env_value(t_list *lst);
 
 /*
 DESCRIPTION:
@@ -50,21 +51,25 @@ DESCRIPTION:
 
 static int	do_cd(char **args, t_shell *shell)
 {
+	char		*home;
+	char		*oldpwd;
 	const char	*dir;
 
 	dir = args[1];
-	if (!dir && (!shell->home || !shell->home->value))
+	home = get_env_value(shell->home);
+	oldpwd = get_env_value(shell->oldpwd);
+	if (!dir && !home)
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
 	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2] && !args[2]))
-		dir = shell->home->value;
+		dir = home;
 	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2] && args[2]))
 		dir = args[2];
 	else if (dir && dir[0] == '-' && dir[1])
 		return (perr_tok_msg(*args, args[1], 2, E_OPTION), 2);
-	if (!ft_strcmp(dir, "-") && (!shell->oldpwd || !shell->oldpwd->value))
+	else if (!ft_strcmp(dir, "-") && !oldpwd)
 		return (perr_msg(*args, E_OLDPWD, NULL, false), 1);
 	else if (!ft_strcmp(dir, "-"))
-		dir = shell->oldpwd->value;
+		dir = oldpwd;
 	if (chdir(dir) == -1)
 		return (perr_msg(*args, dir, strerror(errno), false), 1);
 	update_pwds(shell);
@@ -86,20 +91,35 @@ NOTE:
 
 void	update_pwds(t_shell *shell)
 {
-	if (!shell->pwd)
+	t_env	*pwd;
+	t_env	*oldpwd;
+
+	if (!shell->pwd || !shell->pwd->content)
 	{
 		if (update_env(shell, "PWD", NULL))
 			return ;
 		shell->pwd = env_lookup(shell->env, "PWD");
 	}
-	if (!shell->oldpwd)
+	if (!shell->oldpwd || !shell->oldpwd->content)
 	{
 		if (update_env(shell, "OLDPWD", NULL))
 			return ;
 		shell->oldpwd = env_lookup(shell->env, "OLDPWD");
 	}
-	if (shell->oldpwd->value)
-		free(shell->oldpwd->value);
-	shell->oldpwd->value = shell->pwd->value;
-	shell->pwd->value = getcwd(NULL, 0);
+	pwd = get_env(shell->pwd);
+	oldpwd = get_env(shell->oldpwd);
+	if (oldpwd->value)
+		free(oldpwd->value);
+	oldpwd->value = pwd->value;
+	pwd->value = getcwd(NULL, 0);
+}
+
+static char	*get_env_value(t_list *lst)
+{
+	t_env	*env;
+
+	env = get_env(lst);
+	if (env)
+		return (env->value);
+	return (NULL);
 }

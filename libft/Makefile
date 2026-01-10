@@ -16,7 +16,8 @@ MSRCS		= \
 			strcmp strcspn strdup strlen strncmp \
 			strndup strspn strtok_r
 ASRCS		= \
-			strjoin strjoin3 putstr
+			strjoin strjoin3 putstr lstadd_back lstclear \
+			lstdelone lstnew
 
 SRCS		= $(MSRCS) $(ASRCS)
 MAN_SRCS	= $(addprefix ft_, $(addsuffix .c, $(SRCS)))

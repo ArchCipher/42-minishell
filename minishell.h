@@ -46,6 +46,7 @@
 // heredoc EOF warning msg on linux
 # define W_EOF1 "warning: here-document at line"
 # define W_EOF2 "delimited by end-of-file"
+// # define WARNING "internal invariant violated"
 
 # define EXIT_INVAL_OPTION 258
 // invalid option exits with 2, minishell doesn't support options
@@ -71,63 +72,73 @@
 
 extern volatile sig_atomic_t	g_signal;
 
+// cast
+t_token							*get_tok(t_list *lst);
+t_token_type					get_tok_type(t_list *lst);
+t_cmd							*get_cmd(t_list *lst);
+t_redir							*get_redir(t_list *lst);
+t_env							*get_env(t_list *lst);
+
 // Parsing
-t_token							*tokenise_input(char *s);
-t_token							*parse_tokens(t_token *tokens, t_shell *shell);
-t_cmd							*parse_cmd_list(t_token **tok);
-int								build_cmd(t_token **tok, t_cmd *cmd,
-									void **last_redir);
-int								expand_word_token(t_token *tok, t_token *prev,
+t_list							*tokenise_input(char *s);
+t_list							*parse_tokens(t_list *tokens, t_shell *shell);
+t_list							*parse_cmd_list(t_list **tokens);
+int								build_cmd(t_list **tokens, t_cmd *cmd,
+									t_list **last_redir);
+int								expand_word_token(t_token *token, t_token *prev,
 									t_shell *shell);
-int								split_word_token(t_token **head, t_token **cur,
-									t_token *prev);
-void							del_one_token(t_token **head, t_token *prev,
-									t_token **cur);
-t_token							*create_token(void *token, t_token_type type,
+int								split_word_token(t_list **head, t_list **cur,
+									t_list *prev);
+int								is_valid_token(t_token *prev, t_token *cur);
+t_list							*create_token(char *raw, t_token_type type,
 									size_t len);
-void							free_tokens(t_token *tokens);
+t_token_type					update_quote_flag(char c, t_token_type flag);
+void							free_token(void *content);
+void							del_one_token(t_list **head, t_list *prev,
+									t_list **cur);
 int								is_redir(char c);
 int								is_connector(char *s);
 int								is_parenthesis(char c);
 int								is_word_delimiter(char *s);
 int								is_type_redir(t_token_type t);
 int								is_type_con(t_token_type t);
-t_token_type					update_quote_flag(char c, t_token_type flag);
 void							perr_token(char *s, size_t len);
 void							perr_tok_msg(char *cmd, char *s, size_t len,
 									const char *msg);
 
 // Execution
-int								process_heredoc(t_cmd *cmds, t_shell *shell);
-int								exec_cmds(t_cmd *cmds, t_shell *shell);
-int								fork_with_pipe(t_cmd *cmd, t_shell *shell);
+int								process_heredoc(t_list *cmds, t_shell *shell);
+int								exec_cmds(t_list *cmds, t_shell *shell);
+int								exec_in_parent(t_list *cmds, t_shell *shell);
+int								fork_with_pipe(t_list *cmds, t_shell *shell);
 char							*get_valid_path(const char *filename,
-									t_env *env);
-int								setup_redirs(t_redir *redirs);
+									t_list *envs);
+int								setup_redirs(t_list *redirs);
 void							close_pipe_fds(int *fd, int prev_fd);
 int								close_fds_error(int *fd, int prev_fd);
 int								exec_builtin(t_cmd *cmd, t_shell *shell);
-void							exit_shell(int exit_code, t_cmd *cmds,
-									t_shell *shell);
-void							free_cmds(t_cmd *cmds);
-void							free_arr(char **envp);
+void							exit_shell(t_list *cmds, t_shell *shell);
+void							free_cmd(void *content);
+void							free_redir(void *content);
+void							free_arr(char **arr);
+void							free_env(void *content);
 
 // Builtin
-int								exec_pwd(void);
 int								exec_cd(char **args, t_shell *shell);
-int								exec_exit(char **s);
+int								exec_pwd(void);
+int								exec_exit(char **args, t_shell *shell);
 int								exec_export(char **args, t_shell *shell);
 int								exec_unset(char **args, t_shell *shell);
 void							ft_qsort_env(t_env **arr, size_t low,
 									size_t high);
 
 // Environment
-const char						*ft_getenv(t_env *env, const char *key);
-t_env							*env_lookup(t_env *env, const char *arg);
-t_env							*env_lookup_prev(t_env *env, t_env **prev,
+const char						*ft_getenv(t_list *envs, const char *key);
+t_list							*env_lookup(t_list *envs, const char *arg);
+t_list							*env_lookup_prev(t_list *envs, t_list **prev,
 									const char *arg);
 int								update_env(t_shell *shell, const char *arg,
-									t_env *env);
+									t_list *env);
 void							update_pwds(t_shell *shell);
 const char						*is_valid_identifier(const char *s);
 
@@ -148,8 +159,8 @@ void							shell_handler(int sig);
 void							handle_shell_signal(int *status);
 
 // Utils
-void							lstadd_back(void **tokens, void *new,
-									void *last, t_node_type type);
+// void							lstadd_back(void **tokens, void *new,
+// void *last, t_node_type type);
 void							perr_msg(const char *s1, const char *s2,
 									const char *s3, bool backtick);
 

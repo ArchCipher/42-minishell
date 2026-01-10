@@ -12,10 +12,10 @@
 
 #include "minishell.h"
 
-static int		setup_child_fds(int *fd, int prev_fd);
+static int		init_child(int *fd, int prev_fd);
 static void		exec_child(t_cmd *cmd, int *fd, t_shell *shell);
-static char		**env_to_envp(t_env *env);
-static size_t	envp_size(t_env *env);
+static char		**env_to_envp(t_list *envs);
+static size_t	envp_size(t_list *envs);
 
 /*
 DESCRIPTION:
@@ -31,29 +31,32 @@ DESCRIPTION:
 	On error, both pipe and fork return -1.
 */
 
-int	fork_with_pipe(t_cmd *cmd, t_shell *shell)
+int	fork_with_pipe(t_list *cmds, t_shell *shell)
 {
-	int	fd[2];
-	int	*pipe_fd;
+	t_cmd	*cmd;
+	int		fd[2];
+	int		*pipe_fd;
 
 	pipe_fd = NULL;
-	if (cmd->next && cmd->next->con == PIPE_CHAR)
+	if (cmds->next && cmds->next->content
+		&& get_cmd(cmds->next)->con == PIPE_CHAR)
 	{
 		if (pipe(fd) == -1)
 			return (perror(MINI), 1);
 		pipe_fd = fd;
 	}
+	cmd = get_cmd(cmds);
 	cmd->exec.pid = fork();
 	if (cmd->exec.pid == -1)
-		return (close_fds_error(pipe_fd, cmd->exec.p_fd));
+		return (close_fds_error(pipe_fd, cmd->exec.prev_fd));
 	if (cmd->exec.pid == 0)
 		exec_child(cmd, pipe_fd, shell);
-	if (cmd->exec.p_fd != -1)
-		close(cmd->exec.p_fd);
+	if (cmd->exec.prev_fd != -1)
+		close(cmd->exec.prev_fd); // set it to -1 after closing
 	if (!pipe_fd)
 		return (0);
 	close(pipe_fd[1]);
-	cmd->next->exec.p_fd = pipe_fd[0];
+	get_cmd(cmds->next)->exec.prev_fd = pipe_fd[0];
 	return (0);
 }
 
@@ -75,7 +78,7 @@ DESCRIPTION:
 	The return value will be -1 and errno is set to indicate the error.
 */
 
-static int	setup_child_fds(int *fd, int prev_fd)
+static int	init_child(int *fd, int prev_fd)
 {
 	if (set_signal_handlers(SIG_DFL, SIG_DFL))
 		return (1);
@@ -99,13 +102,13 @@ static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 	char	*path;
 	char	**envp;
 
-	if (setup_child_fds(fd, cmd->exec.p_fd))
-		exit(close_fds_error(fd, cmd->exec.p_fd));
+	if (init_child(fd, cmd->exec.prev_fd))
+		exit(close_fds_error(fd, cmd->exec.prev_fd));
 	if (setup_redirs(cmd->redirs))
 		exit(EXIT_FAILURE);
-	close_pipe_fds(fd, cmd->exec.p_fd);
-	if (cmd->sub)
-		exit(exec_cmds(cmd->sub, shell));
+	close_pipe_fds(fd, cmd->exec.prev_fd);
+	if (cmd->subshell)
+		exit(exec_cmds(cmd->subshell, shell));
 	if (!cmd->args || !cmd->args[0])
 		exit(EXIT_SUCCESS);
 	if (cmd->exec.builtin != -1)
@@ -127,19 +130,21 @@ DESCRIPTION:
 	Converts the environment list to a null-terminated array of strings.
 	Returns the array of strings on success, NULL on failure.
 */
-static char	**env_to_envp(t_env *env)
+static char	**env_to_envp(t_list *envs)
 {
+	t_env	*env;
 	char	**envp;
 	size_t	size;
 	size_t	i;
 
-	size = envp_size(env);
+	size = envp_size(envs);
 	envp = malloc(sizeof(char *) * (size + 1));
 	if (!envp)
 		return (perror(MINI), NULL);
 	i = 0;
-	while (env)
+	while (envs)
 	{
+		env = get_env(envs);
 		if (env->exported && env->value)
 		{
 			envp[i] = ft_strjoin3(env->key, "=", env->value);
@@ -147,7 +152,7 @@ static char	**env_to_envp(t_env *env)
 				return (perror(MINI), free_arr(envp), NULL);
 			i++;
 		}
-		env = env->next;
+		envs = envs->next;
 	}
 	envp[i] = NULL;
 	return (envp);
@@ -159,16 +164,18 @@ DESCRIPTION:
 	Returns the number of exported environment variables.
 */
 
-static size_t	envp_size(t_env *env)
+static size_t	envp_size(t_list *envs)
 {
+	t_env	*env;
 	size_t	i;
 
 	i = 0;
-	while (env)
+	while (envs && envs->content)
 	{
+		env = get_env(envs);
 		if (env->exported && env->value)
 			i++;
-		env = env->next;
+		envs = envs->next;
 	}
 	return (i);
 }

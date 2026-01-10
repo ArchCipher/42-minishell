@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static char	*get_path(const char *filename, t_env *env);
+static char	*get_path(const char *filename, t_list *envs);
 static char	*build_path(const char *filename, char *full_path);
 static void	child_path_error(const char *filename, char *msg, int exit_code,
 				char *path);
@@ -27,7 +27,7 @@ NOTE:
 	Child only logic and should not be used in parent process.
 */
 
-char	*get_valid_path(const char *filename, t_env *env)
+char	*get_valid_path(const char *filename, t_list *envs)
 {
 	struct stat	sb;
 	char		*path;
@@ -35,7 +35,7 @@ char	*get_valid_path(const char *filename, t_env *env)
 	if (ft_strchr(filename, '/'))
 		path = (char *)filename;
 	else
-		path = get_path(filename, env);
+		path = get_path(filename, envs);
 	if (path == ((char *)-1))
 	{
 		perror(MINI);
@@ -61,12 +61,12 @@ DESCRIPTION:
 	((char *)-1) on malloc() failure.
 */
 
-static char	*get_path(const char *filename, t_env *env)
+static char	*get_path(const char *filename, t_list *envs)
 {
 	const char	*path;
 	char		*full_path;
 
-	path = ft_getenv(env, "PATH");
+	path = ft_getenv(envs, "PATH");
 	if (!path)
 		return (NULL);
 	full_path = ft_strdup(path);

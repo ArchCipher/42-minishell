@@ -12,9 +12,10 @@
 
 #include "minishell.h"
 
-static t_token	*get_token(char *s);
-static size_t	get_tok_len(t_token_type type);
-static size_t	parse_word_token(char *s);
+static t_list		*get_token(char *s);
+static t_token_type	get_nonword_tok_type(char *s);
+static size_t		get_nonword_tok_len(t_token_type type);
+static size_t		get_word_tok_len(char *s);
 
 /*
 DESCRIPTION:
@@ -22,34 +23,50 @@ DESCRIPTION:
 	Returns the list of tokens on success, NULL on failure.
 */
 
-t_token	*tokenise_input(char *s)
+t_list	*tokenise_input(char *s)
 {
-	t_list	tokens;
-	t_token	*tmp;
+	t_list_info	tokens;
+	t_token		*tok;
 
 	tokens.head = NULL;
+	tokens.last = NULL;
 	while (*s)
 	{
 		while (*s && ft_isspace(*s))
 			s++;
 		if (!*s)
 			break ;
-		if (is_redir(*s) || is_connector(s) || is_parenthesis(*s))
-			tokens.new = get_token(s);
-		else
-			tokens.new = create_token(s, WORD, parse_word_token(s));
+		tokens.new = get_token(s);
 		if (!tokens.new)
-			return (free_tokens(tokens.head), NULL);
-		lstadd_back((void **)&tokens, tokens.new, tokens.tail, TYPE_TOKEN);
-		tokens.tail = tokens.new;
-		tmp = (t_token *)tokens.new;
-		if (tmp->type == WORD && (ft_memchr(tmp->raw, '\'', tmp->len)
-				|| ft_memchr(tmp->raw, '\"', tmp->len)))
-			tmp->quoted = true;
-		s += tmp->len;
+			return (ft_lstclear(&tokens.head, free_token), NULL);
+		ft_lstadd_back(&tokens.head, tokens.new, &tokens.last);
+		tok = get_tok(tokens.new);
+		if (tok->type == WORD && (ft_memchr(tok->raw, '\'', tok->len)
+				|| ft_memchr(tok->raw, '\"', tok->len)))
+			tok->quoted = true;
+		s += tok->len;
 	}
 	return (tokens.head);
 }
+
+static t_list	*get_token(char *s)
+{
+	t_token_type	type;
+	size_t			len;
+
+	type = WORD;
+	if (is_redir(*s) || is_connector(s) || is_parenthesis(*s))
+	{
+		type = get_nonword_tok_type(s);
+		if (type == NONE)
+			return (NULL);
+		len = get_nonword_tok_len(type);
+	}
+	else
+		len = get_word_tok_len(s);
+	return (create_token(s, type, len));
+}
+
 
 /*
 DESCRIPTION:
@@ -57,7 +74,7 @@ DESCRIPTION:
 	Returns the token on success, NULL on failure.
 */
 
-static t_token	*get_token(char *s)
+static t_token_type	get_nonword_tok_type(char *s)
 {
 	t_token_type	type;
 
@@ -80,8 +97,8 @@ static t_token	*get_token(char *s)
 	else if (*s == '|')
 		type = PIPE_CHAR;
 	else
-		return (perr_token(s, 1), NULL);
-	return (create_token(s, type, get_tok_len(type)));
+		return (perr_token(s, 1), NONE);
+	return (type);
 }
 
 /*
@@ -91,7 +108,7 @@ DESCRIPTION:
 	single-character tokens return 1, others return 0.
 */
 
-static size_t	get_tok_len(t_token_type type)
+static size_t	get_nonword_tok_len(t_token_type type)
 {
 	if (type == APPEND || type == HEREDOC || type == OR || type == AND)
 		return (2);
@@ -106,7 +123,7 @@ DESCRIPTION:
 	Parses the word token and returns the length of the word.
 */
 
-static size_t	parse_word_token(char *s)
+static size_t	get_word_tok_len(char *s)
 {
 	t_token_type	flag;
 	char			*p;

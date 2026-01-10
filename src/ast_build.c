@@ -12,9 +12,11 @@
 
 #include "minishell.h"
 
-static int	build_redir(t_token **tok, void **head, void **last);
-static void	init_redir(t_redir *new, t_token *tok, int target_fd);
-static int	alloc_cmd_args(t_token *tok, t_cmd *cmd);
+static int		alloc_cmd_args(t_list *tokens, t_cmd *cmd);
+static int		build_redir(t_list **tokens, t_list **redirs,
+					t_list **last_redir);
+static t_list	*create_redir(t_list *tokens, int target_fd);
+static int		validate_redir(t_list *tokens);
 
 /*
 DESCRIPTION:
@@ -25,26 +27,26 @@ DESCRIPTION:
 	Returns the newly built command struct on success, NULL on error.
 */
 
-int	build_cmd(t_token **tok, t_cmd *cmd, void **last_redir)
+int	build_cmd(t_list **tokens, t_cmd *cmd, t_list **last_redir)
 {
+	t_token	*token;
 	ssize_t	i;
 
 	i = 0;
-	if (!alloc_cmd_args(*tok, cmd))
+	if (!alloc_cmd_args(*tokens, cmd))
 		return (0);
-	while (*tok && ((*tok)->type == WORD || (*tok)->type == TARGET_FD
-			|| is_type_redir((*tok)->type)))
+	while (*tokens && (*tokens)->content)
 	{
-		if (is_type_redir((*tok)->type) && !(*tok)->next)
-			return (perr_token((*tok)->raw, (*tok)->len), 0);
-		if ((*tok)->type == WORD)
+		token = get_tok(*tokens);
+		if (!token || is_type_con(token->type) || token->type == R_PAREN)
+			break ;
+		if (token->type == WORD)
 		{
-			cmd->args[i++] = (*tok)->word;
-			(*tok)->word = NULL;
-			*tok = (*tok)->next;
+			cmd->args[i++] = token->word;
+			token->word = NULL;
+			*tokens = (*tokens)->next;
 		}
-		else if ((((*tok)->type == TARGET_FD) || is_type_redir((*tok)->type))
-			&& !build_redir(tok, (void **)&cmd->redirs, last_redir))
+		else if (!build_redir(tokens, &cmd->redirs, last_redir))
 		{
 			if (cmd->args)
 				cmd->args[i] = NULL;
@@ -61,18 +63,24 @@ DESCRIPTION:
 	Although only defensive, returns -1 on leaks in the parser.
 */
 
-static int	alloc_cmd_args(t_token *tok, t_cmd *cmd)
+static int	alloc_cmd_args(t_list *tokens, t_cmd *cmd)
 {
+	t_token	*token;
 	ssize_t	word_count;
 
 	word_count = 0;
-	while (tok && (tok->type == WORD || is_type_redir(tok->type)))
+	while (tokens && tokens->content)
 	{
-		if (tok->type == WORD)
+		token = get_tok(tokens);
+		if (!token || is_type_con(token->type))
+			break ;
+		if (token->type == WORD)
 			word_count++;
-		else if (is_type_redir(tok->type))
-			tok = tok->next;
-		tok = tok->next;
+		else if (is_type_redir(token->type))
+			tokens = tokens->next;
+		else
+			break ;
+		tokens = tokens->next;
 	}
 	if (!word_count)
 		return (1);
@@ -85,47 +93,92 @@ static int	alloc_cmd_args(t_token *tok, t_cmd *cmd)
 
 /*
 DESCRIPTION:
+	Returns 1 if valid redir tokens, 0 otherwise.
+*/
+
+/*
+DESCRIPTION:
 	Builds redirect struct redirection token and following word token.
 	Word token following redirection token is treated as delimeter for heredoc,
 	and file for others.
 	Old word tokens are made null, to avoid double free on error.
 */
 
-static int	build_redir(t_token **tok, void **head, void **last)
+static int	build_redir(t_list **tokens, t_list **redirs, t_list **last_redir)
 {
-	t_redir	*new;
+	t_token	*token;
+	t_list	*new;
 	int		target_fd;
 
-	target_fd = -1;
-	if (*tok && (*tok)->type == TARGET_FD)
+	while (*tokens && (*tokens)->content)
 	{
-		target_fd = ft_atoi((*tok)->word);
-		*tok = (*tok)->next;
-	}
-	while (*tok && is_type_redir((*tok)->type) && (*tok)->next
-		&& (*tok)->next->type == WORD)
-	{
-		new = malloc(sizeof(t_redir));
+		token = get_tok(*tokens);
+		target_fd = -1;
+		if (token->type == TARGET_FD)
+		{
+			target_fd = ft_atoi(token->word);
+			*tokens = (*tokens)->next;
+		}
+		if (!is_type_redir(token->type)
+			|| get_tok_type((*tokens)->next) != WORD)
+			break ;
+		new = create_redir(*tokens, target_fd);
 		if (!new)
 			return (perror(MINI), 0);
-		init_redir(new, *tok, target_fd);
-		lstadd_back(head, (void *)new, *last, TYPE_REDIR);
-		*last = new;
-		*tok = (*tok)->next->next;
+		ft_lstadd_back(redirs, new, last_redir);
+		*tokens = (*tokens)->next->next;
 	}
-	if (*tok && is_type_redir((*tok)->type) && (*tok)->next
-		&& (*tok)->next->type != WORD)
-		return (perr_token((*tok)->next->raw, (*tok)->next->len), 0);
+	if (*tokens && !validate_redir(*tokens))
+		return (0);
 	return (1);
 }
 
-static void	init_redir(t_redir *new, t_token *tok, int target_fd)
+static t_list	*create_redir(t_list *tokens, int target_fd)
 {
-	new->file = tok->next->word;
-	tok->next->word = NULL;
-	new->flag = tok->type;
-	new->fd = -1;
-	new->target_fd = target_fd;
-	new->quoted = tok->next->quoted;
-	new->next = NULL;
+	t_list	*new;
+	t_redir	*redir;
+	t_token	*next_token;
+
+	if (!tokens || !tokens->next)
+		return (NULL);
+	new = ft_lstnew(sizeof(t_redir));
+	if (!new)
+		return (perror(MINI), NULL);
+	redir = get_redir(new);
+	next_token = get_tok(tokens->next);
+	redir->file = next_token->word;
+	next_token->word = NULL;
+	redir->flag = get_tok_type(tokens);
+	redir->fd = -1;
+	redir->target_fd = target_fd;
+	redir->quoted = next_token->quoted;
+	return (new);
+}
+
+static int	validate_redir(t_list *tokens)
+{
+	t_token	*token;
+	t_token	*next;
+
+	if (!tokens || !tokens->content)
+		return (0);
+	token = get_tok(tokens);
+	if (!token || (token->type != TARGET_FD && !is_type_redir(token->type)))
+		return (1);
+	if (token->type == TARGET_FD)
+	{
+		if (!tokens->next)
+			return (perr_token(token->raw, token->len), 0);
+		tokens = tokens->next;
+		token = get_tok(tokens);
+		if (!is_type_redir(token->type))
+			return (perr_token(token->raw, token->len), 0);
+	}
+	next = get_tok(tokens->next);
+	if (is_valid_token(token, next))
+		return (1);
+	if (!next)
+		return (perr_token(token->raw, token->len), 0);
+	perr_token(next->raw, next->len);
+	return (0);
 }

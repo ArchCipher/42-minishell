@@ -14,52 +14,51 @@
 
 /*
 DESCRIPTION:
-	Adds a new node to the end of the list.
-
-NOTE:
-	Must update tail in the caller function to maintain the list.
+	Frees the token and its contents.
 */
 
-void	lstadd_back(void **head, void *new, void *last, t_node_type type)
+void	free_token(void *content)
 {
-	if (!head || !new || (*head && !last))
-	{
-		perr_msg("lstadd_back", "internal invariant violated", NULL, false);
+	t_token	*token;
+
+	token = (t_token *)content;
+	if (!token)
 		return ;
-	}
-	if (!*head)
-		*head = new;
-	else
-	{
-		if (type == TYPE_TOKEN)
-			((t_token *)last)->next = new;
-		else if (type == TYPE_CMD)
-			((t_cmd *)last)->next = new;
-		else if (type == TYPE_REDIR)
-			((t_redir *)last)->next = new;
-		else if (type == TYPE_ENV)
-			((t_env *)last)->next = new;
-	}
+	free(token->word);
+	free(token);
 }
 
 /*
 DESCRIPTION:
-	Frees the tokens and their content.
-		&& free_content && current->type == WORD
+	Frees the command lis content. Closes any open fds.
 */
 
-void	free_tokens(t_token *tok)
+void	free_cmd(void *content)
 {
-	t_token	*current;
+	t_cmd	*cmd;
 
-	while (tok)
-	{
-		current = tok;
-		tok = tok->next;
-		if (current->word)
-			free(current->word);
-		free(current);
-	}
+	cmd = (t_cmd *)content;
+	free_arr(cmd->args);
+	ft_lstclear(&cmd->redirs, free_redir);
+	if (cmd->subshell)
+		ft_lstclear(&cmd->subshell, free_cmd);
+	free(cmd);
+}
+
+/*
+DESCRIPTION:
+	Frees the command list's content. Closes any open fds.
+*/
+
+void	free_redir(void *content)
+{
+	t_redir	*redir;
+
+	redir = (t_redir *)content;
+	free(redir->file);
+	if (redir->fd != -1)
+		close(redir->fd);
+	free(redir);
 }
 
 /*
@@ -81,36 +80,16 @@ void	free_arr(char **arr)
 
 /*
 DESCRIPTION:
-	Frees the command list and their content. Closes any open fds.
-
-	// if subshell is added add check for cmd->args existence
-	// or move to separate fucntion
+	Frees the environment list's content.
 */
 
-void	free_cmds(t_cmd *cmds)
+void	free_env(void *content)
 {
-	t_cmd	*cmd;
-	t_cmd	*tmp;
-	t_redir	*cur_redir;
+	t_env	*env;
 
-	cmd = cmds;
-	while (cmd)
-	{
-		if (cmd->args)
-			free_arr(cmd->args);
-		while (cmd->redirs)
-		{
-			cur_redir = cmd->redirs;
-			cmd->redirs = cmd->redirs->next;
-			free(cur_redir->file);
-			if (cur_redir->fd != -1)
-				close(cur_redir->fd);
-			free(cur_redir);
-		}
-		if (cmd->sub)
-			free_cmds(cmd->sub);
-		tmp = cmd;
-		cmd = cmd->next;
-		free(tmp);
-	}
+	env = (t_env *)content;
+	free(env->key);
+	if (env->value)
+		free(env->value);
+	free(env);
 }

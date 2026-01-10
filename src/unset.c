@@ -12,7 +12,7 @@
 
 #include "minishell.h"
 
-static void	del_one_env(t_shell *shell, t_env *env, t_env *prev);
+static void	del_one_env(t_shell *shell, t_list *env, t_list *prev);
 
 /*
 DESCRIPTION:
@@ -22,8 +22,8 @@ DESCRIPTION:
 
 int	exec_unset(char **args, t_shell *shell)
 {
-	t_env	*prev;
-	t_env	*env;
+	t_list	*prev;
+	t_list	*env;
 	char	*cmd;
 
 	cmd = *(args++);
@@ -55,15 +55,15 @@ DESCRIPTION:
 	Updates the head and tail pointers of the list if necessary.
 */
 
-static void	del_one_env(t_shell *shell, t_env *env, t_env *prev)
+static void	del_one_env(t_shell *shell, t_list *env, t_list *prev)
 {
-	if (prev)
-		prev->next = env->next;
-	else
+	if (!shell->env || !env)
+		return ;
+	if (!prev)
 		shell->env = env->next;
-	if (env == shell->env_tail)
-		shell->env_tail = prev;
-	free(env->key);
-	free(env->value);
-	free(env);
+	else
+		prev->next = env->next;
+	if (env == shell->env_last)
+		shell->env_last = prev;
+	ft_lstdelone(env, free_env);
 }

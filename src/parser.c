@@ -12,11 +12,10 @@
 
 #include "minishell.h"
 
-static int	process_token(t_token **head, t_token **cur, t_token *prev,
+static int	process_token(t_list **tokens, t_list **cur, t_list *prev,
 				t_shell *shell);
-static int	is_target_fd(t_token *cur);
+static int	is_target_fd(t_token *cur, t_token *next);
 static int	update_paren_depth(t_token *cur, int *depth);
-static int	is_valid_token(t_token_type t1, t_token_type t2);
 
 /*
 DESCRIPTION:
@@ -26,31 +25,31 @@ DESCRIPTION:
 	Returns the parsed tokens on success, NULL on error.
 */
 
-t_token	*parse_tokens(t_token *head, t_shell *shell)
+t_list	*parse_tokens(t_list *tokens, t_shell *shell)
 {
-	t_token	*cur;
-	t_token	*prev;
+	t_list	*cur;
+	t_list	*prev;
 	int		depth;
 	int		ret;
 
-	if (!head)
+	if (!tokens)
 		return (NULL);
-	cur = head;
+	cur = tokens;
 	prev = NULL;
 	depth = 0;
-	while (cur)
+	while (cur && cur->content)
 	{
-		ret = process_token(&head, &cur, prev, shell);
+		ret = process_token(&tokens, &cur, prev, shell);
 		if (!cur || ret == 2)
 			continue ;
-		if (ret == 1 || (cur && update_paren_depth(cur, &depth)))
-			return (free_tokens(head), NULL);
+		if (ret == 1 || (cur && update_paren_depth(get_tok(cur), &depth)))
+			return (ft_lstclear(&tokens, free_token), NULL);
 		prev = cur;
 		cur = cur->next;
 	}
-	if (depth || (prev && !is_valid_token(prev->type, NONE)))
-		return (perr_token(NULL, 0), free_tokens(head), NULL);
-	return (head);
+	if (depth || (prev && !is_valid_token(get_tok(prev), NULL)))
+		return (perr_token(NULL, 0), ft_lstclear(&tokens, free_token), NULL);
+	return (tokens);
 }
 
 /*
@@ -76,39 +75,42 @@ DESCRIPTION:
 	unquoted word tokens containing spaces. Returns 0 on success, 1 on error.
 */
 
-static int	process_token(t_token **head, t_token **cur, t_token *prev,
+static int	process_token(t_list **tokens, t_list **cur, t_list *prev,
 		t_shell *shell)
 {
-	if ((!prev && !is_valid_token(NONE, (*cur)->type)) || (prev
-			&& !is_valid_token(prev->type, (*cur)->type)))
-		return (perr_token((*cur)->raw, (*cur)->len), 1);
-	if ((*cur)->type != WORD)
-		return (0);
-	if (expand_word_token(*cur, prev, shell))
+	t_token	*cur_tok;
+	t_token	*prev_tok;
+
+	cur_tok = get_tok(*cur);
+	if (!cur_tok)
 		return (1);
-	if ((*cur)->quoted || !(*cur)->word)
+	prev_tok = get_tok(prev);
+	if (!is_valid_token(prev_tok, cur_tok))
+		return (perr_token(cur_tok->raw, cur_tok->len), 1);
+	if (cur_tok->type != WORD)
 		return (0);
-	if (!(*cur)->quoted && is_target_fd(*cur))
-		return (0);
-	if (!*(*cur)->word)
-		return (del_one_token(head, prev, cur), 2);
-	if (ft_strlen((*cur)->word) == ft_strcspn((*cur)->word, IS_SPACE))
-		return (0);
-	if (prev && is_type_redir(prev->type))
-		return (perr_tok_msg(NULL, (*cur)->raw, (*cur)->len,
-				E_REDIR), 1);
-	if (split_word_token(head, cur, prev))
+	if (expand_word_token(cur_tok, prev_tok, shell))
 		return (1);
-	return (0);
+	if (cur_tok->quoted || !cur_tok->word)
+		return (0);
+	if (!cur_tok->quoted && is_target_fd(cur_tok, get_tok((*cur)->next)))
+		return (0);
+	if (!*cur_tok->word)
+		return (del_one_token(tokens, prev, cur), 2);
+	if (ft_strlen(cur_tok->word) == ft_strcspn(cur_tok->word, IS_SPACE))
+		return (0);
+	if (prev_tok && is_type_redir(prev_tok->type))
+		return (perr_tok_msg(NULL, cur_tok->raw, cur_tok->len, E_REDIR), 1);
+	return (split_word_token(tokens, cur, prev));
 }
 
-static int	is_target_fd(t_token *cur)
+static int	is_target_fd(t_token *cur, t_token *next)
 {
 	char	*p;
 	size_t	i;
 
 	p = cur->raw;
-	if (!cur->next || !is_type_redir(cur->next->type))
+	if (!next || !is_type_redir(next->type))
 		return (0);
 	i = 0;
 	while (i < cur->len && ft_isdigit(p[i]))
@@ -124,24 +126,30 @@ DESCRIPTION:
 	Returns 1 if t2 is a valid token after t1, 0 otherwise.
 */
 
-static int	is_valid_token(t_token_type t1, t_token_type t2)
+int	is_valid_token(t_token *prev, t_token *cur)
 {
-	if (t1 == NONE)
-		return (t2 == WORD || t2 == L_PAREN || is_type_redir(t2));
-	if (t2 == NONE)
-		return (t1 == WORD || t1 == R_PAREN);
-	if (t1 == TARGET_FD)
-		return (is_type_redir(t2));
-	if (is_type_redir(t1))
-		return (t2 == WORD);
-	if (t1 == PIPE_CHAR || t1 == AND || t1 == OR)
-		return (t2 == WORD || is_type_redir(t2) || t2 == L_PAREN);
-	if (t1 == L_PAREN)
-		return (t2 == L_PAREN || t2 == WORD || is_type_redir(t2));
-	if (t1 == R_PAREN)
-		return (t2 == R_PAREN || is_type_con(t2) || is_type_redir(t2));
-	if (t1 == WORD)
-		return (t2 == WORD || is_type_redir(t2) || is_type_con(t2)
-			|| t2 == R_PAREN);
+	if (!prev && !cur)
+		return (0);
+	if (!prev)
+		return (cur->type == WORD || cur->type == L_PAREN
+			|| is_type_redir(cur->type));
+	if (!cur)
+		return (prev->type == WORD || prev->type == R_PAREN);
+	if (prev->type == TARGET_FD)
+		return (is_type_redir(cur->type));
+	if (is_type_redir(prev->type))
+		return (cur->type == WORD);
+	if (prev->type == PIPE_CHAR || prev->type == AND || prev->type == OR)
+		return (cur->type == WORD || is_type_redir(cur->type)
+			|| cur->type == L_PAREN);
+	if (prev->type == L_PAREN)
+		return (cur->type == L_PAREN || cur->type == WORD
+			|| is_type_redir(cur->type));
+	if (prev->type == R_PAREN)
+		return (cur->type == R_PAREN || is_type_con(cur->type)
+			|| is_type_redir(cur->type));
+	if (prev->type == WORD)
+		return (cur->type == WORD || is_type_redir(cur->type)
+			|| is_type_con(cur->type) || cur->type == R_PAREN);
 	return (0);
 }
