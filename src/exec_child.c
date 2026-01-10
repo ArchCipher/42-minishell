@@ -52,7 +52,7 @@ int	fork_with_pipe(t_list *cmds, t_shell *shell)
 	if (cmd->exec.pid == 0)
 		exec_child(cmd, pipe_fd, shell);
 	if (cmd->exec.prev_fd != -1)
-		close(cmd->exec.prev_fd); // set it to -1 after closing
+		close(cmd->exec.prev_fd);
 	if (!pipe_fd)
 		return (0);
 	close(pipe_fd[1]);

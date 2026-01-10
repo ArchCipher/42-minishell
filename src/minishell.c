@@ -192,8 +192,6 @@ static void	init_shell_terminal(struct termios *original_term)
 	exit(1);
 }
 
-
-
 /*
 DESCRIPTION:
 	Updates the PWD and OLDPWD environment variables at startup.

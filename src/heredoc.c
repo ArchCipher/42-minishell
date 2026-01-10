@@ -89,7 +89,6 @@ static int	handle_heredoc(t_redir *redir, t_shell *shell)
 	return (wait_heredoc_child(pid));
 }
 
-
 /*
 DESCRIPTION:
 	Reads from terminal and writes to write end of a pipe, until the limiter is

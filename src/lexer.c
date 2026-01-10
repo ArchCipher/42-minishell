@@ -63,7 +63,6 @@ static t_list	*get_token(char *s)
 	return (create_token(s, type, len));
 }
 
-
 /*
 DESCRIPTION:
 	Creates a token from the input string and returns it.
@@ -123,4 +122,3 @@ static size_t	get_word_tok_len(char *s)
 	}
 	return (p - s);
 }
-

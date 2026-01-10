@@ -54,20 +54,20 @@ static int	exec_cmd(t_list *cmds, t_shell *shell)
 	t_cmd	*cmd;
 
 	cmd = get_cmd(cmds);
-	if (!cmd || (cmd->args && expand_args(cmd, shell)))
-		return (1);
+	if (!cmd || (cmd->args && expand_args(cmd, shell))
+		|| (cmd->args && !*cmd->args))
+		return (0);
 	if (cmd->args && (!*cmd->args || !**cmd->args))
 	{
 		perr_msg("", E_CMD, NULL, false);
 		return (EXIT_CMD_NOT_FOUND);
 	}
 	cmd->exec.builtin = is_builtin(cmd->args);
-	if (cmd->exec.builtin == -1 || cmd->subshell
-		|| (cmds->next && get_cmd(cmds->next)->con == PIPE_CHAR))
+	if (cmd->exec.builtin == -1 || cmd->subshell || cmd->con == PIPE_CHAR
+		|| (cmds->next && (get_cmd(cmds->next)->con == PIPE_CHAR)))
 		return (fork_with_pipe(cmds, shell));
 	return (exec_in_parent(cmds, shell));
 }
-
 
 /*
 DESCRIPTION:
@@ -120,18 +120,19 @@ static int	cmds_waitpid(t_list **pipe, t_shell *shell)
 		return (perror(MINI), -1);
 	while (*pipe && (*pipe)->content && get_cmd(*pipe)->exec.pid != -1)
 	{
-		if (waitpid(get_cmd(*pipe)->exec.pid, &status, 0) != -1)
-		{
-			if (WIFEXITED(status))
-				shell->status = WEXITSTATUS(status);
-			else if (WIFSIGNALED(status))
-				shell->status = SIG_EXIT_BASE + WTERMSIG(status);
-		}
-		else
+		if (waitpid(get_cmd(*pipe)->exec.pid, &status, 0) == -1)
 		{
 			perror(MINI);
 			shell->status = 1;
+			*pipe = (*pipe)->next;
+			continue ;
 		}
+		if (WIFEXITED(status))
+			shell->status = WEXITSTATUS(status);
+		else if (WIFSIGNALED(status))
+			shell->status = SIG_EXIT_BASE + WTERMSIG(status);
+		if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
+			write(1, "\n", 1);
 		*pipe = (*pipe)->next;
 	}
 	if (set_signal_handler(SIGINT, shell_handler) == -1)

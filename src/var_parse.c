@@ -12,9 +12,9 @@
 
 #include "minishell.h"
 
-static void		status_int_to_str(t_shell *shell);
+static void			status_int_to_str(t_shell *shell);
 static const char	*expand_env_var(char **str, t_list *envs);
-static size_t	count_digits(int n, int base);
+static size_t		count_digits(int n, int base);
 
 /*
 DESCRIPTION:

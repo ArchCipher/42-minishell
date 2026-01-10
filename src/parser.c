@@ -24,7 +24,6 @@ DESCRIPTION:
 	Returns the parsed tokens on success, NULL on error.
 */
 
-
 t_list	*parse_tokens(t_list *tokens)
 {
 	t_list	*cur;
@@ -137,7 +136,8 @@ int	is_valid_token(t_token *prev, t_token *cur)
 		return (cur->type == R_PAREN || is_type_con(cur->type)
 			|| is_type_redir(cur->type));
 	if (prev->type == WORD)
-		return (cur->type == WORD || is_type_redir(cur->type) || cur->type == TARGET_FD
+		return (cur->type == WORD || is_type_redir(cur->type)
+			|| cur->type == TARGET_FD
 			|| is_type_con(cur->type) || cur->type == R_PAREN);
 	return (0);
 }

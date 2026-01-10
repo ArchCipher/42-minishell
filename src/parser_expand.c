@@ -12,65 +12,13 @@
 
 #include "minishell.h"
 
-char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell);
-
-// 	if (cur_tok->type != WORD)
-// 		return (0);
-// 	if (expand_word_token(cur_tok, prev_tok, shell))
-// 		return (1);
-// 	if (cur_tok->quoted || !cur_tok->word)
-// 		return (0);
-// 	if (!cur_tok->quoted && is_target_fd(cur_tok, get_tok((*cur)->next)))
-// 		return (0);
-// 	if (!*cur_tok->word)
-// 		return (del_one_token(tokens, prev, cur), 2);
-// 	if (ft_strlen(cur_tok->word) == ft_strcspn(cur_tok->word, IS_SPACE))
-// 		return (0);
-// 	if (prev_tok && is_type_redir(prev_tok->type))
-// 		return (perr_tok_msg(NULL, cur_tok->raw, cur_tok->len, E_REDIR), 1);
-// 	return (split_word_token(tokens, cur, prev));
-// }
+static char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell);
+static int	split_args(t_cmd *cmd, ssize_t *j, char *s);
 
 /*
 DESCRIPTION:
-	Splits a word token containing spaces into multiple word tokens.
-	The original token is deleted and replaced with new tokens created from
-	the space-separated words. Returns 0 on success, 1 on failure.
-*/
-
-int	split_args(t_cmd *cmd, ssize_t *j, char *s)
-{
-	char	*str_tok;
-	char	*p;
-	char	*tmp;
-	char	**tmp_args;
-
-	str_tok = ft_strtok_r(s, IS_SPACE, &p);
-	while (str_tok)
-	{
-		tmp = ft_strdup(str_tok);
-		if (!tmp)
-			return (1);
-		if (cmd->argcap < (*j) + 1)
-		{
-			tmp_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *),
-					(cmd->argcap + 1) * sizeof(char *));
-			if (!tmp_args)
-				return (free(tmp), 1);
-			cmd->args = tmp_args;
-			cmd->argcap++;
-		}
-		cmd->args[(*j)++] = tmp;
-		str_tok = ft_strtok_r(NULL, IS_SPACE, &p);
-	}
-	free(s);
-	return (0);
-}
-
-/*
-DESCRIPTION:
-	Expands variables and tilde in a word token and allocates a new string
-	for the expanded result. Returns 0 on success, 1 on error.
+	Expands variables and tilde in arguments and allocates new strings
+	for the expanded results. Returns 0 on success, 1 on error.
 */
 
 int	expand_args(t_cmd *cmd, t_shell *shell)
@@ -78,27 +26,24 @@ int	expand_args(t_cmd *cmd, t_shell *shell)
 	ssize_t	i;
 	ssize_t	j;
 	char	*tmp;
+	bool	expand;
 	bool	quoted;
 
 	i = 0;
 	j = 0;
 	while (i < cmd->arglen)
 	{
-		quoted = (ft_strchr(cmd->args[i], '\'') || ft_strchr(cmd->args[i], '"'));
-		if (quoted || ft_strchr(cmd->args[i], '$'))
-		{
-			tmp = expand_remove_quote(cmd->args[i], &quoted, shell);
-			if (!tmp)
-				return (1);
-			if (!quoted && !*tmp)
-				free(tmp);
-			else if ((!quoted && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE)) || quoted)
-				cmd->args[j++] = tmp;
-			else if (split_args(cmd, &j, tmp))
-				return (free(tmp), 1);
-		}
-		else
-			cmd->args[j++] = cmd->args[i];
+		quoted = (ft_strlen(cmd->args[i]) != ft_strcspn(cmd->args[i], "\'\""));
+		tmp = expand_str(cmd->args[i], shell, &expand, true);
+		if (!tmp)
+			return (1);
+		if (!quoted && !*tmp)
+			free(tmp);
+		else if ((!expand && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE))
+			|| quoted)
+			cmd->args[j++] = tmp;
+		else if (split_args(cmd, &j, tmp))
+			return (free(tmp), 1);
 		i++;
 	}
 	cmd->args[j] = NULL;
@@ -125,7 +70,7 @@ char	*expand_str(char *src, t_shell *shell, bool *quoted, bool split)
 	return (dst);
 }
 
-char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
+static char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
 {
 	t_expand		s;
 	t_token_type	flag;
@@ -137,7 +82,7 @@ char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
 	while (s.src < s.src_end)
 	{
 		if ((*s.src == '\'' && (flag == WORD || flag == SQUOTE))
-				|| (*s.src == '\"' && (flag == WORD || flag == DQUOTE)))
+			|| (*s.src == '\"' && (flag == WORD || flag == DQUOTE)))
 			flag = update_quote_flag(*s.src, flag);
 		else if (dollar_expandable(s.src, s.src_end) && flag != SQUOTE)
 		{
@@ -151,8 +96,43 @@ char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
 			s.dst[s.len++] = *s.src;
 		s.src++;
 	}
-	s.dst[s.len] = 0;
-	return (s.dst);
+	return (s.dst[s.len] = 0, s.dst);
+}
+
+/*
+DESCRIPTION:
+	Splits a word token containing spaces into multiple word tokens.
+	The original token is deleted and replaced with new tokens created from
+	the space-separated words. Returns 0 on success, 1 on failure.
+*/
+
+static int	split_args(t_cmd *cmd, ssize_t *j, char *s)
+{
+	char	*str_tok;
+	char	*p;
+	char	*tmp;
+	char	**tmp_args;
+
+	str_tok = ft_strtok_r(s, IS_SPACE, &p);
+	while (str_tok)
+	{
+		tmp = ft_strdup(str_tok);
+		if (!tmp)
+			return (1);
+		if (cmd->argcap <= (*j) + 1)
+		{
+			tmp_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *),
+					(cmd->argcap + 1) * sizeof(char *));
+			if (!tmp_args)
+				return (free(tmp), 1);
+			cmd->args = tmp_args;
+			cmd->argcap++;
+		}
+		cmd->args[(*j)++] = tmp;
+		str_tok = ft_strtok_r(NULL, IS_SPACE, &p);
+	}
+	free(s);
+	return (0);
 }
 
 /*

@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/16 18:26:05 by kmurugan          #+#    #+#             */
-/*   Updated: 2025/12/28 19:43:51 by kmurugan         ###   ########.fr       */
+/*   Created: 2025/10/16 18:01:41 by kmurugan          #+#    #+#             */
+/*   Updated: 2025/10/16 18:01:41 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,10 @@
 
 void	*ft_memset(void *b, int c, size_t len)
 {
-	size_t	i;
+	unsigned char	*p;
 
-	i = 0;
-	while (i < len)
-	{
-		((unsigned char *)b)[i] = (unsigned char)c;
-		i++;
-	}
+	p = (unsigned char *)b;
+	while (len--)
+		*p++ = (unsigned char)c;
 	return (b);
 }

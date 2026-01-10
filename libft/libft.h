@@ -51,9 +51,7 @@ char				*ft_strjoin3(const char *s1, const char *s2,
 int					ft_putstr(const char *s, int fd);
 void				ft_lstadd_back(t_list **lst, t_list *new, t_list **last);
 void				ft_lstclear(t_list **lst, void (*del)(void *));
-// void				ft_lstiter(t_list *lst, void (*f)(void *));
 void				ft_lstdelone(t_list *lst, void (*del)(void *));
 t_list				*ft_lstnew(size_t size);
-// int					ft_lstsize(t_list *lst);
 
 #endif

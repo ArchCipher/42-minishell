@@ -79,7 +79,6 @@ static int	print_nbr(char *num, int num_len, int prefix_len, t_fmt flag)
 
 	width_pad = 0;
 	prec_pad = 0;
-	num_written = 0;
 	if (flag.dot && flag.precision == 0 && *num == '0')
 		num_len = 0;
 	pad_len = max(0, flag.width - (prefix_len + max(num_len, flag.precision)));
