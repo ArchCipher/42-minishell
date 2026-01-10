@@ -29,7 +29,7 @@ int	exec_in_parent(t_list *cmds, t_shell *shell)
 	o_stderr = dup(STDERR_FILENO);
 	if (o_stderr == -1)
 		return (close(o_stdout), close(o_stdin), perror(MINI), 1);
-	if (setup_redirs(cmd->redirs))
+	if (setup_redirs(cmd->redirs, shell))
 		return (restore_fds(o_stdin, o_stdout, o_stderr, shell), 1);
 	if (isatty(o_stdout) && cmd->exec.builtin == BUILTIN_EXIT)
 		write(o_stdout, "exit\n", 5);

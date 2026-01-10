@@ -104,7 +104,7 @@ static void	exec_child(t_cmd *cmd, int *fd, t_shell *shell)
 
 	if (init_child(fd, cmd->exec.prev_fd))
 		exit(close_fds_error(fd, cmd->exec.prev_fd));
-	if (setup_redirs(cmd->redirs))
+	if (setup_redirs(cmd->redirs, shell))
 		exit(EXIT_FAILURE);
 	close_pipe_fds(fd, cmd->exec.prev_fd);
 	if (cmd->subshell)

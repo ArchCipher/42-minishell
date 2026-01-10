@@ -67,28 +67,28 @@ DESCRIPTION:
 static int	alloc_cmd_args(t_list *tokens, t_cmd *cmd)
 {
 	t_token	*token;
-	ssize_t	word_count;
 
-	word_count = 0;
+	cmd->arglen = 0;
 	while (tokens && tokens->content)
 	{
 		token = get_tok(tokens);
 		if (!token || is_type_con(token->type))
 			break ;
 		if (token->type == WORD)
-			word_count++;
+			cmd->arglen++;
 		else if (is_type_redir(token->type))
 			tokens = tokens->next;
 		else
 			break ;
 		tokens = tokens->next;
 	}
-	if (!word_count)
+	if (!cmd->arglen)
 		return (1);
-	cmd->args = malloc(sizeof(char *) * (word_count + 1));
+	cmd->args = malloc(sizeof(char *) * (cmd->arglen + 1));
 	if (!cmd->args)
 		return (perror(MINI), 0);
-	cmd->args[word_count] = NULL;
+	cmd->args[cmd->arglen] = NULL;
+	cmd->argcap = cmd->arglen + 1;
 	return (1);
 }
 

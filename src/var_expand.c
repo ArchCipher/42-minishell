@@ -51,6 +51,7 @@ int	append_var(t_expand *s, t_shell *shell)
 {
 	const char	*var;
 	size_t		var_len;
+	char		*tmp;
 
 	var = get_var(&s->src, shell);
 	if (var == ((char *)-1))
@@ -61,9 +62,10 @@ int	append_var(t_expand *s, t_shell *shell)
 	if (s->cap < s->len + var_len + (s->src_end - s->src))
 	{
 		s->cap = s->len + var_len + (s->src_end - s->src);
-		s->dst = ft_realloc(s->dst, s->len, (s->cap) + 1);
-		if (!s->dst)
+		tmp = ft_realloc(s->dst, s->len, (s->cap) + 1);
+		if (!tmp)
 			return (perror(MINI), 1);
+		s->dst = tmp;
 	}
 	ft_memcpy(s->dst + (s->len), var, var_len);
 	s->len += var_len;

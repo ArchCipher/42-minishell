@@ -32,7 +32,7 @@ INC				= -I. \
 #				Sources & Objects
 MSRCS			= \
 				minishell \
-				lexer parser parser_expand parser_split \
+				lexer parser parser_expand\
 				token_checks token_utils \
 				ast ast_build \
 				var_expand var_parse \

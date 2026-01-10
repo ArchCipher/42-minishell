@@ -27,13 +27,19 @@ NOTE:
 	redirs->fd is set to -1 after closing, to avoid double close.
 */
 
-int	setup_redirs(t_list *redirs)
+int	setup_redirs(t_list *redirs, t_shell *shell)
 {
 	t_redir	*redir;
+	char	*tmp;
+	bool	quoted;
 
 	while (redirs && redirs->content)
 	{
 		redir = get_redir(redirs);
+		tmp = expand_str(redir->file, shell, &quoted, false);
+		if (!tmp)
+			return (1);
+		redir->file = tmp;
 		redir->fd = open_redir_file(redir);
 		if (redir->fd == -1)
 			return (perr_msg(redir->file, strerror(errno), NULL, false), 1);

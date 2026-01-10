@@ -12,9 +12,9 @@
 
 #include "minishell.h"
 
-static int	exec_no_pipe(t_list *cmds, t_shell *shell);
+static int	exec_cmd(t_list *cmds, t_shell *shell);
 static int	is_builtin(char **s);
-static int	cmds_waitpid(t_list *pipe, t_shell *shell);
+static int	cmds_waitpid(t_list **pipe, t_shell *shell);
 
 /*
 DESCRIPTION:
@@ -30,8 +30,6 @@ int	exec_cmds(t_list *cmds, t_shell *shell)
 	t_list	*pipe;
 	t_cmd	*cmd;
 
-	if (exec_no_pipe(cmds, shell))
-		return (shell->status);
 	pipe = NULL;
 	while (cmds && cmds->content)
 	{
@@ -39,37 +37,35 @@ int	exec_cmds(t_list *cmds, t_shell *shell)
 		if ((cmd->con == OR && !shell->status) || (cmd->con == AND
 				&& shell->status))
 			return (shell->status);
-		cmd->exec.builtin = is_builtin(cmd->args);
-		fork_with_pipe(cmds, shell);
+		shell->status = exec_cmd(cmds, shell);
 		if (!pipe)
 			pipe = cmds;
 		if (pipe && (!cmds->next || !cmds->next->content
-				|| get_cmd(cmds->next)->con != PIPE_CHAR))
-		{
-			shell->status = cmds_waitpid(pipe, shell);
-			pipe = NULL;
-		}
+				|| get_cmd(cmds->next)->con != PIPE_CHAR)
+			&& cmds_waitpid(&pipe, shell) == -1)
+			exit_shell(cmds, shell);
 		cmds = cmds->next;
 	}
 	return (shell->status);
 }
 
-static int	exec_no_pipe(t_list *cmds, t_shell *shell)
+static int	exec_cmd(t_list *cmds, t_shell *shell)
 {
 	t_cmd	*cmd;
 
 	cmd = get_cmd(cmds);
-	if (!cmd || (cmd->args && (!*cmd->args || !**cmd->args)))
+	if (!cmd || (cmd->args && expand_args(cmd, shell)))
+		return (1);
+	if (cmd->args && (!*cmd->args || !**cmd->args))
 	{
 		perr_msg("", E_CMD, NULL, false);
-		shell->status = EXIT_CMD_NOT_FOUND;
-		return (1);
+		return (EXIT_CMD_NOT_FOUND);
 	}
 	cmd->exec.builtin = is_builtin(cmd->args);
-	if (cmds->next || cmd->exec.builtin == -1 || cmd->subshell)
-		return (0);
-	shell->status = exec_in_parent(cmds, shell);
-	return (1);
+	if (cmd->exec.builtin == -1 || cmd->subshell
+		|| (cmds->next && get_cmd(cmds->next)->con == PIPE_CHAR))
+		return (fork_with_pipe(cmds, shell));
+	return (exec_in_parent(cmds, shell));
 }
 
 
@@ -106,7 +102,7 @@ static int	is_builtin(char **s)
 DESCRIPTION:
 	Waits for the child processes to finish and returns the exit status of the
 	last command.
-	Returns 0 on success, 1 on error.
+	Returns the exit status of the last command on success, -1 on error.
 
 	waitpid(): Waits for a child process to update its status.
 		WIFEXITED() returns true if the child process terminated normally.
@@ -116,17 +112,15 @@ DESCRIPTION:
 	If waitpid() returns -1, WIFSIGNALED or WEXITSTATUS is not set.
 */
 
-// maybe setup handler to detect signal and kill processes before exit.
-
-static int	cmds_waitpid(t_list *pipe, t_shell *shell)
+static int	cmds_waitpid(t_list **pipe, t_shell *shell)
 {
 	int		status;
 
 	if (set_signal_handler(SIGINT, SIG_IGN) == -1)
-		return (perror(MINI), 1);
-	while (pipe && pipe->content && get_cmd(pipe)->exec.pid != -1)
+		return (perror(MINI), -1);
+	while (*pipe && (*pipe)->content && get_cmd(*pipe)->exec.pid != -1)
 	{
-		if (waitpid(get_cmd(pipe)->exec.pid, &status, 0) != -1)
+		if (waitpid(get_cmd(*pipe)->exec.pid, &status, 0) != -1)
 		{
 			if (WIFEXITED(status))
 				shell->status = WEXITSTATUS(status);
@@ -138,9 +132,10 @@ static int	cmds_waitpid(t_list *pipe, t_shell *shell)
 			perror(MINI);
 			shell->status = 1;
 		}
-		pipe = pipe->next;
+		*pipe = (*pipe)->next;
 	}
 	if (set_signal_handler(SIGINT, shell_handler) == -1)
-		return (perror(MINI), 1);
+		return (perror(MINI), -1);
+	*pipe = NULL;
 	return (shell->status);
 }

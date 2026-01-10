@@ -13,8 +13,7 @@
 #include "minishell.h"
 
 static void		status_int_to_str(t_shell *shell);
-static const char	*expand_env_var(char **token, t_list *envs);
-// static int		is_valid_var_subst(char *token, size_t len);
+static const char	*expand_env_var(char **str, t_list *envs);
 static size_t	count_digits(int n, int base);
 
 /*
@@ -43,7 +42,7 @@ const char	*get_var(char **str, t_shell *shell)
 	}
 	(*str)++;
 	if (**str != '?')
-		return (expand_env_var(str, shell->env))
+		return (expand_env_var(str, shell->env));
 	(*str)++;
 	status_int_to_str(shell);
 	return (shell->exit_code);
@@ -81,10 +80,8 @@ DESCRIPTION:
 NOTE:
 	As NULL is a valid expansion, (char *)-1 is used as a sentinel value for
 	invalid substitution and malloc failure. Must not be dereferenced, but only
-	compared to detect invalid substitution.
+	compared to detect 	invalid substitution.
 */
-
-// maybe should err when no closing brackets
 
 static const char	*expand_env_var(char **str, t_list *envs)
 {

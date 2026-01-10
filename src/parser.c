@@ -49,30 +49,6 @@ t_list	*parse_tokens(t_list *tokens)
 	return (tokens);
 }
 
-// t_list	*parse_tokens(t_list *tokens, t_shell *shell)
-// {
-// 	t_list	*cur;
-// 	t_list	*prev;
-// 	int		depth;
-
-// 	if (!tokens)
-// 		return (NULL);
-// 	cur = tokens;
-// 	prev = NULL;
-// 	depth = 0;
-// 	while (cur && cur->content)
-// 	{
-// 		if (process_token(cur, prev)
-// 			|| update_paren_depth(get_tok(cur), &depth))
-// 			return (ft_lstclear(&tokens, free_token), NULL);
-// 		prev = cur;
-// 		cur = cur->next;
-// 	}
-// 	if (depth || (prev && !is_valid_token(get_tok(prev), NULL)))
-// 		return (perr_token(NULL, 0), ft_lstclear(&tokens, free_token), NULL);
-// 	return (tokens);
-// }
-
 /*
 DESCRIPTION:
 	Updates the parenthesis depth counter based on the current token type.
@@ -115,41 +91,6 @@ static int	process_token(t_list *cur, t_list *prev)
 	ft_memcpy(cur_tok->word, cur_tok->raw, cur_tok->len);
 	return (0);
 }
-
-// /*
-// DESCRIPTION:
-// 	Processes a single token: validates it, expands word tokens, and splits
-// 	unquoted word tokens containing spaces. Returns 0 on success, 1 on error.
-// */
-
-// static int	process_token(t_list **tokens, t_list **cur, t_list *prev,
-// 		t_shell *shell)
-// {
-// 	t_token	*cur_tok;
-// 	t_token	*prev_tok;
-
-// 	cur_tok = get_tok(*cur);
-// 	if (!cur_tok)
-// 		return (1);
-// 	prev_tok = get_tok(prev);
-// 	if (!is_valid_token(prev_tok, cur_tok))
-// 		return (perr_token(cur_tok->raw, cur_tok->len), 1);
-// 	if (cur_tok->type != WORD)
-// 		return (0);
-// 	if (expand_word_token(cur_tok, prev_tok, shell))
-// 		return (1);
-// 	if (cur_tok->quoted || !cur_tok->word)
-// 		return (0);
-// 	if (!cur_tok->quoted && is_target_fd(cur_tok, get_tok((*cur)->next)))
-// 		return (0);
-// 	if (!*cur_tok->word)
-// 		return (del_one_token(tokens, prev, cur), 2);
-// 	if (ft_strlen(cur_tok->word) == ft_strcspn(cur_tok->word, IS_SPACE))
-// 		return (0);
-// 	if (prev_tok && is_type_redir(prev_tok->type))
-// 		return (perr_tok_msg(NULL, cur_tok->raw, cur_tok->len, E_REDIR), 1);
-// 	return (split_word_token(tokens, cur, prev));
-// }
 
 static int	is_target_fd(t_token *cur, t_token *next)
 {

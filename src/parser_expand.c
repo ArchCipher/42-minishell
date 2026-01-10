@@ -12,12 +12,120 @@
 
 #include "minishell.h"
 
-// static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag);
-// static void	append_char(char *c, char *end, t_token_type *flag, t_string *str);
-// static int	init_expand_vars(t_token *token, t_string *str, t_expand *exp);
-// static int	is_fully_quoted(const char *raw, size_t len);
+char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell);
 
-char	*expand_remove_quote(char *src, t_shell *shell)
+// 	if (cur_tok->type != WORD)
+// 		return (0);
+// 	if (expand_word_token(cur_tok, prev_tok, shell))
+// 		return (1);
+// 	if (cur_tok->quoted || !cur_tok->word)
+// 		return (0);
+// 	if (!cur_tok->quoted && is_target_fd(cur_tok, get_tok((*cur)->next)))
+// 		return (0);
+// 	if (!*cur_tok->word)
+// 		return (del_one_token(tokens, prev, cur), 2);
+// 	if (ft_strlen(cur_tok->word) == ft_strcspn(cur_tok->word, IS_SPACE))
+// 		return (0);
+// 	if (prev_tok && is_type_redir(prev_tok->type))
+// 		return (perr_tok_msg(NULL, cur_tok->raw, cur_tok->len, E_REDIR), 1);
+// 	return (split_word_token(tokens, cur, prev));
+// }
+
+/*
+DESCRIPTION:
+	Splits a word token containing spaces into multiple word tokens.
+	The original token is deleted and replaced with new tokens created from
+	the space-separated words. Returns 0 on success, 1 on failure.
+*/
+
+int	split_args(t_cmd *cmd, ssize_t *j, char *s)
+{
+	char	*str_tok;
+	char	*p;
+	char	*tmp;
+	char	**tmp_args;
+
+	str_tok = ft_strtok_r(s, IS_SPACE, &p);
+	while (str_tok)
+	{
+		tmp = ft_strdup(str_tok);
+		if (!tmp)
+			return (1);
+		if (cmd->argcap < (*j) + 1)
+		{
+			tmp_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *),
+					(cmd->argcap + 1) * sizeof(char *));
+			if (!tmp_args)
+				return (free(tmp), 1);
+			cmd->args = tmp_args;
+			cmd->argcap++;
+		}
+		cmd->args[(*j)++] = tmp;
+		str_tok = ft_strtok_r(NULL, IS_SPACE, &p);
+	}
+	free(s);
+	return (0);
+}
+
+/*
+DESCRIPTION:
+	Expands variables and tilde in a word token and allocates a new string
+	for the expanded result. Returns 0 on success, 1 on error.
+*/
+
+int	expand_args(t_cmd *cmd, t_shell *shell)
+{
+	ssize_t	i;
+	ssize_t	j;
+	char	*tmp;
+	bool	quoted;
+
+	i = 0;
+	j = 0;
+	while (i < cmd->arglen)
+	{
+		quoted = (ft_strchr(cmd->args[i], '\'') || ft_strchr(cmd->args[i], '"'));
+		if (quoted || ft_strchr(cmd->args[i], '$'))
+		{
+			tmp = expand_remove_quote(cmd->args[i], &quoted, shell);
+			if (!tmp)
+				return (1);
+			if (!quoted && !*tmp)
+				free(tmp);
+			else if ((!quoted && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE)) || quoted)
+				cmd->args[j++] = tmp;
+			else if (split_args(cmd, &j, tmp))
+				return (free(tmp), 1);
+		}
+		else
+			cmd->args[j++] = cmd->args[i];
+		i++;
+	}
+	cmd->args[j] = NULL;
+	return (0);
+}
+
+char	*expand_str(char *src, t_shell *shell, bool *quoted, bool split)
+{
+	char	*dst;
+
+	*quoted = false;
+	if (ft_strlen(src) == ft_strcspn(src, "\'\"$"))
+		return (src);
+	dst = expand_remove_quote(src, quoted, shell);
+	if (!dst)
+		return (NULL);
+	if (!split && *quoted)
+	{
+		perr_msg(src, E_REDIR, NULL, false);
+		free(dst);
+		return (NULL);
+	}
+	free(src);
+	return (dst);
+}
+
+char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
 {
 	t_expand		s;
 	t_token_type	flag;
@@ -29,12 +137,14 @@ char	*expand_remove_quote(char *src, t_shell *shell)
 	while (s.src < s.src_end)
 	{
 		if ((*s.src == '\'' && (flag == WORD || flag == SQUOTE))
-			|| (*s.src == '\"' && (flag == WORD || flag == DQUOTE)))
+				|| (*s.src == '\"' && (flag == WORD || flag == DQUOTE)))
 			flag = update_quote_flag(*s.src, flag);
 		else if (dollar_expandable(s.src, s.src_end) && flag != SQUOTE)
 		{
+			if (flag == WORD)
+				*quoted = true;
 			if (append_var(&s, shell))
-				return (free(s.dst), free(src), NULL);
+				return (free(s.dst), NULL);
 			continue ;
 		}
 		else
@@ -42,92 +152,30 @@ char	*expand_remove_quote(char *src, t_shell *shell)
 		s.src++;
 	}
 	s.dst[s.len] = 0;
-	free(src);
 	return (s.dst);
 }
 
 /*
 DESCRIPTION:
-	Expands variables and tilde in a word token and allocates a new string
-	for the expanded result. Returns 0 on success, 1 on error.
+	Copies src to dst while removing quote characters.
+	Returns pointer to the null terminator in dst.
 */
 
-// int	expand_word_token(t_token *token, t_token *prev, t_shell *shell)
-// {
-// 	t_string		str;
-// 	t_expand		exp;
+char	*remove_quotes(char *dst, const char *src)
+{
+	t_token_type	old_flag;
+	t_token_type	flag;
 
-// 	if (init_expand_vars(token, &str, &exp))
-// 		return (1);
-// 	while (exp.p < exp.end)
-// 	{
-// 		if (!should_expand(exp.p, exp.end, prev, exp.quote_state))
-// 			append_char(exp.p++, exp.end, &exp.quote_state, &str);
-// 		else
-// 		{
-// 			if (exp.quote_state == WORD)
-// 				exp.unquoted_var = true;
-// 			if (append_var(&str, &exp.p, exp.end, shell))
-// 				return (free(str.dst), 1);
-// 		}
-// 	}
-// 	str.dst[str.len] = 0;
-// 	token->word = str.dst;
-// 	return (0);
-// }
-
-// static int	init_expand_vars(t_token *token, t_string *str, t_expand *exp)
-// {
-// 	*str = alloc_tstring(token->len);
-// 	if (!str->dst)
-// 		return (perror(MINI), 1);
-// 	exp->p = token->raw;
-// 	exp->end = exp->p + token->len;
-// 	exp->quote_state = WORD;
-// 	exp->unquoted_var = false;
-// 	return (0);
-// }
-
-/*
-DESCRIPTION:
-	Determines if the character at position s should be expanded.
-	Returns 1 if expansion should occur, 0 otherwise.
-*/
-
-// static int	should_expand(char *s, char *end, t_token *prev, t_token_type flag)
-// {
-// 	if (prev && prev->type == HEREDOC)
-// 		return (0);
-// 	if (*s == '~' && (s + 1 == end || s[1] == '/'))
-// 		return (1);
-// 	if (dollar_expandable(s, end) && flag != SQUOTE)
-// 		return (1);
-// 	return (0);
-// }
-
-/*
-DESCRIPTION:
-	Appends a character to the string unless it is a quote or an expandable
-	dollar sign. In case of quotes, it updates the flag to the appropriate type.
-
-	Updates quote state. Does not append the quote character itself
-
-	skips '$' for following cases,but does not support ANSCI-C quoting or locale
-	translation
-	$'string'	ANSI-C quoting
-	$"string"	locale translation
-*/
-
-// static void	append_char(char *s, char *end, t_token_type *quote_state,
-// 		t_string *str)
-// {
-// 	t_token_type	old_flag;
-
-// 	if (*s == '$' && *quote_state == WORD && s + 1 < end && (s[1] == '\''
-// 			|| s[1] == '\"'))
-// 		return ;
-// 	old_flag = *quote_state;
-// 	*quote_state = update_quote_flag(*s, *quote_state);
-// 	if (*quote_state == old_flag)
-// 		str->dst[(str->len)++] = *s;
-// }
+	old_flag = WORD;
+	while (*src)
+	{
+		flag = update_quote_flag(*src, old_flag);
+		if (flag == old_flag)
+			*dst++ = *src++;
+		else
+			src++;
+		old_flag = flag;
+	}
+	*dst = 0;
+	return (dst);
+}

@@ -85,8 +85,6 @@ t_list							*parse_tokens(t_list *tokens);
 t_list							*parse_cmd_list(t_list **tokens);
 int								build_cmd(t_list **tokens, t_cmd *cmd,
 									t_list **last_redir);
-int								expand_word_token(t_token *token, t_token *prev,
-									t_shell *shell);
 int								split_word_token(t_list **head, t_list **cur,
 									t_list *prev);
 int								is_valid_token(t_token *prev, t_token *cur);
@@ -107,13 +105,16 @@ void							perr_tok_msg(char *cmd, char *s, size_t len,
 									const char *msg);
 
 // Execution
+int								expand_args(t_cmd *cmd, t_shell *shell);
+char							*expand_str(char *src, t_shell *shell);
+char							*remove_quotes(char *dst, const char *src);
 int								process_heredoc(t_list *cmds, t_shell *shell);
 int								exec_cmds(t_list *cmds, t_shell *shell);
 int								exec_in_parent(t_list *cmds, t_shell *shell);
 int								fork_with_pipe(t_list *cmds, t_shell *shell);
 char							*get_valid_path(const char *filename,
 									t_list *envs);
-int								setup_redirs(t_list *redirs);
+int								setup_redirs(t_list *redirs, t_shell *shell);
 void							close_pipe_fds(int *fd, int prev_fd);
 int								close_fds_error(int *fd, int prev_fd);
 int								exec_builtin(t_cmd *cmd, t_shell *shell);
