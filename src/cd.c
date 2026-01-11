@@ -26,9 +26,9 @@ DESCRIPTION:
 
 int	exec_cd(char **args, t_shell *shell)
 {
-	char		*home;
-	char		*oldpwd;
-	char		*tmp;
+	char	*home;
+	char	*oldpwd;
+	char	*tmp;
 
 	if (args[1] && args[2] && args[1][0] != '-')
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
@@ -52,9 +52,9 @@ int	exec_cd(char **args, t_shell *shell)
 
 int	exec_cd(char **args, t_shell *shell)
 {
-	char		*home;
-	char		*oldpwd;
-	char		*tmp;
+	char	*home;
+	char	*oldpwd;
+	char	*tmp;
 
 	home = get_env_value(shell->home);
 	oldpwd = get_env_value(shell->oldpwd);
@@ -84,8 +84,8 @@ static int	do_cd(char **args, t_shell *shell, char *home, char *oldpwd)
 	dir = args[1];
 	if (!dir && !home)
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
-	else if (!dir || ((dir[0] == '~' && !dir[1])
-				|| (dir[0] == '-' && dir[1] == '-' && !dir[2] && !args[2])))
+	else if (!dir || ((dir[0] == '~' && !dir[1]) || (dir[0] == '-'
+				&& dir[1] == '-' && !dir[2] && !args[2])))
 		dir = home;
 	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2] && args[2]))
 		dir = args[2];

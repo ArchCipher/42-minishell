@@ -80,4 +80,3 @@ char	*remove_quotes(char *dst, const char *src)
 	*dst = 0;
 	return (dst);
 }
-

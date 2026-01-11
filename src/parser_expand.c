@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   parser_expand.c                                     :+:      :+:    :+:   */
+/*   parser_expand.c                                     :+:      :+:    :+:  */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -83,7 +83,7 @@ static void	expand_remove_quote(t_expand *s, t_shell *shell)
 	while (s->src < s->src_end)
 	{
 		if ((*(s->src) == '\'' && (flag == WORD || flag == SQUOTE))
-				|| (*(s->src) == '\"' && (flag == WORD || flag == DQUOTE)))
+			|| (*(s->src) == '\"' && (flag == WORD || flag == DQUOTE)))
 			flag = update_quote_flag(*(s->src), flag);
 		else if (dollar_expandable(s->src, s->src_end) && flag != SQUOTE)
 		{
@@ -95,8 +95,8 @@ static void	expand_remove_quote(t_expand *s, t_shell *shell)
 			s->dst = NULL;
 			return ;
 		}
-		else if (!(*(s->src) == '$' && flag == WORD
-				&& s->src + 1 < s->src_end && (!ft_strcspn(s->src + 1, "\'\""))))
+		else if (!(*(s->src) == '$' && flag == WORD && s->src + 1 < s->src_end
+				&& (!ft_strcspn(s->src + 1, "\'\""))))
 			s->dst[s->len++] = *(s->src);
 		s->src++;
 	}
