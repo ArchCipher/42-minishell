@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   parser_expand.c                                    :+:      :+:    :+:   */
+/*   parser_expand.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -12,8 +12,9 @@
 
 #include "minishell.h"
 
-static char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell);
-static int	split_args(t_cmd *cmd, size_t i, size_t *j, char *s);
+static int	expand_word_to_args(t_expand s, char ***args, size_t *cap,
+				size_t *len);
+static void	expand_remove_quote(t_expand *s, t_shell *shell);
 
 /*
 DESCRIPTION:
@@ -23,144 +24,81 @@ DESCRIPTION:
 
 int	expand_args(t_cmd *cmd, t_shell *shell)
 {
-	size_t	i;
-	size_t	j;
-	char	*tmp;
-	bool	expand;
-	bool	quoted;
+	t_expand	s;
+	char		**new_args;
+	size_t		i;
+	size_t		j;
 
+	new_args = ft_calloc(cmd->argcap + 1, sizeof(char *));
+	if (!new_args)
+		return (perror(MINI), 1);
 	i = 0;
 	j = 0;
-	while (i < cmd->arglen)
+	while (cmd->args[i])
 	{
-		quoted = (ft_strlen(cmd->args[i]) != ft_strcspn(cmd->args[i], "\'\""));
-		tmp = expand_str(cmd->args[i], shell, &expand, true);
-		if (!tmp)
-			return (1);
-		if (!quoted && !*tmp)
-			free(tmp);
-		else if (!expand || (expand && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE))
-			|| (quoted && !expand))
-			cmd->args[j++] = tmp;
-		else if (split_args(cmd, i, &j, tmp))
-			return (free(tmp), 1);
+		s = expand_word(cmd->args[i], shell);
+		if (expand_word_to_args(s, &new_args, &cmd->argcap, &j))
+			return (free(s.dst), free_arr(new_args), 1);
 		i++;
 	}
-	cmd->args[j] = NULL;
+	free_arr(cmd->args);
+	cmd->args = new_args;
+	cmd->arglen = j;
+	new_args[j] = NULL;
 	return (0);
 }
 
-char	*expand_str(char *src, t_shell *shell, bool *expand, bool split)
+t_expand	expand_word(char *src, t_shell *shell)
 {
-	char	*dst;
-	bool	quoted;
-
-	*expand = false;
-	quoted = (ft_strlen(src) != ft_strcspn(src, "\'\""));
-	if (ft_strlen(src) == ft_strcspn(src, "\'\"$"))
-		return (src);
-	dst = expand_remove_quote(src, expand, shell);
-	if (!dst)
-		return (NULL);
-	if (!split && !quoted && *expand)
-	{
-		perr_msg(src, E_REDIR, NULL, false);
-		free(dst);
-		return (NULL);
-	}
-	free(src);
-	return (dst);
-}
-
-static char	*expand_remove_quote(char *src, bool *expand, t_shell *shell)
-{
-	t_expand		s;
-	t_token_type	flag;
+	t_expand	s;
 
 	s = init_expand(src, ft_strlen(src));
 	if (!s.dst)
-		return (perror(MINI), NULL);
-	flag = WORD;
-	while (s.src < s.src_end)
-	{
-		if ((*s.src == '\'' && (flag == WORD || flag == SQUOTE))
-			|| (*s.src == '\"' && (flag == WORD || flag == DQUOTE)))
-			flag = update_quote_flag(*s.src, flag);
-		else if (dollar_expandable(s.src, s.src_end) && flag != SQUOTE)
-		{
-			if (flag == WORD)
-				*expand = true;
-			if (append_var(&s, shell))
-				return (free(s.dst), NULL);
-			continue ;
-		}
-		else if (!(*s.src == '$' && flag == WORD && (!ft_strcspn(s.src + 1, "\'\""))))
-			s.dst[s.len++] = *s.src;
-		s.src++;
-	}
-	return (s.dst[s.len] = 0, s.dst);
+		return (perror(MINI), s);
+	expand_remove_quote(&s, shell);
+	if (!s.dst)
+		return (perror(MINI), s);
+	s.has_space = (ft_strlen(s.dst) != ft_strcspn(s.dst, IS_SPACE));
+	s.quoted = (ft_strlen(src) != ft_strcspn(src, "\'\""));
+	return (s);
 }
 
-/*
-DESCRIPTION:
-	Splits a word token containing spaces into multiple word tokens.
-	The original token is deleted and replaced with new tokens created from
-	the space-separated words. Returns 0 on success, 1 on failure.
-*/
-
-static int	split_args(t_cmd *cmd, size_t i, size_t *j, char *s)
+static int	expand_word_to_args(t_expand s, char ***args, size_t *cap,
+		size_t *len)
 {
-	char	*str_tok;
-	char	*p;
-	char	*tmp;
-	char	**new_args;
-
-	new_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *), cmd->argcap + 2 * sizeof(char *));
-	if (!new_args)
+	if (!s.dst)
 		return (1);
-	memcpy(new_args, cmd->args, (*j) * sizeof(char *));
-	str_tok = ft_strtok_r(s, IS_SPACE, &p);
-	while (str_tok)
-	{
-		tmp = ft_strdup(str_tok);
-		if (!tmp)
-			return (1);
-		if (cmd->argcap - (cmd->arglen - i) <= (*j) + 1)
-		{
-			new_args = malloc((cmd->argcap + 1 + (cmd->arglen - i - 1)) * sizeof(char *));
-			if (!new_args)
-				return (free(tmp), 1);
-			ft_memcpy(new_args, cmd->args, (*j) * sizeof(char *));
-			cmd->argcap = cmd->argcap + 1 + (cmd->arglen - i - 1);
-		}
-		new_args[(*j)++] = tmp;
-		str_tok = ft_strtok_r(NULL, IS_SPACE, &p);
-	}
-	new_args[(*j)] = NULL;
-	return (0);
+	if (!s.quoted && !*s.dst)
+		return (free(s.dst), 0);
+	if (!s.expanded || !s.has_space || (s.quoted && !s.expanded))
+		return (append_arg(args, cap, len, s.dst));
+	return (split_args(args, cap, len, s.dst));
 }
 
-/*
-DESCRIPTION:
-	Copies src to dst while removing quote characters.
-	Returns pointer to the null terminator in dst.
-*/
-
-char	*remove_quotes(char *dst, const char *src)
+static void	expand_remove_quote(t_expand *s, t_shell *shell)
 {
-	t_token_type	old_flag;
 	t_token_type	flag;
 
-	old_flag = WORD;
-	while (*src)
+	flag = WORD;
+	while (s->src < s->src_end)
 	{
-		flag = update_quote_flag(*src, old_flag);
-		if (flag == old_flag)
-			*dst++ = *src++;
-		else
-			src++;
-		old_flag = flag;
+		if ((*(s->src) == '\'' && (flag == WORD || flag == SQUOTE))
+				|| (*(s->src) == '\"' && (flag == WORD || flag == DQUOTE)))
+			flag = update_quote_flag(*(s->src), flag);
+		else if (dollar_expandable(s->src, s->src_end) && flag != SQUOTE)
+		{
+			if (flag == WORD)
+				s->expanded = true;
+			if (!append_var(s, shell))
+				continue ;
+			free(s->dst);
+			s->dst = NULL;
+			return ;
+		}
+		else if (!(*(s->src) == '$' && flag == WORD
+				&& s->src + 1 < s->src_end && (!ft_strcspn(s->src + 1, "\'\""))))
+			s->dst[s->len++] = *(s->src);
+		s->src++;
 	}
-	*dst = 0;
-	return (dst);
+	s->dst[s->len] = 0;
 }

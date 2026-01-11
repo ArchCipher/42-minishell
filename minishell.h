@@ -106,8 +106,9 @@ void							perr_tok_msg(char *cmd, char *s, size_t len,
 
 // Execution
 int								expand_args(t_cmd *cmd, t_shell *shell);
-char							*expand_str(char *src, t_shell *shell,
-									bool *quoted, bool split);
+t_expand						expand_word(char *src, t_shell *shell);
+int								split_args(char ***args, size_t *cap, size_t *j, char *s);
+int								append_arg(char ***args, size_t *cap, size_t *len, char *s);
 char							*remove_quotes(char *dst, const char *src);
 int								process_heredoc(t_list *cmds, t_shell *shell);
 int								exec_cmds(t_list *cmds, t_shell *shell);

@@ -31,6 +31,9 @@ t_expand	init_expand(char *src, size_t size)
 	str.len = 0;
 	str.src = src;
 	str.src_end = src + size;
+	str.quoted = false;
+	str.expanded = false;
+	str.has_space = false;
 	return (str);
 }
 

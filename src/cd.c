@@ -84,8 +84,8 @@ static int	do_cd(char **args, t_shell *shell, char *home, char *oldpwd)
 	dir = args[1];
 	if (!dir && !home)
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
-	else if (!dir || (((dir[0] == '~' && !dir[1])
-				|| (dir[0] == '-' && dir[1] == '-' && !dir[2])) && !args[2]))
+	else if (!dir || ((dir[0] == '~' && !dir[1])
+				|| (dir[0] == '-' && dir[1] == '-' && !dir[2] && !args[2])))
 		dir = home;
 	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2] && args[2]))
 		dir = args[2];

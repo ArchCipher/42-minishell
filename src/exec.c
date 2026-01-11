@@ -37,7 +37,10 @@ int	exec_cmds(t_list *cmds, t_shell *shell)
 		cmd = get_cmd(cmds);
 		if ((cmd->con == OR && !shell->status) || (cmd->con == AND
 				&& shell->status))
-			return (shell->status);
+		{
+			cmds = cmds->next;
+			continue ;
+		}
 		shell->status = exec_cmd(cmds, shell);
 		if (!pipe)
 			pipe = cmds;

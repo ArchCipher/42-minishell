@@ -125,6 +125,9 @@ typedef struct s_expand
 	size_t			cap;
 	char			*src;
 	char			*src_end;
+	bool			quoted;
+	bool			expanded;
+	bool			has_space;
 }					t_expand;
 
 #endif

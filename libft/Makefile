@@ -11,10 +11,10 @@ INC			= -I.
 
 #			Sources
 MSRCS		= \
-			atoi isalnum isalpha isdigit isspace \
-			memchr memcpy memset realloc strchr \
-			strcmp strcspn strdup strlen strncmp \
-			strndup strspn strtok_r
+			atoi calloc isalnum isalpha isdigit \
+			isspace memchr memcpy memset realloc \
+			strchr strcmp strcspn strdup strlen \
+			strncmp strndup strspn strtok_r
 ASRCS		= \
 			strjoin strjoin3 putstr lstadd_back lstclear \
 			lstdelone lstnew

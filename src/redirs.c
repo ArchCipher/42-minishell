@@ -29,26 +29,24 @@ NOTE:
 
 int	setup_redirs(t_list *redirs, t_shell *shell)
 {
-	t_redir	*redir;
-	char	*tmp;
-	bool	expand;
+	t_redir		*redir;
+	t_expand	s;
 
 	while (redirs && redirs->content)
 	{
 		redir = get_redir(redirs);
-		tmp = expand_str(redir->file, shell, &expand, false);
-		if (!tmp)
+		s = expand_word(redir->file, shell);
+		if (!s.dst)
 			return (1);
-		redir->file = tmp;
+		free(redir->file);
+		redir->file = s.dst;
+		if (s.expanded && s.has_space)
+			return (perr_msg(redir->file, E_REDIR, NULL, false), 1);
 		redir->fd = open_redir_file(redir);
 		if (redir->fd == -1)
 			return (perr_msg(redir->file, strerror(errno), NULL, false), 1);
 		if (dup2(redir->fd, redir->target_fd) == -1)
-		{
-			close(redir->fd);
-			redir->fd = -1;
-			return (perror(MINI), 1);
-		}
+			return (close(redir->fd), redir->fd = -1, perror(MINI), 1);
 		close(redir->fd);
 		redir->fd = -1;
 		redirs = redirs->next;
