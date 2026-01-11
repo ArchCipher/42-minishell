@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:33:15 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 21:50:53 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 18:15:41 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,8 @@
 
 # define SIG_EXIT_BASE 128
 # define EXIT_STATUS_MASK 0xFF
+
+# define E_SIGQUIT "Quit (core dumped)"
 
 # ifdef __linux__
 #  define EXIT_NUMERIC_ERROR 2
@@ -125,7 +127,7 @@ void							free_env(void *content);
 
 // Builtin
 int								exec_cd(char **args, t_shell *shell);
-int								exec_pwd(void);
+int								exec_pwd(char **args);
 int								exec_exit(char **args, t_shell *shell);
 int								exec_export(char **args, t_shell *shell);
 int								exec_unset(char **args, t_shell *shell);

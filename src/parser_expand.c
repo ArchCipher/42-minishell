@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/06 14:41:34 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 17:36:27 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 17:19:20 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,17 +50,19 @@ int	expand_args(t_cmd *cmd, t_shell *shell)
 	return (0);
 }
 
-char	*expand_str(char *src, t_shell *shell, bool *quoted, bool split)
+char	*expand_str(char *src, t_shell *shell, bool *expand, bool split)
 {
 	char	*dst;
+	bool	quoted;
 
-	*quoted = false;
+	*expand = false;
+	quoted = (ft_strlen(src) != ft_strcspn(src, "\'\""));
 	if (ft_strlen(src) == ft_strcspn(src, "\'\"$"))
 		return (src);
-	dst = expand_remove_quote(src, quoted, shell);
+	dst = expand_remove_quote(src, expand, shell);
 	if (!dst)
 		return (NULL);
-	if (!split && *quoted)
+	if (!split && !quoted && *expand)
 	{
 		perr_msg(src, E_REDIR, NULL, false);
 		free(dst);
@@ -70,7 +72,7 @@ char	*expand_str(char *src, t_shell *shell, bool *quoted, bool split)
 	return (dst);
 }
 
-static char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
+static char	*expand_remove_quote(char *src, bool *expand, t_shell *shell)
 {
 	t_expand		s;
 	t_token_type	flag;
@@ -87,7 +89,7 @@ static char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell)
 		else if (dollar_expandable(s.src, s.src_end) && flag != SQUOTE)
 		{
 			if (flag == WORD)
-				*quoted = true;
+				*expand = true;
 			if (append_var(&s, shell))
 				return (free(s.dst), NULL);
 			continue ;

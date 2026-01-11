@@ -17,7 +17,6 @@ static int		build_redir(t_list **tokens, t_list **redirs,
 					t_list **last_redir);
 static t_list	*create_redir(t_list *tokens, int target_fd);
 static int		validate_redir(t_list *tokens);
-static int		get_target_fd(t_token *token);
 
 /*
 DESCRIPTION:

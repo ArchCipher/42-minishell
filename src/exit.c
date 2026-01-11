@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:47 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/07 18:19:52 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 18:55:04 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,12 +41,12 @@ int	exec_exit(char **args, t_shell *shell)
 	int	n;
 
 	errno = 0;
-	if (args[1] == NULL)
+	if (!args[1])
 		return (shell->status);
 	n = status_atoi(args[1]) & EXIT_STATUS_MASK;
 	if (!errno && args[2])
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
-	if (!*args[1] || errno)
+	if (errno || !*args[1])
 		return (perr_msg(*args, args[1], E_EXIT_CODE, false),
 			EXIT_NUMERIC_ERROR);
 	return (n);
@@ -69,7 +69,10 @@ static int	status_atoi(const char *str)
 	if (*str == '-')
 		sign = -1;
 	if (*str == '-' || *str == '+')
-		str++;
+	{
+		if (!*(++str))
+			errno = EINVAL;
+	}
 	while (ft_isdigit(*str))
 	{
 		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))

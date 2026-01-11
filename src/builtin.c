@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 14:01:35 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/07 18:04:29 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 16:13:47 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ int	exec_builtin(t_cmd *cmd, t_shell *shell)
 	else if (cmd->exec.builtin == BUILTIN_CD)
 		return (exec_cd(cmd->args, shell));
 	else if (cmd->exec.builtin == BUILTIN_PWD)
-		return (exec_pwd());
+		return (exec_pwd(cmd->args));
 	else if (cmd->exec.builtin == BUILTIN_EXPORT)
 		return (exec_export(cmd->args, shell));
 	else if (cmd->exec.builtin == BUILTIN_ENV)
@@ -91,11 +91,14 @@ DESCRIPTION:
 	Returns 0 on success, 1 if getcwd() or write() fails.
 */
 
-int	exec_pwd(void)
+int	exec_pwd(char **args)
 {
 	char	*buf;
 
 	buf = NULL;
+	if (args[1] && args[1][0] == '-' && args[1][1] && (args[1][1] != '-'
+		|| (args[1][1] == '-' && args[1][2])))
+		return (perr_tok_msg(*args, args[1], 2, E_OPTION), 2);
 	buf = getcwd(buf, 0);
 	if (!buf)
 		return (perror(MINI), 1);
@@ -122,7 +125,10 @@ static int	exec_env(char **args, t_list *envs)
 	t_env	*env;
 	int		ret;
 
-	if (args[1])
+	if (args[1] && args[1][0] == '-' && !args[1][1])
+		return (0);
+	if (args[1] && args[1][0] == '-' && args[1][1] && (args[1][1] != '-'
+		|| (args[1][1] == '-' && args[1][2])))
 		return (perr_msg(*args, args[1], E_OPTION, false), 2);
 	ret = 0;
 	while (envs)

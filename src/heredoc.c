@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:45:05 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 16:00:57 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 16:49:20 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,7 +107,6 @@ static int	exec_heredoc(char *limiter, int fd, t_shell *shell)
 	line = readline("> ");
 	while (line && ft_strcmp(line, limiter))
 	{
-		shell->line_num++;
 		len = ft_strlen(line);
 		if (!quoted && ft_memchr(line, '$', len)
 			&& expand_dollar(&line, &len, shell))

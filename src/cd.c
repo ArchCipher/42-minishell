@@ -6,13 +6,13 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/06 14:35:35 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/07 11:31:06 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 15:49:46 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-static int	do_cd(char **args, t_shell *shell);
+static int	do_cd(char **args, t_shell *shell, char *home, char *oldpwd);
 static char	*get_env_value(t_list *lst);
 
 /*
@@ -26,19 +26,29 @@ DESCRIPTION:
 
 int	exec_cd(char **args, t_shell *shell)
 {
+	char		*home;
+	char		*oldpwd;
+
 	if (args[1] && args[2] && args[1][0] != '-')
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
 	if (args[1] && args[2] && args[1][0] == '-' && !args[1][1])
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
 	if (args[1] && args[2] && args[3])
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
-	return (do_cd(args, shell));
+	home = get_env_value(shell->home);
+	oldpwd = get_env_value(shell->oldpwd);
+	return (do_cd(args, shell, home, oldpwd));
 }
 #else
 
 int	exec_cd(char **args, t_shell *shell)
 {
-	return (do_cd(args, shell));
+	char		*home;
+	char		*oldpwd;
+
+	home = get_env_value(shell->home);
+	oldpwd = get_env_value(shell->oldpwd);
+	return (do_cd(args, shell, home, oldpwd));
 }
 #endif
 
@@ -49,18 +59,15 @@ DESCRIPTION:
 	error.
 */
 
-static int	do_cd(char **args, t_shell *shell)
+static int	do_cd(char **args, t_shell *shell, char *home, char *oldpwd)
 {
-	char		*home;
-	char		*oldpwd;
 	const char	*dir;
 
 	dir = args[1];
-	home = get_env_value(shell->home);
-	oldpwd = get_env_value(shell->oldpwd);
 	if (!dir && !home)
 		return (perr_msg(*args, E_HOME, NULL, false), 1);
-	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2] && !args[2]))
+	else if (!dir || (((dir[0] == '~' && !dir[1])
+				|| (dir[0] == '-' && dir[1] == '-' && !dir[2])) && !args[2]))
 		dir = home;
 	else if (!dir || (dir[0] == '-' && dir[1] == '-' && !dir[2] && args[2]))
 		dir = args[2];
@@ -74,7 +81,7 @@ static int	do_cd(char **args, t_shell *shell)
 		return (perr_msg(*args, dir, strerror(errno), false), 1);
 	update_pwds(shell);
 	if (args[1] && args[1][0] == '-' && !args[1][1])
-		exec_pwd();
+		exec_pwd(args);
 	return (0);
 }
 

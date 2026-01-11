@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:45 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/07 18:29:23 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 18:58:56 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 static int	exec_cmd(t_list *cmds, t_shell *shell);
 static int	is_builtin(char **s);
 static int	cmds_waitpid(t_list **pipe, t_shell *shell);
+static void	handle_sig_msg(int status);
 
 /*
 DESCRIPTION:
@@ -131,12 +132,19 @@ static int	cmds_waitpid(t_list **pipe, t_shell *shell)
 			shell->status = WEXITSTATUS(status);
 		else if (WIFSIGNALED(status))
 			shell->status = SIG_EXIT_BASE + WTERMSIG(status);
-		if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
-			write(1, "\n", 1);
 		*pipe = (*pipe)->next;
 	}
 	if (set_signal_handler(SIGINT, shell_handler) == -1)
 		return (perror(MINI), -1);
+	handle_sig_msg(shell->status);
 	*pipe = NULL;
 	return (shell->status);
+}
+
+static void	handle_sig_msg(int status)
+{
+	if (status == SIG_EXIT_BASE + SIGQUIT)
+		ft_dprintf(STDERR_FILENO, "%s\n", E_SIGQUIT);
+	else if (status == SIG_EXIT_BASE + SIGINT)
+		write(1, "\n", 1);
 }

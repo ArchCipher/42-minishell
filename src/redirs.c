@@ -6,7 +6,7 @@
 /*   By: kmurugan <kmurugan@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/28 19:44:43 by kmurugan          #+#    #+#             */
-/*   Updated: 2026/01/06 20:19:38 by kmurugan         ###   ########.fr       */
+/*   Updated: 2026/01/11 17:18:27 by kmurugan         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,12 +31,12 @@ int	setup_redirs(t_list *redirs, t_shell *shell)
 {
 	t_redir	*redir;
 	char	*tmp;
-	bool	quoted;
+	bool	expand;
 
 	while (redirs && redirs->content)
 	{
 		redir = get_redir(redirs);
-		tmp = expand_str(redir->file, shell, &quoted, false);
+		tmp = expand_str(redir->file, shell, &expand, false);
 		if (!tmp)
 			return (1);
 		redir->file = tmp;
