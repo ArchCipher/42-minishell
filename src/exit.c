@@ -75,9 +75,9 @@ static int	status_atoi(const char *str)
 	}
 	while (ft_isdigit(*str))
 	{
-		if (sign == 1 && (LONG_MAX - (num * 10)) <= (*str - '0'))
+		if (sign == 1 && (LONG_MAX - (num * 10)) < (*str - '0'))
 			return (errno = ERANGE, (int)LONG_MAX);
-		if (sign == -1 && (LONG_MAX - (num * 10)) <= (*str - '0') - 1)
+		if (sign == -1 && (LONG_MAX - (num * 10)) < (*str - '0') - 1)
 			return (errno = ERANGE, (int)LONG_MIN);
 		num = (num * 10) + (*str - '0');
 		str++;

@@ -28,6 +28,7 @@ int	exec_cd(char **args, t_shell *shell)
 {
 	char		*home;
 	char		*oldpwd;
+	char		*tmp;
 
 	if (args[1] && args[2] && args[1][0] != '-')
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
@@ -37,6 +38,14 @@ int	exec_cd(char **args, t_shell *shell)
 		return (perr_msg(*args, E_MANY_ARGS, NULL, false), 1);
 	home = get_env_value(shell->home);
 	oldpwd = get_env_value(shell->oldpwd);
+	if (args[1] && args[1][0] == '~' && args[1][1])
+	{
+		tmp = ft_strjoin(home, args[1] + 1);
+		if (!tmp)
+			return (1);
+		free(args[1]);
+		args[1] = tmp;
+	}
 	return (do_cd(args, shell, home, oldpwd));
 }
 #else
@@ -45,9 +54,18 @@ int	exec_cd(char **args, t_shell *shell)
 {
 	char		*home;
 	char		*oldpwd;
+	char		*tmp;
 
 	home = get_env_value(shell->home);
 	oldpwd = get_env_value(shell->oldpwd);
+	if (args[1] && args[1][0] == '~' && args[1][1])
+	{
+		tmp = ft_strjoin(home, args[1] + 1);
+		if (!tmp)
+			return (1);
+		free(args[1]);
+		args[1] = tmp;
+	}
 	return (do_cd(args, shell, home, oldpwd));
 }
 #endif
