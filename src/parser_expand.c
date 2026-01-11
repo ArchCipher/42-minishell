@@ -39,8 +39,8 @@ int	expand_args(t_cmd *cmd, t_shell *shell)
 			return (1);
 		if (!quoted && !*tmp)
 			free(tmp);
-		else if ((expand && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE))
-			|| quoted)
+		else if (!expand || (expand && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE))
+			|| (quoted && !expand))
 			cmd->args[j++] = tmp;
 		else if (split_args(cmd, i, &j, tmp))
 			return (free(tmp), 1);
@@ -113,8 +113,12 @@ static int	split_args(t_cmd *cmd, size_t i, size_t *j, char *s)
 	char	*str_tok;
 	char	*p;
 	char	*tmp;
-	char	**tmp_args;
+	char	**new_args;
 
+	new_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *), cmd->argcap + 2 * sizeof(char *));
+	if (!new_args)
+		return (1);
+	memcpy(new_args, cmd->args, (*j) * sizeof(char *));
 	str_tok = ft_strtok_r(s, IS_SPACE, &p);
 	while (str_tok)
 	{
@@ -123,17 +127,16 @@ static int	split_args(t_cmd *cmd, size_t i, size_t *j, char *s)
 			return (1);
 		if (cmd->argcap - (cmd->arglen - i) <= (*j) + 1)
 		{
-			tmp_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *),
-					(cmd->argcap + 2) * sizeof(char *));
-			if (!tmp_args)
+			new_args = malloc((cmd->argcap + 1 + (cmd->arglen - i - 1)) * sizeof(char *));
+			if (!new_args)
 				return (free(tmp), 1);
-			cmd->args = tmp_args;
-			cmd->argcap += 2;
+			ft_memcpy(new_args, cmd->args, (*j) * sizeof(char *));
+			cmd->argcap = cmd->argcap + 1 + (cmd->arglen - i - 1);
 		}
-		cmd->args[(*j)++] = tmp;
+		new_args[(*j)++] = tmp;
 		str_tok = ft_strtok_r(NULL, IS_SPACE, &p);
 	}
-	free(s);
+	new_args[(*j)] = NULL;
 	return (0);
 }
 
