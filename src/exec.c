@@ -39,6 +39,8 @@ int	exec_cmds(t_list *cmds, t_shell *shell)
 				&& shell->status))
 		{
 			cmds = cmds->next;
+			while (cmds && cmds->content && get_cmd(cmds)->con == PIPE_CHAR)
+				cmds = cmds->next;
 			continue ;
 		}
 		shell->status = exec_cmd(cmds, shell);
