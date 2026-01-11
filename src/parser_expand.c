@@ -13,7 +13,7 @@
 #include "minishell.h"
 
 static char	*expand_remove_quote(char *src, bool *quoted, t_shell *shell);
-static int	split_args(t_cmd *cmd, ssize_t *j, char *s);
+static int	split_args(t_cmd *cmd, size_t i, size_t *j, char *s);
 
 /*
 DESCRIPTION:
@@ -23,8 +23,8 @@ DESCRIPTION:
 
 int	expand_args(t_cmd *cmd, t_shell *shell)
 {
-	ssize_t	i;
-	ssize_t	j;
+	size_t	i;
+	size_t	j;
 	char	*tmp;
 	bool	expand;
 	bool	quoted;
@@ -39,10 +39,10 @@ int	expand_args(t_cmd *cmd, t_shell *shell)
 			return (1);
 		if (!quoted && !*tmp)
 			free(tmp);
-		else if ((!expand && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE))
+		else if ((expand && ft_strlen(tmp) == ft_strcspn(tmp, IS_SPACE))
 			|| quoted)
 			cmd->args[j++] = tmp;
-		else if (split_args(cmd, &j, tmp))
+		else if (split_args(cmd, i, &j, tmp))
 			return (free(tmp), 1);
 		i++;
 	}
@@ -94,7 +94,7 @@ static char	*expand_remove_quote(char *src, bool *expand, t_shell *shell)
 				return (free(s.dst), NULL);
 			continue ;
 		}
-		else
+		else if (!(*s.src == '$' && flag == WORD && (!ft_strcspn(s.src + 1, "\'\""))))
 			s.dst[s.len++] = *s.src;
 		s.src++;
 	}
@@ -108,7 +108,7 @@ DESCRIPTION:
 	the space-separated words. Returns 0 on success, 1 on failure.
 */
 
-static int	split_args(t_cmd *cmd, ssize_t *j, char *s)
+static int	split_args(t_cmd *cmd, size_t i, size_t *j, char *s)
 {
 	char	*str_tok;
 	char	*p;
@@ -121,14 +121,14 @@ static int	split_args(t_cmd *cmd, ssize_t *j, char *s)
 		tmp = ft_strdup(str_tok);
 		if (!tmp)
 			return (1);
-		if (cmd->argcap <= (*j) + 1)
+		if (cmd->argcap - (cmd->arglen - i) <= (*j) + 1)
 		{
 			tmp_args = ft_realloc(cmd->args, cmd->argcap * sizeof(char *),
-					(cmd->argcap + 1) * sizeof(char *));
+					(cmd->argcap + 2) * sizeof(char *));
 			if (!tmp_args)
 				return (free(tmp), 1);
 			cmd->args = tmp_args;
-			cmd->argcap++;
+			cmd->argcap += 2;
 		}
 		cmd->args[(*j)++] = tmp;
 		str_tok = ft_strtok_r(NULL, IS_SPACE, &p);
