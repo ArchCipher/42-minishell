@@ -66,7 +66,11 @@ static int	exec_cmd(t_list *cmds, t_shell *shell)
 	cmd->exec.builtin = is_builtin(cmd->args);
 	if (cmd->exec.builtin == -1 || cmd->subshell || cmd->con == PIPE_CHAR
 		|| (cmds->next && (get_cmd(cmds->next)->con == PIPE_CHAR)))
-		return (fork_with_pipe(cmds, shell));
+	{
+		if (fork_with_pipe(cmds, shell))
+			return (1);
+		return (shell->status);
+	}
 	return (exec_in_parent(cmds, shell));
 }
 
