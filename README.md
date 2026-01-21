@@ -34,41 +34,41 @@
 - Exit code handling
 
 ### Pipes
-- ✅ Multiple pipes in sequence (`cmd1 | cmd2 | cmd3`)
-- ✅ Proper file descriptor management
-- ✅ Process synchronization
-- ✅ Signal handling in pipelines
+- Multiple pipes in sequence (`cmd1 | cmd2 | cmd3`)
+- Proper file descriptor management
+- Process synchronization
+- Signal handling in pipelines
 
 ### Redirections
-- ✅ Output redirection (`>`)
-- ✅ Append redirection (`>>`)
-- ✅ Input redirection (`<`)
-- ✅ Heredoc (`<<`)
-- ✅ Multiple redirections
-- ✅ Redirection with pipes
+- Output redirection (`>`)
+- Append redirection (`>>`)
+- Input redirection (`<`)
+- Heredoc (`<<`)
+- Multiple redirections
+- Redirection with pipes
 
 ### Environment Variables
-- ✅ Variable expansion (`$VAR`, `${VAR}`)
-- ✅ Special variables (`$?`, `$$`, `$USER`)
-- ✅ Variable assignment (`export VAR=value`)
-- ✅ Variable unsetting (`unset VAR`)
+- Variable expansion (`$VAR`, `${VAR}`)
+- Special variables (`$?`, `$$`, `$USER`)
+- Variable assignment (`export VAR=value`)
+- Variable unsetting (`unset VAR`)
 
 ### Built-in Commands
-- ✅ `cd` - Change directory (with `-` support)
-- ✅ `echo` - Print with `-n` flag
-- ✅ `pwd` - Print working directory
-- ✅ `export` - Set environment variables
-- ✅ `unset` - Remove environment variables
-- ✅ `env` - Print environment
-- ✅ `exit` - Exit shell with code
+- `cd` - Change directory (with `-` support)
+- `echo` - Print with `-n` flag
+- `pwd` - Print working directory
+- `export` - Set environment variables
+- `unset` - Remove environment variables
+- `env` - Print environment
+- `exit` - Exit shell with code
 
 ### Advanced Features
-- ✅ Logical operators (`&&`, `||`)
-- ✅ Parentheses for command grouping
-- ✅ Quoting (`'`, `"`)
-- ✅ Signal handling (Ctrl+C, Ctrl+D, Ctrl+\)
-- ✅ Proper error messages
-- ✅ Exit code propagation
+- Logical operators (`&&`, `||`)
+- Parentheses for command grouping
+- Quoting (`'`, `"`)
+- Signal handling (Ctrl+C, Ctrl+D, Ctrl+\)
+- Proper error messages
+- Exit code propagation
 
 ---
 
