@@ -18,6 +18,7 @@
 - **Signal Handling:** `SIGINT` (Ctrl+C), `SIGQUIT` (Ctrl+\), signal blocking
 - **File I/O:** Redirections (`>`, `>>`, `<`), heredoc (`<<`), file descriptor management
 - **Parsing:** Complex command line parsing, tokenization, syntax validation
+- **Control Flow:** Logical operators (`&&`, `||`), command chaining, subshell execution
 - **Environment Variables:** Variable expansion, `$?`, `$$`, `$USER`, etc.
 - **Built-in Commands:** `cd`, `echo`, `pwd`, `export`, `unset`, `env`, `exit`
 - **Error Handling:** Proper error messages, exit codes, error recovery
@@ -27,10 +28,10 @@
 ## Features Implemented
 
 ### Command Execution
-- ✅ Execute external programs via `execve()`
-- ✅ PATH resolution for command lookup
-- ✅ Proper argument passing
-- ✅ Exit code handling
+- Execute external programs via `execve()`
+- PATH resolution for command lookup
+- Proper argument passing
+- Exit code handling
 
 ### Pipes
 - ✅ Multiple pipes in sequence (`cmd1 | cmd2 | cmd3`)
@@ -77,17 +78,17 @@
 minishell/
 ├── src/
 │   ├── exec.c              # Command execution and process management
-│   ├── exec_child.c         # Child process setup and execution
-│   ├── parser.c             # Command parsing and AST building
-│   ├── lexer.c              # Tokenization
-│   ├── expand.c             # Environment variable expansion
-│   ├── builtins/            # Built-in command implementations
-│   └── ...                  # Additional source files
-├── libft/                   # Custom library functions
-├── dprintf/                 # Printf implementation for error output
-├── minishell.h              # Main header file
-├── types.h                   # Type definitions
-└── Makefile                 # Build configuration
+│   ├── exec_child.c        # Child process setup and execution
+│   ├── parser.c            # Command parsing and AST building
+│   ├── lexer.c             # Tokenization
+│   ├── expand.c            # Environment variable expansion
+│   ├── builtins/           # Built-in command implementations
+│   └── ...                 # Additional source files
+├── libft/                  # Custom library functions
+├── dprintf/                # Printf implementation for error output
+├── minishell.h             # Main header file
+├── types.h                 # Type definitions
+└── Makefile                # Build configuration
 ```
 
 **Key Components:**
@@ -102,17 +103,17 @@ minishell/
 
 ### Core Components
 
-**1. Lexer (`lexer.c`)**
+**1. Lexer ([`lexer.c`](src/lexer.c))**
 - Tokenizes input string
 - Identifies commands, operators, redirections
 - Handles quotes and special characters
 
-**2. Parser (`parser.c`)**
+**2. Parser ([`parser.c`](src/parser.c))**
 - Builds abstract syntax tree
 - Validates syntax
 - Organizes commands and operators
 
-**3. Executor (`exec.c`, `exec_child.c`)**
+**3. Executor ([`exec.c`](src/exec.c), [`exec_child.c`](src/exec_child.c))**
 - Executes command trees
 - Manages process creation
 - Handles pipes and redirections
@@ -123,12 +124,12 @@ minishell/
 - Handles environment variable manipulation
 - Manages shell state
 
-**5. Expander (`expand.c`)**
+**5. Expander ([`parser_expand.c`](src/parser_expand.c))**
 - Expands environment variables
 - Handles special variables
 - Processes quotes
 
-**6. Signal Handler (`signals.c`)**
+**6. Signal Handler ([`signal.c`](src/signal.c))**
 - Handles SIGINT (Ctrl+C)
 - Handles SIGQUIT (Ctrl+\)
 - Manages signal blocking during execution
@@ -137,83 +138,49 @@ minishell/
 
 ## Technical Implementation
 
+### Lexing and Tokenization
+
+See [`lexer.c`](src/lexer.c) for input tokenization and operator identification.
+
 ### Process Management
 
-```c
-// Fork and execute command
-pid_t pid = fork();
-if (pid == 0)
-{
-    // Child: setup redirections and execute
-    dup2(fd_in, STDIN_FILENO);
-    dup2(fd_out, STDOUT_FILENO);
-    execve(cmd_path, args, env);
-}
-else
-{
-    // Parent: wait for child
-    waitpid(pid, &status, 0);
-}
-```
+See [`exec.c`](src/exec.c) for fork and execute implementation.
 
 ### Pipe Implementation
 
-```c
-// Create pipe
-int pipe_fd[2];
-pipe(pipe_fd);
-
-// Child 1: write to pipe
-dup2(pipe_fd[1], STDOUT_FILENO);
-close(pipe_fd[0]);
-close(pipe_fd[1]);
-
-// Child 2: read from pipe
-dup2(pipe_fd[0], STDIN_FILENO);
-close(pipe_fd[0]);
-close(pipe_fd[1]);
-```
+See [`exec_child.c`](src/exec_child.c) for pipe setup and file descriptor management.
 
 ### Signal Handling
 
-```c
-// Setup signal handlers
-signal(SIGINT, handle_sigint);
-signal(SIGQUIT, handle_sigquit);
-
-// Block signals during execution
-sigemptyset(&sa.sa_mask);
-sigaddset(&sa.sa_mask, SIGINT);
-sigaddset(&sa.sa_mask, SIGQUIT);
-```
+See [`signal.c`](src/signal.c) for signal handler setup and blocking.
 
 ---
 
 ## Key Challenges & Solutions
 
-### Challenge 1: Pipe Chain Execution
-**Problem:** Managing multiple processes in a pipe chain  
-**Solution:** Track pipe head, wait only after all commands in chain are forked, check `next->con` to determine end of pipe chain
+### Pipe Chain Execution
+**Managing multiple processes in a pipe chain**
+I tracked pipe head, waited only after all commands in chain are forked, and checked next connector `next->con` to determine end of pipe chain
 
-### Challenge 2: Signal Handling
-**Problem:** Ctrl+C should interrupt current command, not exit shell  
-**Solution:** Block signals in parent, allow in child, restore handlers after execution
+### Environment Variable Expansion
+**Expanding variables within quoted strings correctly**
+I initially expanded all variables in the parser stage before execution. When I tried to implement logical operators (`&&` and `||`), this caused bugs because expansion needed to happen after command execution to properly handle exit codes and variable values that depend on previous commands. I moved the expansion logic to the execution stage. I tracked the quote state during parsing and only expanded variables when appropriate based on the current quote context
 
-### Challenge 3: File Descriptor Management
-**Problem:** Properly closing file descriptors to prevent leaks  
-**Solution:** Track all opened FDs, close in both parent and child appropriately
+### Signal Handling
+**Ctrl+C should interrupt the current command, not exit the shell**
+I looked for signal-safe options but couldn't find an alternative. I later learned that readline is documented in glibc as signal-safe and was used only to interrupt readline, so I used readline functions to interrupt readline. I blocked signals in the parent process, allowed them in child processes, and restored handlers after execution completes
 
-### Challenge 4: Environment Variable Expansion
-**Problem:** Expanding variables within quoted strings correctly  
-**Solution:** Track quote state during parsing, expand variables only when appropriate
+### Zombie Process Prevention
+**Signal handling causing zombie processes**
+I had not added signal handling in command execution (although I did implement it in heredoc), which caused the shell to receive Ctrl+C signals when they were supposed to be received by the child process, like for `cat`. This caused zombie processes to exist. I used `watch -n 0.2 pstree -p <pid>` to check this and later resolved it.
 
-### Challenge 5: Error Handling
-**Problem:** Proper error messages matching bash behavior  
-**Solution:** Study bash error messages, implement matching error handling
+### File Descriptor Management
+**Properly closing file descriptors to prevent leaks**
+I tracked all opened file descriptors and made sure to close them in both parent and child processes appropriately
 
-### Challenge 6: EINTR Handling
-**Problem:** `waitpid()` interrupted by signals causing hangs  
-**Solution:** Retry `waitpid()` when `errno == EINTR`
+### Error Handling
+**Proper error messages matching bash behavior**
+I studied bash error messages and implemented matching error handling to ensure compatibility
 
 ---
 
@@ -227,36 +194,25 @@ make
 ./minishell
 ```
 
-**Example Usage:**
-```bash
-$> ls -la | grep "\.c" | wc -l
-$> echo $USER
-$> export TEST=hello && echo $TEST
-$> cd /tmp && pwd
-$> cat file.txt > output.txt
-$> cat << EOF
-> hello
-> world
-> EOF
-```
-
 ---
 
 ## Testing
 
 The project includes comprehensive testing:
+- **scan-build** - Static analysis tool used during development to catch memory leaks, uninitialized variables, and other potential bugs
+- **AddressSanitizer (ASan)** - Runtime memory error detector used to catch buffer overflows, use-after-free, and other memory safety issues
 - **[minishell_tester](https://github.com/LucasKuhn/minishell_tester)** - Community tester with optimal test cases
 - **[42_minishell_tester](https://github.com/zstenger93/42_minishell_tester)** - Community tester with extensive test cases
 - Custom test cases for edge cases and error handling
 
 **Test Coverage:**
-- ✅ Command execution
-- ✅ Pipes and redirections
-- ✅ Built-in commands
-- ✅ Environment variables
-- ✅ Signal handling
-- ✅ Error handling
-- ✅ Edge cases
+- Command execution
+- Pipes and redirections
+- Built-in commands
+- Environment variables
+- Signal handling
+- Error handling
+- Edge cases
 
 ---
 
