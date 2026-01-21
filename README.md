@@ -158,32 +158,32 @@ See [`signal.c`](src/signal.c) for signal handler setup and blocking.
 
 ## Key Challenges & Solutions
 
-### Pipe Chain Execution
+### 1. Pipe Chain Execution
 **Managing multiple processes in a pipe chain**
 
 I tracked pipe head, waited only after all commands in chain are forked, and checked next connector `next->con` to determine end of pipe chain
 
-### Environment Variable Expansion
+### 2. Environment Variable Expansion
 **Expanding variables within quoted strings correctly**
 
 I initially expanded all variables in the parser stage before execution. When I tried to implement logical operators (`&&` and `||`), this caused bugs because expansion needed to happen after command execution to properly handle exit codes and variable values that depend on previous commands. I moved the expansion logic to the execution stage. I tracked the quote state during parsing and only expanded variables when appropriate based on the current quote context
 
-### Signal Handling
+### 3. Signal Handling
 **Ctrl+C should interrupt the current command, not exit the shell**
 
 I looked for signal-safe options but couldn't find an alternative. I later learned that readline is documented in glibc as signal-safe and was used only to interrupt readline, so I used readline functions to interrupt readline. I blocked signals in the parent process, allowed them in child processes, and restored handlers after execution completes
 
-### Zombie Process Prevention
+### 4. Zombie Process Prevention
 **Signal handling causing zombie processes**
 
 I had not added signal handling in command execution (although I did implement it in heredoc), which caused the shell to receive Ctrl+C signals when they were supposed to be received by the child process, like for `cat`. This caused zombie processes to exist. I used `watch -n 0.2 pstree -p <pid>` to check this and later resolved it.
 
-### File Descriptor Management
+### 5. File Descriptor Management
 **Properly closing file descriptors to prevent leaks**
 
 I tracked all opened file descriptors and made sure to close them in both parent and child processes appropriately
 
-### Error Handling
+### 6. Error Handling
 **Proper error messages matching bash behavior**
 
 I studied bash error messages and implemented matching error handling to ensure compatibility
