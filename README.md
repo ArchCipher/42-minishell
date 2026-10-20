@@ -9,6 +9,8 @@
 
 **Minishell** is one of the most complex 42 projects, requiring deep understanding of system programming, process management, and shell internals. This project implements a functional shell that can execute commands, handle pipes, redirections, environment variables, and built-in commands.
 
+[Watch the minishell demo](./docs/DEMO_minishell.mp4)
+
 ---
 
 ## Skills Demonstrated
